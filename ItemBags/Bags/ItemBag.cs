@@ -169,7 +169,7 @@ namespace ItemBags.Bags
         public static bool AreItemsEquivalent(Object object1, Object object2, bool ComparePrice)
         {
             //Possible TODO this method was originally intended to find existing stacks of the same item so that that I could combine the stacks.
-            //I've recently realized there is an Item.canStackWith(Item) instance method.  So most of the calls to this function should be refactored to use that.
+            //I've recently realized there is an Item.canStackWith(Item) instance method.  The calls to this function should be refactored to use that.
             if (object1 == null && object2 == null) // both null
                 return true;
             else if (object1 == null || object2 == null) // 1 is null but the other isn't
@@ -640,7 +640,7 @@ namespace ItemBags.Bags
 
             List<Object> InventoryItems = Source.Where(x => x != null && x is Object).Cast<Object>().Where(x => AreItemsEquivalent(x, Item, true))
                 .OrderByDescending(x => x == Item).ToList(); // OrderBy will prioritize moving the clicked item's index first
-            if (Source == Game1.player.Items && Game1.player.CursorSlotItem != null && Game1.player.CursorSlotItem is Object CursorSlotObject)
+            if (Source == Game1.player.Items && Game1.player.CursorSlotItem != null && Game1.player.CursorSlotItem is Object CursorSlotObject && AreItemsEquivalent(CursorSlotObject, Item, true))
                 InventoryItems.Insert(0, CursorSlotObject);
 
             foreach (Object InventoryItem in InventoryItems)
@@ -743,8 +743,6 @@ namespace ItemBags.Bags
             int TargetCapacity = Math.Max(ActualTargetCapacity, Target.Count);
 
             Object BagItem = this.Contents.FirstOrDefault(x => AreItemsEquivalent(x, Item, true));
-            if (BagItem == null)
-                BagItem = this.Contents.FirstOrDefault(x => AreItemsEquivalent(x, Item, false));
             if (BagItem == null)
                 return false;
             int RemainingQty = Math.Min(BagItem.Stack, Qty);

@@ -42,6 +42,20 @@ namespace ItemBags.Persistence
         [XmlArrayItem("RucksackSizeConfig")]
         public RucksackSizeConfig[] RucksackSettings { get; set; }
 
+        [XmlElement("HideSmallBagsFromShops")]
+        public bool HideSmallBagsFromShops { get; set; }
+        [XmlElement("HideMediumBagsFromShops")]
+        public bool HideMediumBagsFromShops { get; set; }
+        [XmlElement("HideLargeBagsFromShops")]
+        public bool HideLargeBagsFromShops { get; set; }
+        [XmlElement("HideGiantBagsFromShops")]
+        public bool HideGiantBagsFromShops { get; set; }
+        [XmlElement("HideMassiveBagsFromShops")]
+        public bool HideMassiveBagsFromShops { get; set; }
+
+        [XmlElement("HideObsoleteBagsFromShops")]
+        public bool HideObsoleteBagsFromShops { get; set; }
+
         public UserConfig()
         {
             InitializeDefaults();
@@ -75,6 +89,30 @@ namespace ItemBags.Persistence
                 new RucksackSizeConfig(ContainerSize.Giant, 1.0, 1.0, 350000, 999, 36, 12, BagInventoryMenu.DefaultInventoryIconSize),
                 new RucksackSizeConfig(ContainerSize.Massive, 1.0, 1.0, 1000000, 9999, 72, 12, BagInventoryMenu.DefaultInventoryIconSize)
             };
+
+            this.HideSmallBagsFromShops = false;
+            this.HideMediumBagsFromShops = false;
+            this.HideLargeBagsFromShops = false;
+            this.HideGiantBagsFromShops = false;
+            this.HideMassiveBagsFromShops = false;
+
+            this.HideObsoleteBagsFromShops = false;
+        }
+
+        public bool IsSizeVisibleInShops(ContainerSize Size)
+        {
+            if (Size == ContainerSize.Small)
+                return !HideSmallBagsFromShops;
+            else if (Size == ContainerSize.Medium)
+                return !HideMediumBagsFromShops;
+            else if (Size == ContainerSize.Large)
+                return !HideLargeBagsFromShops;
+            else if (Size == ContainerSize.Giant)
+                return !HideGiantBagsFromShops;
+            else if (Size == ContainerSize.Massive)
+                return !HideMassiveBagsFromShops;
+            else
+                return true;
         }
 
         public int GetStandardBagPrice(ContainerSize Size, BagType Type)
