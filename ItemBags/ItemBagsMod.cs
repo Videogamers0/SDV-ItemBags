@@ -30,6 +30,7 @@ namespace ItemBags
     {
         public static Version CurrentVersion = new Version(1, 2, 2); // Last updated 2/23/2020 (Don't forget to update manifest.json)
 
+
         //Possible TODO 
         //  Netplay support. Not sure where to begin but should probably start by storing the entire Object in BagItem.cs instead of just saving a handful of properties like Id/Quantity/Price.
         //      and convert ItemBag fields into their Net equivalents, such as BoundedBag.Autofill could be a NetBool instead of bool. And Add XmlElement tags to the properties that need serialized.
