@@ -316,6 +316,10 @@ namespace ItemBags.Menus
                     {
                         Copy = new Rucksack(Bag.Size, false);
                     }
+                    else if (Bag is OmniBag OB)
+                    {
+                        Copy = new OmniBag(Bag.Size);
+                    }
                     else
                         throw new NotImplementedException(string.Format("Unexpected Bag Type while creating CustomizeIconMenu: {0}", Bag.GetType().ToString()));
 

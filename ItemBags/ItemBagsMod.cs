@@ -31,15 +31,6 @@ namespace ItemBags
         public static Version CurrentVersion = new Version(1, 2, 3); // Last updated 2/24/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
 
-        //Changelog (Version already updated):
-        //  If on Android, left-clicking an opened bag can now close it.
-        //  This mod's interfaces will now scale down in size if they don't fit on screen. Especially useful if playing on Android.
-        //  Added some new settings to the config.json file in the mod directory. These settings let you hide bags that you no longer want to see in the shop menus.
-        //  Improved compatibility with SaveAnywhere mod. You'll no longer crash when using SaveAnywhere, but until the creator of SaveAnywhere fixes an issue with their API,
-        //      you'll still need to exit to title and re-load your game to get your bags back. Do not sell/trash the Rusty Swords - those are your bags encoded as regular items! 
-        //      (So that this mod doesn't have to put custom items into your save file, which could cause save file corruption if you uninstall this mod)
-        //  Added a new type of bag - The "Omni Bag". These are capable or storing other bags inside of them. Sold by Pierre.
-
         //Possible TODO 
         //  Netplay support. Not sure where to begin but should probably start by storing the entire Object in BagItem.cs instead of just saving a handful of properties like Id/Quantity/Price.
         //      and convert ItemBag fields into their Net equivalents, such as BoundedBag.Autofill could be a NetBool instead of bool. And Add XmlElement tags to the properties that need serialized.
