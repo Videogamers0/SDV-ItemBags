@@ -29,6 +29,15 @@ namespace ItemBags
     public class ItemBagsMod : Mod
     {
         public static Version CurrentVersion = new Version(1, 2, 3); // Last updated 2/24/2020 (Don't forget to update manifest.json)
+        public const string ModUniqueId = "SlayerDharok.Item_Bags";
+
+        //Changelog (Version already updated):
+        //  If on Android, left-clicking an opened bag can now close it.
+        //  This mod's interfaces will now scale down in size if they don't fit on screen. Especially useful if playing on Android.
+        //  Added some new settings to the config.json file in the mod directory. These settings let you hide bags that you no longer want to see in the shop menus.
+        //  Improved compatibility with SaveAnywhere mod. You'll no longer crash when using SaveAnywhere, but until the creator of SaveAnywhere fixes an issue with their API,
+        //      you'll still need to exit to title and re-load your game to get your bags back. Do not sell/trash the Rusty Swords - those are your bags encoded as regular items! 
+        //      (So that this mod doesn't have to put custom items into your save file, which could cause save file corruption if you uninstall this mod)
 
         //Possible TODO 
         //  Netplay support. Not sure where to begin but should probably start by storing the entire Object in BagItem.cs instead of just saving a handful of properties like Id/Quantity/Price.
@@ -36,10 +45,14 @@ namespace ItemBags
         //      Then probably need to add checks for IsLocalPlayer, and maybe use Game1.MasterPlayer.Items instead of Game1.player.Items? Idk
         //      Then re-work the SaveLoadHelpers. Maybe the ReplaceAllInstances needs to iterate the inventories of all the farmhands?
         //  dynamically resize interfaces to fit to screen? Maybe after InitializeLayout finishes, check if it's too big. If so, lower the SlotSize and call InitializeLayout again.
+        //      edit: this won't work with Android, because Android version of game seems to set a zoom on the following Game Update after an interface is opened.
         //  dynamically load json files in the mod directory that can be deserialized into BagTypes, giving users an easier way to use custom bags without needing the edit the behemoth that is bagconfig.json.
         //  Rucksack tooltips: if not in shopmenu, draw a scaled-down version of the contents interface, maybe 32x32 slots, without quantity, and maybe cap it to the first 72 slots in case
         //      user has edited the config files to make the bag store a ridiculous amount of items
         //  An additional sidebar button in topleft of bag contents interface. hovering over it displays a tooltip with total bag content's summed values
+        //  Rucksack filtering. if Rucksack has >=36 slots, add some category filter buttons to the left sidebar. Also make OnBagContentsChanged have a Removed, Added, Modified list
+        //      so in RucksackMenu, when detecting a BagContentsChanged, only need to refresh the view if not filtering by category, or at least 1 changed item belongs to current category filter.
+        //      this performance improvement is probably needed if using like 500+ slots on rucksack since I coded it so terribly.
 
         internal static ItemBagsMod ModInstance { get; private set; }
         internal static string Translate(string Key, Dictionary<string, string> Parameters = null)
@@ -61,7 +74,8 @@ namespace ItemBags
         {
             ModInstance = this;
 
-            IsMegaStorageInstalled = Helper.ModRegistry.IsLoaded("Alek.MegaStorage") || Helper.ModRegistry.GetAll().Any(x => x.Manifest.Name.Equals("Mega Storage", StringComparison.CurrentCultureIgnoreCase)); ;
+            IsMegaStorageInstalled = Helper.ModRegistry.IsLoaded("Alek.MegaStorage") || 
+                Helper.ModRegistry.GetAll().Any(x => x.Manifest.Name.Equals("Mega Storage", StringComparison.CurrentCultureIgnoreCase));
 
             //BagType GemBagType = BagType.DeserializeFromXML(@"C:\Programming\Source\Personal\SDV\GemBag.xml", out bool Success, out Exception Error);
             //BagTypeFactory.GetGemBagType().SerializeToXML(@"C:\Programming\Source\Personal\SDV\GemBag.xml", out bool Success, out Exception Error);
@@ -156,7 +170,7 @@ namespace ItemBags
             List<string> ValidTypes = BagConfig.BagTypes.Select(x => x.Name).ToList();
 
             //Possible TODO: Add translation support for this command
-            string CommandName = "player_additembag";
+            string CommandName = Constants.TargetPlatform == GamePlatform.Android ? "addbag" : "player_additembag";
             string CommandHelp = string.Format("Adds an empty Bag of the desired size and type to your inventory.\n"
                 + "Arguments: <BagSize> <BagType>\n"
                 + "Example: {0} Massive River Fish Bag\n\n"
@@ -218,7 +232,7 @@ namespace ItemBags
             List<string> ValidSizes = BundleBag.ValidSizes.Select(x => x.ToString()).ToList();
 
             //Possible TODO: Add translation support for this command
-            string CommandName = "player_addbundlebag";
+            string CommandName = Constants.TargetPlatform == GamePlatform.Android ? "addbundlebag" : "player_addbundlebag";
             string CommandHelp = string.Format("Adds an empty Bundle Bag of the desired size to your inventory.\n"
                 + "Arguments: <BagSize>\n"
                 + "Example: {0} Large\n\n"
@@ -262,7 +276,7 @@ namespace ItemBags
             List<string> ValidSizes = Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>().Select(x => x.ToString()).ToList();
 
             //Possible TODO: Add translation support for this command
-            string CommandName = "player_addrucksack";
+            string CommandName = Constants.TargetPlatform == GamePlatform.Android ? "addrucksack" : "player_addrucksack";
             string CommandHelp = string.Format("Adds an empty Rucksack of the desired size to your inventory.\n"
                 + "Arguments: <BagSize>\n"
                 + "Example: {0} Large\n\n"
@@ -412,8 +426,30 @@ namespace ItemBags
                 IBM.OnMouseButtonReleased(e);
         }
 
+        private bool HasTriedSubscribingToSaveAnywhereAPI = false;
+
         private void GameLoop_UpdateTicked(object sender, UpdateTickedEventArgs e)
         {
+            //  Add compatibility with the Save Anywhere mod
+            if (!HasTriedSubscribingToSaveAnywhereAPI)
+            {
+                HasTriedSubscribingToSaveAnywhereAPI = true;
+
+                string SaveAnywhereUniqueId = "Omegasis.SaveAnywhere";
+                bool IsSaveAnywhereInstalled = Helper.ModRegistry.IsLoaded(SaveAnywhereUniqueId) ||
+                    Helper.ModRegistry.GetAll().Any(x => x.Manifest.Name.Equals("Save Anywhere", StringComparison.CurrentCultureIgnoreCase));
+                if (IsSaveAnywhereInstalled)
+                {
+                    ISaveAnywhereAPI API = Helper.ModRegistry.GetApi<ISaveAnywhereAPI>(SaveAnywhereUniqueId);
+                    if (API != null)
+                    {
+                        API.addBeforeSaveEvent(ModUniqueId, () => { SaveLoadHelpers.OnSaving(); });
+                        API.addAfterSaveEvent(ModUniqueId, () => { SaveLoadHelpers.OnSaved(); });
+                        API.addAfterLoadEvent(ModUniqueId, () => { SaveLoadHelpers.OnLoaded(); });
+                    }
+                }
+            }
+
             if (Game1.activeClickableMenu != null && Game1.activeClickableMenu is ItemBagMenu IBM)
                 IBM.Update(e);
         }

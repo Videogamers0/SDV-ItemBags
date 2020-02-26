@@ -21,8 +21,9 @@ namespace ItemBags.Menus
         public Rucksack Rucksack { get; }
         private void Bag_ContentsChanged(object sender, EventArgs e) { InitializePlaceholders(); }
 
+        private int OriginalSlotSize { get; }
         /// <summary>The size, in pixels, to use when rendering an item slot. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></summary>
-        public int SlotSize { get; }
+        public int SlotSize { get; private set; }
         /// <summary>The number of columns to display in each row</summary>
         public int ColumnCount { get; }
         /// <summary>If true, then the grid will always be displayed as a perfect square, even if some of the slots in the bottom-right cannot store anything.<para/>
@@ -122,6 +123,7 @@ namespace ItemBags.Menus
             Bag.OnContentsChanged += Bag_ContentsChanged;
 
             this.ColumnCount = Math.Min(Rucksack.NumSlots, ContentsColumns);
+            this.OriginalSlotSize = ContentsSlotSize;
             this.SlotSize = ContentsSlotSize;
             this.ShowLockedSlots = ShowLockedSlots;
 
@@ -340,12 +342,17 @@ namespace ItemBags.Menus
             Bag.OnContentsChanged -= Bag_ContentsChanged;
         }
 
+        protected override bool CanResize() { return true; }
+
         private int SidebarTopMargin = Constants.TargetPlatform == GamePlatform.Android ? 32 : 16;
 
         protected override void InitializeContentsLayout()
         {
             if (Rucksack == null)
                 return;
+
+            if (ResizeIteration > 1)
+                this.SlotSize = Math.Min(OriginalSlotSize, Math.Max(24, OriginalSlotSize - (ResizeIteration - 1) * 8));
 
             int SidebarWidth = 0;
             int SidebarHeight = 0;

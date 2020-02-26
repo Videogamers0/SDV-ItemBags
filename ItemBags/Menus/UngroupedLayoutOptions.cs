@@ -20,8 +20,9 @@ namespace ItemBags.Menus
 {
     public class UngroupedLayoutOptions
     {
+        private int OriginalSlotSize { get; }
         /// <summary>The size, in pixels, to use when rendering an item slot. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></summary>
-        public int SlotSize { get; }
+        public int SlotSize { get; private set; }
         /// <summary>The number of columns to display in each row</summary>
         public int ColumnCount { get; }
         /// <summary>If true, then the grid will always be displayed as a perfect square, even if some of the slots in the bottom-right cannot store anything.<para/>
@@ -89,6 +90,7 @@ namespace ItemBags.Menus
             this.LineBreaks = new ReadOnlyCollection<int>(LineBreaks);
             this.LineBreakHeights = new ReadOnlyCollection<int>(LineBreakHeights);
             this.SlotSize = SlotSize;
+            this.OriginalSlotSize = SlotSize;
         }
 
         public UngroupedLayoutOptions(BagMenuOptions.UngroupedLayout ULO)
@@ -256,8 +258,11 @@ namespace ItemBags.Menus
         }
         #endregion Parent Menu
 
-        public void InitializeLayout()
+        public void InitializeLayout(int ResizeIteration)
         {
+            if (ResizeIteration > 1)
+                this.SlotSize = Math.Min(OriginalSlotSize, Math.Max(24, OriginalSlotSize - (ResizeIteration - 1) * 8));
+
             HoveredSlot = null;
             RightButtonPressedTime = null;
             RightButtonPressedLocation = null;

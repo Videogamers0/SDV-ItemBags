@@ -209,6 +209,7 @@ namespace ItemBags.Bags
             }
         }
 
+        #region Textures
         /// <summary>The unmodified LooseSprites/cursors.xnb texture</summary>
         protected static Texture2D CursorsTexture { get { return Game1.mouseCursors; } }
         /// <summary>The 16x16 portion of <see cref="CursorsTexture"/> that contains the bag icon</summary>
@@ -310,6 +311,7 @@ namespace ItemBags.Bags
             int b = (int)a.B - z.B;
             return (r * r + g * g + b * b) <= threshold * threshold;
         }
+        #endregion Textures
 
         /// <summary>Same purpose as <see cref="Tool.Description"/> except this is a read-only property that doesn't call a function</summary>
         public string DescriptionAlias { get; protected set; }
@@ -403,6 +405,7 @@ namespace ItemBags.Bags
                 !Item.isLostItem;
         }
 
+        #region Open/Close Menu
         public ItemBagMenu ContentsMenu { get; private set; }
         public IClickableMenu PreviousMenu { get; private set; }
 
@@ -421,24 +424,6 @@ namespace ItemBags.Bags
             this.ContentsMenu = CreateMenu(Source, ActualCapacity);
             Game1.activeClickableMenu = ContentsMenu;
             Game1.playSound("bigSelect");
-        }
-
-        /// <summary>Removes anyitems that should no longer be storeable in this bag.<para/>
-        /// (Could be useful if, for instance, the BagType is modified and certain items can no longer be placed inside the bag. 
-        /// This would prevent old items from being stuck in the bag with no way of removing them from the interface)</summary>
-        /// <param name="Target">The target items that this bag's contents are being moved to. Typically this is <see cref="Game1.player.Items"/> if moving to/from the inventory.</param>
-        /// <param name="ActualTargetCapacity">The maximum # of items that can be stored in the Target list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
-        public virtual bool TryRemoveInvalidItems(IList<Item> Target, int ActualTargetCapacity)
-        {
-            bool ChangesMade = false;
-            List<Object> InvalidItems = Contents.Where(x => !IsValidBagObject(x)).ToList();
-            foreach (Object InvalidItem in InvalidItems)
-            {
-                MoveFromBag(InvalidItem, InvalidItem.Stack, out int MovedQty, false, Target, ActualTargetCapacity);
-                if (MovedQty > 0)
-                    ChangesMade = true;
-            }
-            return ChangesMade;
         }
 
         protected bool IsClosingContents { get; set; } = false;
@@ -479,6 +464,25 @@ namespace ItemBags.Bags
             {
                 IsClosingContents = false;
             }
+        }
+        #endregion Open/Close Menu
+
+        /// <summary>Removes anyitems that should no longer be storeable in this bag.<para/>
+        /// (Could be useful if, for instance, the BagType is modified and certain items can no longer be placed inside the bag. 
+        /// This would prevent old items from being stuck in the bag with no way of removing them from the interface)</summary>
+        /// <param name="Target">The target items that this bag's contents are being moved to. Typically this is <see cref="Game1.player.Items"/> if moving to/from the inventory.</param>
+        /// <param name="ActualTargetCapacity">The maximum # of items that can be stored in the Target list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
+        public virtual bool TryRemoveInvalidItems(IList<Item> Target, int ActualTargetCapacity)
+        {
+            bool ChangesMade = false;
+            List<Object> InvalidItems = Contents.Where(x => !IsValidBagObject(x)).ToList();
+            foreach (Object InvalidItem in InvalidItems)
+            {
+                MoveFromBag(InvalidItem, InvalidItem.Stack, out int MovedQty, false, Target, ActualTargetCapacity);
+                if (MovedQty > 0)
+                    ChangesMade = true;
+            }
+            return ChangesMade;
         }
 
         /// <param name="InventorySource">Typically this is <see cref="Game1.player.Items"/> if this menu should display the player's inventory.</param>

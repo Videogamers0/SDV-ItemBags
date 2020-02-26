@@ -24,8 +24,9 @@ namespace ItemBags.Menus
         public bool IsJojaMember { get; }
         private void Bag_ContentsChanged(object sender, EventArgs e) { UpdateQuantities(); }
 
+        private int OriginalSlotSize { get; }
         /// <summary>The size, in pixels, to use when rendering an item slot. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></summary>
-        public int SlotSize { get; }
+        public int SlotSize { get; private set; }
         /// <summary>The number of columns to display in each row</summary>
         public int ColumnCount { get; }
         /// <summary>If true, then the grid will always be displayed as a perfect square, even if some of the slots in the bottom-right cannot store anything.<para/>
@@ -74,6 +75,7 @@ namespace ItemBags.Menus
             Bag.OnContentsChanged += Bag_ContentsChanged;
 
             this.ColumnCount = ContentsColumns;
+            this.OriginalSlotSize = ContentsSlotSize;
             this.SlotSize = ContentsSlotSize;
             this.ShowLockedSlots = ShowLockedSlots;
 
@@ -266,10 +268,15 @@ namespace ItemBags.Menus
         private SpriteFont RoomHeaderFont { get { return Game1.smallFont; } }
         private const float RoomHeaderScale = 0.8f;
 
+        protected override bool CanResize() { return true; }
+
         protected override void InitializeContentsLayout()
         {
             if (BundleBag == null)
                 return;
+
+            if (ResizeIteration > 1)
+                this.SlotSize = Math.Min(OriginalSlotSize, Math.Max(24, OriginalSlotSize - (ResizeIteration - 1) * 8));
 
             if (IsJojaMember)
             {

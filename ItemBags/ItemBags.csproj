@@ -88,6 +88,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Helpers\SaveLoadHelpers.cs" />
     <Compile Include="Helpers\TextureHelpers.cs" />
+    <Compile Include="SaveAnywhereAPI.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="i18n\de.json" />

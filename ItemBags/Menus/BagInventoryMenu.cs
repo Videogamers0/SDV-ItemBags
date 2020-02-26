@@ -3,6 +3,7 @@ using ItemBags.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Menus;
@@ -118,19 +119,20 @@ namespace ItemBags.Menus
 
         internal void OnMouseButtonPressed(ButtonPressedEventArgs e)
         {
-            if (e.Button == StardewModdingAPI.SButton.MouseRight)
+            if (e.Button == SButton.MouseRight)
             {
                 RightButtonPressedLocation = HoveredSlot;
                 RightButtonPressedTime = DateTime.Now;
             }
 
-            if (e.Button == StardewModdingAPI.SButton.MouseLeft || e.Button == StardewModdingAPI.SButton.MouseRight)
+            if (e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
             {
                 Item PressedItem = GetHoveredItem();
                 if (PressedItem != null)
                 {
                     //  Right-clicking a bag will attempt to open its contents
-                    if (PressedItem is ItemBag IB && e.Button == StardewModdingAPI.SButton.MouseRight)
+                    if (PressedItem is ItemBag IB && 
+                        (e.Button == SButton.MouseRight || Constants.TargetPlatform == GamePlatform.Android)) // Also allow left-clicking on Android since the interface might be too small to display the Close button in top-right
                     {
                         if (IB == this.Bag)
                         {

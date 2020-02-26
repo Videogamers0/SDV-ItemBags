@@ -144,13 +144,15 @@ namespace ItemBags.Menus
 
         public Rectangle? HorizontalSeparatorPosition { get; private set; }
 
+        protected override bool CanResize() { return true; }
+
         protected override void InitializeContentsLayout()
         {
             if (GroupedOptions == null || UngroupedOptions == null)
                 return;
 
-            GroupedOptions.InitializeLayout();
-            UngroupedOptions.InitializeLayout();
+            GroupedOptions.InitializeLayout(ResizeIteration);
+            UngroupedOptions.InitializeLayout(ResizeIteration);
 
             int RequiredWidth;
             int RequiredHeight;

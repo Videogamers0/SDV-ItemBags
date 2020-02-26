@@ -140,32 +140,43 @@ namespace ItemBags.Menus
 
         protected int ButtonLeftTopMargin = 4;
         protected int ButtonBottomMargin = 6;
-        protected int ButtonSize { get { return Constants.TargetPlatform == GamePlatform.Android ? 48 : 32; } }
+        protected int ButtonSize { get { return 32; } } //{ get { return Constants.TargetPlatform == GamePlatform.Android ? 48 : 32; } }
+
+        public int ResizeIteration { get; private set; } = 0;
 
         protected void InitializeLayout()
         {
-            int SidebarWidth = 0;
-            int SidebarHeight = 0;
-            if (IsLeftSidebarVisible || IsRightSidebarVisible)
+            bool FitsOnScreen;
+            ResizeIteration = 0;
+            do
             {
-                SidebarWidth = ButtonSize + ButtonLeftTopMargin * 2;
+                ResizeIteration++;
 
-                int LeftButtons = LeftSidebarButtonBounds.Count();
-                int LeftHeight = InventoryMargin + ButtonLeftTopMargin + LeftButtons * ButtonSize + (LeftButtons - 1) * ButtonBottomMargin + ButtonLeftTopMargin + InventoryMargin;
-                int RightButtons = RightSidebarButtonBounds.Count();
-                int RightHeight = InventoryMargin + ButtonLeftTopMargin + RightButtons * ButtonSize + (RightButtons - 1) * ButtonBottomMargin + ButtonLeftTopMargin + InventoryMargin;
-                SidebarHeight = Math.Max(IsLeftSidebarVisible ? LeftHeight : 0, IsRightSidebarVisible ? RightHeight : 0);
-            }
+                int SidebarWidth = 0;
+                int SidebarHeight = 0;
+                if (IsLeftSidebarVisible || IsRightSidebarVisible)
+                {
+                    SidebarWidth = ButtonSize + ButtonLeftTopMargin * 2;
 
-            InventoryMenu.InitializeLayout();
-            //BagInfo.InitializeLayout();
-            InitializeContentsLayout();
+                    int LeftButtons = LeftSidebarButtonBounds.Count();
+                    int LeftHeight = InventoryMargin + ButtonLeftTopMargin + LeftButtons * ButtonSize + (LeftButtons - 1) * ButtonBottomMargin + ButtonLeftTopMargin + InventoryMargin;
+                    int RightButtons = RightSidebarButtonBounds.Count();
+                    int RightHeight = InventoryMargin + ButtonLeftTopMargin + RightButtons * ButtonSize + (RightButtons - 1) * ButtonBottomMargin + ButtonLeftTopMargin + InventoryMargin;
+                    SidebarHeight = Math.Max(IsLeftSidebarVisible ? LeftHeight : 0, IsRightSidebarVisible ? RightHeight : 0);
+                }
 
-            //  Compute size of menu
-            width = Math.Max(InventoryMenu.RelativeBounds.Width + InventoryMargin * 2 + SidebarWidth * 2, GetRelativeContentBounds().Width + ContentsMargin * 2 /*+ BagInfo.RelativeBounds.Width*/);
-            height = Math.Max(InventoryMenu.RelativeBounds.Height + InventoryMargin * 2, SidebarHeight) + Math.Max(GetRelativeContentBounds().Height + ContentsMargin * 2, /*BagInfo.RelativeBounds.Height*/0);
-            xPositionOnScreen = (Game1.viewport.Size.Width - width) / 2;
-            yPositionOnScreen = (Game1.viewport.Size.Height - height) / 2;
+                InventoryMenu.InitializeLayout();
+                //BagInfo.InitializeLayout();
+                InitializeContentsLayout();
+
+                //  Compute size of menu
+                width = Math.Max(InventoryMenu.RelativeBounds.Width + InventoryMargin * 2 + SidebarWidth * 2, GetRelativeContentBounds().Width + ContentsMargin * 2 /*+ BagInfo.RelativeBounds.Width*/);
+                height = Math.Max(InventoryMenu.RelativeBounds.Height + InventoryMargin * 2, SidebarHeight) + Math.Max(GetRelativeContentBounds().Height + ContentsMargin * 2, /*BagInfo.RelativeBounds.Height*/0);
+                xPositionOnScreen = (Game1.viewport.Size.Width - width) / 2;
+                yPositionOnScreen = (Game1.viewport.Size.Height - height) / 2;
+
+                FitsOnScreen = width <= Game1.viewport.Size.Width && height <= Game1.viewport.Size.Height;
+            } while (!FitsOnScreen && ResizeIteration < 5 && CanResize());
 
             //  Set position of inventory and contents
             InventoryMenu.SetTopLeft(new Point(
@@ -195,7 +206,7 @@ namespace ItemBags.Menus
             }
 
             //  Set bounds of close button
-            Point CloseButtonOffset = new Point(16, -16);
+            Point CloseButtonOffset = Constants.TargetPlatform == GamePlatform.Android ? new Point(24, -24) : new Point(16, -16);
             upperRightCloseButton.bounds.X = xPositionOnScreen + width - upperRightCloseButton.bounds.Width + CloseButtonOffset.X;
             upperRightCloseButton.bounds.Y = yPositionOnScreen + CloseButtonOffset.Y;
         }
@@ -205,6 +216,7 @@ namespace ItemBags.Menus
         protected abstract void DrawContentsToolTips(SpriteBatch b);
         public abstract Rectangle GetRelativeContentBounds();
         public abstract Rectangle GetContentBounds();
+        protected abstract bool CanResize();
         public abstract void SetTopLeft(Point Point);
         public abstract void OnClose();
 

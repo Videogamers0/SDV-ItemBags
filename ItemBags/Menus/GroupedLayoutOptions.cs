@@ -59,8 +59,9 @@ namespace ItemBags.Menus
                 throw new NotImplementedException(string.Format("Unrecognized ColumnType: {0}", Column.ToString()));
         }
 
+        private int OriginalSlotSize { get; }
         /// <summary>The size, in pixels, to use when rendering an item slot. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></summary>
-        public int SlotSize { get; }
+        public int SlotSize { get; private set; }
         /// <summary>Determines how many groups to show in each row. Recommended = 3.<para/>
         /// A group will typically be 4 columns (all 4 qualities), and possibly a value column, so the total number of columns in a row is usually either <see cref="GroupsPerRow"/>*4 or <see cref="GroupsPerRow"/>*5</summary>
         public int GroupsPerRow { get; }
@@ -140,6 +141,7 @@ namespace ItemBags.Menus
         {
             this.GroupsPerRow = GroupsPerRow;
             this.ShowValueColumn = ShowValueColumn;
+            this.OriginalSlotSize = SlotSize;
             this.SlotSize = SlotSize;
 
             this.ColumnsPerGroup = Enum.GetValues(typeof(ObjectQuality)).Cast<ObjectQuality>().Count();
@@ -326,8 +328,11 @@ namespace ItemBags.Menus
         }
         #endregion Parent Menu
 
-        public void InitializeLayout()
+        public void InitializeLayout(int ResizeIteration)
         {
+            if (ResizeIteration > 1)
+                this.SlotSize = Math.Min(OriginalSlotSize, Math.Max(24, OriginalSlotSize - (ResizeIteration - 1) * 8));
+
             HoveredSlot = null;
             RightButtonPressedTime = null;
             RightButtonPressedLocation = null;
