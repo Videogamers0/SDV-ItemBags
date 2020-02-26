@@ -73,10 +73,8 @@ namespace ItemBags.Bags
         public override bool IsUsingDefaultIcon() { return this.Icon == TextureHelpers.JunimoNoteTexture && this.IconTexturePosition == new Rectangle(0, 244, 16, 16); }
         public override bool CanCustomizeIcon() { return false; }
 
-        public override int GetPurchasePrice()
-        {
-            return ItemBagsMod.UserConfig.GetBundleBagPrice(Size);
-        }
+        public override int GetPurchasePrice() { return ItemBagsMod.UserConfig.GetBundleBagPrice(Size); }
+        public override string GetTypeId() { return BundleBagTypeId; }
 
         /// <param name="InventorySource">Typically this is <see cref="Game1.player.Items"/> if this menu should display the player's inventory.</param>
         /// <param name="ActualCapacity">The maximum # of items that can be stored in the InventorySource list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>

@@ -110,12 +110,12 @@ namespace ItemBags.Helpers
             CommunityCenterBundles.Instance = new CommunityCenterBundles();
 
 #if NEVER //DEBUG
-            //  Add 1 of every Rucksack to inventory for testing purposes
+            //  Add 1 of every OmniBag to inventory for testing purposes
             foreach (ContainerSize Size in Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>())
             {
-                if (!Game1.player.isInventoryFull() && !Game1.player.Items.Any(x => x is Rucksack RS && RS.Size == Size))
+                if (!Game1.player.isInventoryFull() && !Game1.player.Items.Any(x => x is OmniBag OB && OB.Size == Size))
                 {
-                    Game1.player.addItemToInventory(new Rucksack(Size, true));
+                    Game1.player.addItemToInventory(new OmniBag(Size));
                 }
             }
 #endif
@@ -168,48 +168,13 @@ namespace ItemBags.Helpers
                 //  Decode all of our Encoded custom items back into their original form
                 ReplaceAllInstances(IsEncodedCustomItem, Encoded =>
                 {
-                    //  Re-create each saved bag and set their stored items back to their saved state
                     int BagInstanceId = Encoded.ParentSheetIndex - EncodedItemStartIndex;
                     if (IndexedBagInstances.TryGetValue(BagInstanceId, out BagInstance BagInstance))
                     {
-                        string BagTypeId = BagInstance.TypeId;
-
-                        //  Handle BundleBags
-                        if (BagTypeId == BundleBag.BundleBagTypeId)
-                        {
-                            BundleBag Replacement = new BundleBag(BagInstance);
+                        if (BagInstance.TryDecode(IndexedBagTypes, out ItemBag Replacement))
                             return Replacement;
-                        }
-                        //  Handle Rucksacks
-                        else if (BagTypeId == Rucksack.RucksackTypeId)
-                        {
-                            Rucksack Replacement = new Rucksack(BagInstance);
-                            return Replacement;
-                        }
-                        //  Handle all other types of Bags
-                        else if (IndexedBagTypes.TryGetValue(BagTypeId, out BagType BagType))
-                        {
-                            BagSizeConfig SizeConfig = BagType.SizeSettings.FirstOrDefault(x => x.Size == BagInstance.Size);
-                            if (SizeConfig != null)
-                            {
-                                BoundedBag Replacement = new BoundedBag(BagType, BagInstance);
-                                return Replacement;
-                            }
-                            else
-                            {
-                                string Warning = string.Format("Warning - BagType with Id = {0} was found, but it does not contain any settings for Size={1}. Did you manually edit your {2} json file? The saved bag with InstanceId = {3} cannot be loaded without the corresponding settings for this size!",
-                                    BagTypeId, BagInstance.Size.ToString(), ItemBagsMod.BagConfigDataKey, BagInstanceId);
-                                ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
-                                return Encoded;
-                            }
-                        }
                         else
-                        {
-                            string Warning = string.Format("Warning - no BagType with Id = {0} was found. Did you manually edit your {1} json file? The saved bag with InstanceId = {2} cannot be loaded without a corresponding type!",
-                                BagTypeId, ItemBagsMod.BagConfigDataKey, BagInstanceId);
-                            ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
                             return Encoded;
-                        }
                     }
                     else
                     {

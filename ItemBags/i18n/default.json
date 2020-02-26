@@ -39,6 +39,8 @@
   "BundleBagDescription": "A bag for storing items required by\nbundles in the Community Center.",
   "RucksackName": "Rucksack",
   "RucksackDescription": "A bag capable of storing most standard items.",
+  "OmniBagName": "Omni Bag",
+  "OmniBagDescription": "A bag for storing other bags.",
 
   "SizeSmallName": "Small",
   "SizeMediumName": "Medium",
@@ -73,6 +75,7 @@
 
   "BagCategoryName": "Container",
   "CapacityDescription": "holds up to {{count}} of each",
+  "OmniBagCapacityDescription": "Maximum bag size: {{size}}",
   "LargeBundleBagUnstoreableRooms": "Bulletin Board, Abandoned Joja Mart",
   "CustomizeIconInstructions": "Click a sprite to use as this bag's icon:",
   "UseDefaultIconButtonText": "Default",

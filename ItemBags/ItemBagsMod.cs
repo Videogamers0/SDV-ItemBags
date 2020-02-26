@@ -38,14 +38,13 @@ namespace ItemBags
         //  Improved compatibility with SaveAnywhere mod. You'll no longer crash when using SaveAnywhere, but until the creator of SaveAnywhere fixes an issue with their API,
         //      you'll still need to exit to title and re-load your game to get your bags back. Do not sell/trash the Rusty Swords - those are your bags encoded as regular items! 
         //      (So that this mod doesn't have to put custom items into your save file, which could cause save file corruption if you uninstall this mod)
+        //  Added a new type of bag - The "Omni Bag". These are capable or storing other bags inside of them. Sold by Pierre.
 
         //Possible TODO 
         //  Netplay support. Not sure where to begin but should probably start by storing the entire Object in BagItem.cs instead of just saving a handful of properties like Id/Quantity/Price.
         //      and convert ItemBag fields into their Net equivalents, such as BoundedBag.Autofill could be a NetBool instead of bool. And Add XmlElement tags to the properties that need serialized.
         //      Then probably need to add checks for IsLocalPlayer, and maybe use Game1.MasterPlayer.Items instead of Game1.player.Items? Idk
         //      Then re-work the SaveLoadHelpers. Maybe the ReplaceAllInstances needs to iterate the inventories of all the farmhands?
-        //  dynamically resize interfaces to fit to screen? Maybe after InitializeLayout finishes, check if it's too big. If so, lower the SlotSize and call InitializeLayout again.
-        //      edit: this won't work with Android, because Android version of game seems to set a zoom on the following Game Update after an interface is opened.
         //  dynamically load json files in the mod directory that can be deserialized into BagTypes, giving users an easier way to use custom bags without needing the edit the behemoth that is bagconfig.json.
         //  Rucksack tooltips: if not in shopmenu, draw a scaled-down version of the contents interface, maybe 32x32 slots, without quantity, and maybe cap it to the first 72 slots in case
         //      user has edited the config files to make the bag store a ridiculous amount of items
@@ -76,9 +75,6 @@ namespace ItemBags
 
             IsMegaStorageInstalled = Helper.ModRegistry.IsLoaded("Alek.MegaStorage") || 
                 Helper.ModRegistry.GetAll().Any(x => x.Manifest.Name.Equals("Mega Storage", StringComparison.CurrentCultureIgnoreCase));
-
-            //BagType GemBagType = BagType.DeserializeFromXML(@"C:\Programming\Source\Personal\SDV\GemBag.xml", out bool Success, out Exception Error);
-            //BagTypeFactory.GetGemBagType().SerializeToXML(@"C:\Programming\Source\Personal\SDV\GemBag.xml", out bool Success, out Exception Error);
 
             //  Load global user settings into memory
             UserConfig GlobalUserConfig = helper.Data.ReadJsonFile<UserConfig>(UserConfigFilename);
@@ -157,11 +153,13 @@ namespace ItemBags
             RegisterCommands();
         }
 
+        #region Commands
         private void RegisterCommands()
         {
             RegisterAddItemBagCommand();
             RegisterAddBundleBagCommand();
             RegisterAddRucksackCommand();
+            RegisterAddOmniBagCommand();
         }
 
         private void RegisterAddItemBagCommand()
@@ -315,6 +313,51 @@ namespace ItemBags
             });
         }
 
+        private void RegisterAddOmniBagCommand()
+        {
+            List<string> ValidSizes = Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>().Select(x => x.ToString()).ToList();
+
+            //Possible TODO: Add translation support for this command
+            string CommandName = Constants.TargetPlatform == GamePlatform.Android ? "addomnibag" : "player_addomnibag";
+            string CommandHelp = string.Format("Adds an empty Omni Bag of the desired size to your inventory.\n"
+                + "Arguments: <BagSize>\n"
+                + "Example: {0} Large\n\n"
+                + "Valid values for <BagSize>: {1}\n\n",
+                CommandName, string.Join(", ", ValidSizes));
+            Helper.ConsoleCommands.Add(CommandName, CommandHelp, (string Name, string[] Args) =>
+            {
+                if (Game1.player.isInventoryFull())
+                {
+                    Monitor.Log("Unable to execute command: Inventory is full!", LogLevel.Alert);
+                }
+                else if (Args.Length < 1)
+                {
+                    Monitor.Log("Unable to execute command: Required arguments missing!", LogLevel.Alert);
+                }
+                else
+                {
+                    string SizeName = Args[0];
+                    if (!Enum.TryParse(SizeName, out ContainerSize Size) || !ValidSizes.Contains(SizeName))
+                    {
+                        Monitor.Log(string.Format("Unable to execute command: <BagSize> \"{0}\" is not valid. Expected valid values: {1}", SizeName, string.Join(", ", ValidSizes)), LogLevel.Alert);
+                    }
+                    else
+                    {
+                        try
+                        {
+                            OmniBag NewBag = new OmniBag(Size);
+                            Game1.player.addItemToInventory(NewBag);
+                        }
+                        catch (Exception ex)
+                        {
+                            Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);
+                        }
+                    }
+                }
+            });
+        }
+        #endregion Commands
+
         private bool IsHandlingInventoryChanged { get; set; } = false;
 
         private void Player_InventoryChanged(object sender, InventoryChangedEventArgs e)
@@ -327,7 +370,49 @@ namespace ItemBags
                     IsHandlingInventoryChanged = true;
                     if (e.IsLocalPlayer)
                     {
-                        List<ItemBag> AutofillableBags = e.Player.Items.Where(x => x != null && ((x is BoundedBag BB && BB.Autofill) || (x is Rucksack RS && RS.Autofill))).Cast<ItemBag>().ToList();
+                        HashSet<ItemBag> NestedBags = new HashSet<ItemBag>();
+
+                        //  Get all bags in the player's inventory that can be autofilled
+                        List<ItemBag> AutofillableBags = new List<ItemBag>();
+                        foreach (Item Item in e.Player.Items)
+                        {
+                            if (Item != null && Item is ItemBag)
+                            {
+                                if (Item is BoundedBag BB)
+                                {
+                                    if (BB.Autofill)
+                                        AutofillableBags.Add(BB);
+                                }
+                                else if (Item is Rucksack RS)
+                                {
+                                    if (RS.Autofill)
+                                        AutofillableBags.Add(RS);
+                                }
+                                else if (Item is OmniBag OB)
+                                {
+                                    foreach (ItemBag NestedBag in OB.NestedBags)
+                                    {
+                                        if (NestedBag is BoundedBag NestedBB)
+                                        {
+                                            if (NestedBB.Autofill)
+                                            {
+                                                AutofillableBags.Add(NestedBB);
+                                                NestedBags.Add(NestedBag);
+                                            }
+                                        }
+                                        else if (NestedBag is Rucksack NestedRS)
+                                        {
+                                            if (NestedRS.Autofill)
+                                            {
+                                                AutofillableBags.Add(NestedRS);
+                                                NestedBags.Add(NestedBag);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         if (AutofillableBags.Any())
                         {
                             foreach (Item NewItem in e.Added)
@@ -346,17 +431,21 @@ namespace ItemBags
                                     {
                                         List<ItemBag> SortedTargets = ValidTargets.OrderBy(x =>
                                         {
+                                            int NestedPenalty = NestedBags.Contains(x) ? 10 : 0; // Items nested inside of Omni Bags have lower priority than non-nested bags
                                             if (x is BundleBag)
-                                                return 0; // Prioritize filling Bundle Bags first
+                                                return 0 + NestedPenalty; // Prioritize filling Bundle Bags first
                                             else if (x is Rucksack RS)
-                                                return RS.AutofillPriority == AutofillPriority.High ? 1 : 4; // Prioritize Rucksacks with HighPriority over BoundedBags
+                                            {
+                                                int Priority = RS.AutofillPriority == AutofillPriority.High ? 1 : 4;
+                                                return Priority + NestedPenalty; // Prioritize Rucksacks with HighPriority over BoundedBags
+                                            }
                                             else if (x is BoundedBag BB)
                                             {
                                                 //  Prioritize BoundedBags that already have an existing stack of the item over BoundedBags that don't
                                                 if (x.Contents.Any(BagItem => BagItem != null && ItemBag.AreItemsEquivalent(NewObject, BagItem, false)))
-                                                    return 2;
+                                                    return 2 + NestedPenalty;
                                                 else
-                                                    return 3;
+                                                    return 3 + NestedPenalty;
                                             }
                                             else
                                                 throw new NotImplementedException(string.Format("Unexpected Bag type in Autofill sorter: {0}", x.GetType().ToString()));
@@ -440,12 +529,19 @@ namespace ItemBags
                     Helper.ModRegistry.GetAll().Any(x => x.Manifest.Name.Equals("Save Anywhere", StringComparison.CurrentCultureIgnoreCase));
                 if (IsSaveAnywhereInstalled)
                 {
-                    ISaveAnywhereAPI API = Helper.ModRegistry.GetApi<ISaveAnywhereAPI>(SaveAnywhereUniqueId);
-                    if (API != null)
+                    try
                     {
-                        API.addBeforeSaveEvent(ModUniqueId, () => { SaveLoadHelpers.OnSaving(); });
-                        API.addAfterSaveEvent(ModUniqueId, () => { SaveLoadHelpers.OnSaved(); });
-                        API.addAfterLoadEvent(ModUniqueId, () => { SaveLoadHelpers.OnLoaded(); });
+                        ISaveAnywhereAPI API = Helper.ModRegistry.GetApi<ISaveAnywhereAPI>(SaveAnywhereUniqueId);
+                        if (API != null)
+                        {
+                            API.addBeforeSaveEvent(ModUniqueId, () => { SaveLoadHelpers.OnSaving(); });
+                            API.addAfterSaveEvent(ModUniqueId, () => { SaveLoadHelpers.OnSaved(); });
+                            API.addAfterLoadEvent(ModUniqueId, () => { SaveLoadHelpers.OnLoaded(); });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Monitor.Log(string.Format("Failed to bind to Save Anywhere's Mod API. Your game may crash while saving with Save Anywhere! Error: {0}", ex.Message), LogLevel.Warn);
                     }
                 }
             }
@@ -494,6 +590,7 @@ namespace ItemBags
                     {
                         bool HasChangedStock = false;
 
+                        //  Add Bounded Bags to stock
                         foreach (BagType Type in BagConfig.BagTypes)
                         {
                             foreach (BagSizeConfig SizeCfg in Type.SizeSettings)
@@ -526,6 +623,7 @@ namespace ItemBags
 
                         if (ShopOwnerName.Equals("Pierre"))
                         {
+                            //  Add Rucksacks to stock
                             foreach (ContainerSize Size in Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>())
                             {
                                 if (UserConfig.IsSizeVisibleInShops(Size))
@@ -545,10 +643,32 @@ namespace ItemBags
                                     }
                                 }
                             }
+
+                            //  Add Omni Bags to stock
+                            foreach (ContainerSize Size in Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>())
+                            {
+                                if (UserConfig.IsSizeVisibleInShops(Size))
+                                {
+                                    bool IsObsolete = false;
+                                    if (UserConfig.HideObsoleteBagsFromShops)
+                                    {
+                                        IsObsolete = OwnedBags.Any(x => x is OmniBag OB && (int)OB.Size > (int)Size);
+                                    }
+
+                                    if (!IsObsolete)
+                                    {
+                                        OmniBag OmniBag = new OmniBag(Size);
+                                        int Price = OmniBag.GetPurchasePrice();
+                                        Stock.Add(OmniBag, new int[] { Price, ShopMenu.infiniteStock });
+                                        HasChangedStock = true;
+                                    }
+                                }
+                            }
                         }
 
                         if (ShopOwnerName.Equals("TravellingCart"))
                         {
+                            //  Add Bundle Bags to stock
                             foreach (ContainerSize Size in BundleBag.ValidSizes)
                             {
                                 if (UserConfig.IsSizeVisibleInShops(Size))

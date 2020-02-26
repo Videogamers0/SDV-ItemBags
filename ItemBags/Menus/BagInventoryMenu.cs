@@ -130,11 +130,11 @@ namespace ItemBags.Menus
                 Item PressedItem = GetHoveredItem();
                 if (PressedItem != null)
                 {
-                    //  Right-clicking a bag will attempt to open its contents
-                    if (PressedItem is ItemBag IB && 
-                        (e.Button == SButton.MouseRight || Constants.TargetPlatform == GamePlatform.Android)) // Also allow left-clicking on Android since the interface might be too small to display the Close button in top-right
+                    if (PressedItem is ItemBag IB)
                     {
-                        if (IB == this.Bag)
+                        //  Click current bag to close it
+                        if (IB == this.Bag &&
+                            (e.Button == SButton.MouseRight || Constants.TargetPlatform == GamePlatform.Android)) // Also allow left-clicking on Android since the interface might be too small to display the Close button in top-right))
                         {
                             //IB.CloseContents();
                             //  Rather than immediately closing the menu, queue it up to be closed on the next game update.
@@ -145,7 +145,20 @@ namespace ItemBags.Menus
                             //  in the chest so this current right-click action would close the bag, then transfer the hovered chest item, rather than just closing the bag.
                             QueueCloseBag = true;
                         }
-                        else
+                        else if (IB != this.Bag && this.Bag is OmniBag OB)
+                        {
+                            if (e.Button == SButton.MouseRight)
+                            {
+                                IClickableMenu PreviousMenu = this.Bag.PreviousMenu;
+                                this.Bag.CloseContents(false, false);
+                                IB.OpenContents(Source, ActualCapacity, PreviousMenu);
+                            }
+                            else
+                            {
+                                OB.MoveToBag(IB, true, Source, true);
+                            }
+                        }
+                        else if (IB != this.Bag && !(this.Bag is OmniBag) && (e.Button == SButton.MouseRight || Constants.TargetPlatform == GamePlatform.Android))
                         {
                             IClickableMenu PreviousMenu = this.Bag.PreviousMenu;
                             this.Bag.CloseContents(false, false);
@@ -164,7 +177,7 @@ namespace ItemBags.Menus
 
         internal void OnMouseButtonReleased(ButtonReleasedEventArgs e)
         {
-            if (e.Button == StardewModdingAPI.SButton.MouseRight)
+            if (e.Button == SButton.MouseRight)
             {
                 RightButtonPressedTime = null;
                 RightButtonPressedLocation = null;
@@ -273,7 +286,7 @@ namespace ItemBags.Menus
                 Item CurrentItem = null;
                 if (!IsLockedInventorySlot(i) && i < Source.Count)
                     CurrentItem = Source[i];
-                bool IsValidBagItem = Bag.IsValidBagItem(CurrentItem);
+                bool IsValidBagItem = (Bag is OmniBag OB && CurrentItem is ItemBag IB && OB.IsValidBag(IB)) || Bag.IsValidBagItem(CurrentItem);
 
                 //  Draw a transparent black or white overlay if the item is valid for the bag or not
                 Color Overlay = IsValidBagItem || CurrentItem == this.Bag ? Color.White : Color.Black;

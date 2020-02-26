@@ -164,10 +164,8 @@ namespace ItemBags.Bags
             return this.Icon == TypeInfo.GetIconTexture() && this.IconTexturePosition.HasValue && this.IconTexturePosition == TypeInfo.IconSourceRect;
         }
 
-        public override int GetPurchasePrice()
-        {
-            return ItemBagsMod.UserConfig.GetStandardBagPrice(Size, TypeInfo);
-        }
+        public override int GetPurchasePrice() { return ItemBagsMod.UserConfig.GetStandardBagPrice(Size, TypeInfo); }
+        public override string GetTypeId() { return TypeInfo.Id; }
 
         /// <param name="InventorySource">Typically this is <see cref="Game1.player.Items"/> if this menu should display the player's inventory.</param>
         /// <param name="ActualCapacity">The maximum # of items that can be stored in the InventorySource list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>

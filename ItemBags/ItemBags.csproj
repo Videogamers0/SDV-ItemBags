@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="Bags\BoundedBag.cs" />
     <Compile Include="Bags\BundleBag.cs" />
+    <Compile Include="Bags\OmniBag.cs" />
     <Compile Include="Bags\Rucksack.cs" />
     <Compile Include="Community Center\BundleItem.cs" />
     <Compile Include="Community Center\BundleReward.cs" />
@@ -71,6 +72,7 @@
     <Compile Include="Menus\GroupedLayoutOptions.cs" />
     <Compile Include="Menus\ItemBagMenu.cs" />
     <Compile Include="Bags\ItemBag.cs" />
+    <Compile Include="Menus\OmniBagMenu.cs" />
     <Compile Include="Menus\RucksackMenu.cs" />
     <Compile Include="Menus\UngroupedLayoutOptions.cs" />
     <Compile Include="ItemBagsMod.cs" />

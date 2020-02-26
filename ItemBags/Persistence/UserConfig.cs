@@ -41,6 +41,9 @@ namespace ItemBags.Persistence
         [XmlArray("RucksackSettings")]
         [XmlArrayItem("RucksackSizeConfig")]
         public RucksackSizeConfig[] RucksackSettings { get; set; }
+        [XmlArray("OmniBagSettings")]
+        [XmlArrayItem("OmniBagSizeConfig")]
+        public OmniBagSizeConfig[] OmniBagSettings { get; set; }
 
         [XmlElement("HideSmallBagsFromShops")]
         public bool HideSmallBagsFromShops { get; set; }
@@ -90,13 +93,22 @@ namespace ItemBags.Persistence
                 new RucksackSizeConfig(ContainerSize.Massive, 1.0, 1.0, 1000000, 9999, 72, 12, BagInventoryMenu.DefaultInventoryIconSize)
             };
 
+            this.OmniBagSettings = new OmniBagSizeConfig[]
+            {
+                new OmniBagSizeConfig(ContainerSize.Small, 1.0, 12000, 8, BagInventoryMenu.DefaultInventoryIconSize),
+                new OmniBagSizeConfig(ContainerSize.Medium, 1.0, 25000, 8, BagInventoryMenu.DefaultInventoryIconSize),
+                new OmniBagSizeConfig(ContainerSize.Large, 1.0, 75000, 8, BagInventoryMenu.DefaultInventoryIconSize),
+                new OmniBagSizeConfig(ContainerSize.Giant, 1.0, 300000, 8, BagInventoryMenu.DefaultInventoryIconSize),
+                new OmniBagSizeConfig(ContainerSize.Massive, 1.0, 1500000, 8, BagInventoryMenu.DefaultInventoryIconSize)
+            };
+
             this.HideSmallBagsFromShops = false;
             this.HideMediumBagsFromShops = false;
             this.HideLargeBagsFromShops = false;
             this.HideGiantBagsFromShops = false;
             this.HideMassiveBagsFromShops = false;
 
-            this.HideObsoleteBagsFromShops = false;
+            this.HideObsoleteBagsFromShops = true;
         }
 
         public bool IsSizeVisibleInShops(ContainerSize Size)
@@ -173,6 +185,24 @@ namespace ItemBags.Persistence
         public void GetRucksackMenuOptions(ContainerSize Size, out int NumColumns, out int SlotSize)
         {
             RucksackSizeConfig SizeCfg = RucksackSettings.First(x => x.Size == Size);
+            NumColumns = SizeCfg.MenuColumns;
+            SlotSize = SizeCfg.MenuSlotSize;
+        }
+
+        public int GetOmniBagPrice(ContainerSize Size)
+        {
+            OmniBagSizeConfig SizeCfg = OmniBagSettings.First(x => x.Size == Size);
+            int BasePrice = SizeCfg.BasePrice;
+            double Multiplier = GlobalPriceModifier * SizeCfg.PriceModifier;
+            if (Multiplier == 1.0)
+                return BasePrice;
+            else
+                return RoundIntegerToSecondMostSignificantDigit((int)(BasePrice * Multiplier), RoundingMode.Round);
+        }
+
+        public void GetOmniBagMenuOptions(ContainerSize Size, out int NumColumns, out int SlotSize)
+        {
+            OmniBagSizeConfig SizeCfg = OmniBagSettings.First(x => x.Size == Size);
             NumColumns = SizeCfg.MenuColumns;
             SlotSize = SizeCfg.MenuSlotSize;
         }
@@ -347,6 +377,59 @@ namespace ItemBags.Persistence
             this.BasePrice = 0;
             this.BaseCapacity = 1;
             this.Slots = 1;
+            this.MenuColumns = 12;
+            this.MenuSlotSize = BagInventoryMenu.DefaultInventoryIconSize;
+        }
+
+        [OnSerializing]
+        private void OnSerializing(StreamingContext sc) { }
+        [OnSerialized]
+        private void OnSerialized(StreamingContext sc) { }
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext sc) { InitializeDefaults(); }
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext sc) { }
+    }
+
+    [XmlRoot(ElementName = "OmniBagSizeConfig", Namespace = "")]
+    public class OmniBagSizeConfig
+    {
+        [JsonIgnore]
+        [XmlIgnore]
+        public ContainerSize Size { get; private set; }
+        [XmlElement("Size")]
+        [JsonProperty("Size")]
+        public string SizeName { get { return Size.ToString(); } set { Size = (ContainerSize)Enum.Parse(typeof(ContainerSize), value); } }
+
+        [XmlElement("PriceModifier")]
+        public double PriceModifier { get; set; }
+        [XmlElement("BasePrice")]
+        public int BasePrice { get; set; }
+        [XmlElement("MenuColumns")]
+        public int MenuColumns { get; set; }
+        [XmlElement("MenuSlotSize")]
+        public int MenuSlotSize { get; set; }
+
+        public OmniBagSizeConfig()
+        {
+            InitializeDefaults();
+        }
+
+        public OmniBagSizeConfig(ContainerSize Size, double PriceModifier, int BasePrice, int MenuColumns, int MenuSlotSize)
+        {
+            InitializeDefaults();
+            this.Size = Size;
+            this.PriceModifier = PriceModifier;
+            this.BasePrice = BasePrice;
+            this.MenuColumns = MenuColumns;
+            this.MenuSlotSize = MenuSlotSize;
+        }
+
+        private void InitializeDefaults()
+        {
+            this.Size = ContainerSize.Small;
+            this.PriceModifier = 1.0;
+            this.BasePrice = 0;
             this.MenuColumns = 12;
             this.MenuSlotSize = BagInventoryMenu.DefaultInventoryIconSize;
         }

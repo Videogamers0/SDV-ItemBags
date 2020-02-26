@@ -309,6 +309,8 @@ namespace ItemBags.Bags
             return ItemBagsMod.UserConfig.GetRucksackPrice(Size);
         }
 
+        public override string GetTypeId() { return RucksackTypeId; }
+
         private static readonly HashSet<int> BlacklistedItemIds = new HashSet<int>();
         private static readonly HashSet<int> WhitelistedItemIds = new HashSet<int>(new List<int>() {
             486 // Starfruit Seeds (apparently these are classified as "special items" (Item.specialItem=true), not sure why. I'd explicitly disallowed special items thinking they could cause problems.

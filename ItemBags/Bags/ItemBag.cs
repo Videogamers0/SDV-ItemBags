@@ -61,6 +61,7 @@ namespace ItemBags.Bags
 
     [KnownType(typeof(BoundedBag))]
     [KnownType(typeof(Rucksack))]
+    [KnownType(typeof(OmniBag))]
     public abstract class ItemBag : GenericTool
     {
         /// <summary>The default color tints to use when rendering the bag icon in your inventory/toolbar.</summary>
@@ -343,6 +344,8 @@ namespace ItemBags.Bags
         /// <summary>The maximum number of the same item that can be stored in a single slot of this bag.</summary>
         public abstract int MaxStackSize { get; }
         protected virtual int GetMaxStackSize(Object Item) { return this.MaxStackSize; }
+
+        public abstract string GetTypeId();
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         private ItemBag() : base("", "", 0, Tool.wateringCanSpriteIndex, Tool.wateringCanMenuIndex)
