@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using StardewValley.Objects;
+using StardewValley.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -115,7 +116,6 @@ namespace ItemBags.Helpers
 
             Texture2D SourceTexture = null;
             Rectangle? SourceTextureRectangle = null;
-            //Possible TODO: Handle case where Item is MeleeWeapon type. (Or is that already handled since MeleeWeapon is a subclass of Tool? Needs testing)
             if (Item is ItemBag Bag)
             {
                 float BaseScale = Destination.Width / (float)BagInventoryMenu.DefaultInventoryIconSize;
@@ -124,8 +124,16 @@ namespace ItemBags.Helpers
             }
             else if (Item is Tool Tool)
             {
-                SourceTexture = Game1.toolSpriteSheet;
-                SourceTextureRectangle = new Rectangle?(Game1.getSquareSourceRectForNonStandardTileSheet(SourceTexture, 16, 16, Tool.IndexOfMenuItemView));
+                if (Item is MeleeWeapon Weapon)
+                {
+                    SourceTexture = MeleeWeapon.weaponsTexture;
+                    SourceTextureRectangle = new Rectangle?(Game1.getSquareSourceRectForNonStandardTileSheet(SourceTexture, 16, 16, Tool.IndexOfMenuItemView));
+                }
+                else
+                {
+                    SourceTexture = Game1.toolSpriteSheet;
+                    SourceTextureRectangle = new Rectangle?(Game1.getSquareSourceRectForNonStandardTileSheet(SourceTexture, 16, 16, Tool.IndexOfMenuItemView));
+                }
             }
             else if (Item is Ring Ring)
             {

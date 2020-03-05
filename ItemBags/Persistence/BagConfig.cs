@@ -39,6 +39,11 @@ namespace ItemBags.Persistence
             InitializeDefaults();
         }
 
+        internal BagType GetDefaultBoundedBagType()
+        {
+            return BagTypes.First(x => x.Id != Rucksack.RucksackTypeId && x.Id != OmniBag.OmniBagTypeId && x.Id != BundleBag.BundleBagTypeId);
+        }
+
         private void InitializeDefaults()
         {
             this.BagTypes = new BagType[]
@@ -59,7 +64,8 @@ namespace ItemBags.Persistence
                 BagTypeFactory.GetOceanFishBagType(),
                 BagTypeFactory.GetRiverFishBagType(),
                 BagTypeFactory.GetLakeFishBagType(),
-                BagTypeFactory.GetMiscFishBagType()
+                BagTypeFactory.GetMiscFishBagType(),
+                BagTypeFactory.GetFishBagType()
             };
 
             //this.CreatedByVersion = ItemBagsMod.CurrentVersion;

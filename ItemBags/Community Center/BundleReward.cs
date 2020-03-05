@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using StardewValley;
 using StardewValley.Objects;
+using StardewValley.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,12 +18,14 @@ namespace ItemBags.Community_Center
         public int Quantity { get; }
         public bool IsBigCraftable { get; }
         public bool IsRing { get; }
+        public bool IsWeapon { get; }
 
         public enum BundleRewardType
         {
             Object,
             BigCraftable,
-            Ring
+            Ring,
+            Weapon
         }
 
         public BundleReward(BundleTask Task, int Id, int Quantity, BundleRewardType Type)
@@ -32,6 +35,7 @@ namespace ItemBags.Community_Center
             this.Quantity = Quantity;
             this.IsBigCraftable = Type == BundleRewardType.BigCraftable;
             this.IsRing = Type == BundleRewardType.Ring;
+            this.IsWeapon = Type == BundleRewardType.Weapon;
         }
 
         /// <param name="RawData">The raw data string from the game's bundle content. EX: "O 495 30".<para/>
@@ -48,6 +52,8 @@ namespace ItemBags.Community_Center
                 RewardType = BundleRewardType.BigCraftable;
             else if (Entries[0].Equals("R", StringComparison.CurrentCultureIgnoreCase))
                 RewardType = BundleRewardType.Ring;
+            else if (Entries[0].Equals("W", StringComparison.CurrentCultureIgnoreCase))
+                RewardType = BundleRewardType.Weapon;
             else
                 throw new NotImplementedException(string.Format("Unrecognized Bundle Reward Type: {0}", Entries[0]));
 
@@ -55,6 +61,7 @@ namespace ItemBags.Community_Center
             this.Quantity = int.Parse(Entries[2]);
             this.IsBigCraftable = RewardType == BundleRewardType.BigCraftable;
             this.IsRing = RewardType == BundleRewardType.Ring;
+            this.IsWeapon = RewardType == BundleRewardType.Weapon;
         }
 
         public Item ToItem()
@@ -66,6 +73,10 @@ namespace ItemBags.Community_Center
             else if (IsRing)
             {
                 return new Ring(Id);
+            }
+            else if (IsWeapon)
+            {
+                return new MeleeWeapon(Id);
             }
             else
             {

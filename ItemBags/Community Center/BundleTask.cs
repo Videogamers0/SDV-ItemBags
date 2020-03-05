@@ -50,7 +50,15 @@ namespace ItemBags.Community_Center
             if (string.IsNullOrEmpty(Entries[1]))
                 this.Reward = null;
             else
-                this.Reward = new BundleReward(this, Entries[1]);
+            {
+                try { this.Reward = new BundleReward(this, Entries[1]); }
+                catch (Exception ex)
+                {
+                    string ErrorMsg = string.Format("Error while parsing Bundle Reward: '{0}' - {1}", Entries[1], ex.Message);
+                    ItemBagsMod.ModInstance.Monitor.Log(ErrorMsg, StardewModdingAPI.LogLevel.Error);
+                    this.Reward = null;
+                }
+            }
 
             this.Items = Entries[2].Split(' ').Split(3).Select(x => string.Join(" ", x)).Select(x => new BundleItem(this, x)).ToList().AsReadOnly();
             this.SpriteColorIndex = int.Parse(Entries[3]);

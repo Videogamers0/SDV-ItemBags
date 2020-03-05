@@ -4,6 +4,7 @@ using ItemBags.Menus;
 using ItemBags.Persistence;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using PyTK.CustomElementHandler;
 using StardewValley;
 using System;
 using System.Collections.Generic;
@@ -11,12 +12,14 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Object = StardewValley.Object;
 
 namespace ItemBags.Bags
 {
     /// <summary>A bag used for storing items required by incomplete Community Center Bundles</summary>
-    public class BundleBag : BoundedBag
+    [XmlRoot(ElementName = "BundleBag", Namespace = "")]
+    public class BundleBag : BoundedBag, ISyncableElement
     {
         public const string BundleBagTypeId = "c3f69b2c-6b21-477c-ad43-ee3b996a96bd";
 
@@ -35,8 +38,10 @@ namespace ItemBags.Bags
         public override int MaxStackSize { get { return int.MaxValue; } }
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
-        protected BundleBag() : base()
+        public BundleBag() : base()
         {
+            this.syncObject = new PySync(this);
+
             this.Autofill = true;
         }
 
@@ -44,8 +49,11 @@ namespace ItemBags.Bags
         public BundleBag(ContainerSize Size, bool Autofill)
             : base(ItemBagsMod.Translate("BundleBagName"), ItemBagsMod.Translate("BundleBagDescription"), Size, true)
         {
+            this.syncObject = new PySync(this);
+
             if (!ValidSizes.Contains(Size))
                 throw new InvalidOperationException(string.Format("Size '{0}' is not valid for BundleBag types", Size.ToString()));
+
             this.Autofill = Autofill;
         }
 
@@ -63,6 +71,41 @@ namespace ItemBags.Bags
                 this.IconTexturePosition = SavedData.OverriddenIcon;
             }
         }
+
+        #region PyTK CustomElementHandler
+        public override object getReplacement()
+        {
+            return new Object(172, 1);
+        }
+
+        protected override void LoadSettings(BagInstance Data)
+        {
+            if (Data != null)
+            {
+                this.Size = Data.Size;
+                this.Autofill = Data.Autofill;
+
+                this.BaseName = ItemBagsMod.Translate("BundleBagName");
+                this.DescriptionAlias = ItemBagsMod.Translate("BundleBagDescription");
+
+                Contents.Clear();
+                foreach (BagItem Item in Data.Contents)
+                {
+                    this.Contents.Add(Item.ToObject());
+                }
+
+                if (Data.IsCustomIcon)
+                {
+                    this.Icon = Game1.objectSpriteSheet;
+                    this.IconTexturePosition = Data.OverriddenIcon;
+                }
+                else
+                {
+                    ResetIcon();
+                }
+            }
+        }
+        #endregion PyTK CustomElementHandler
 
         public override void ResetIcon()
         {

@@ -247,7 +247,7 @@ namespace ItemBags.Persistence
         public static BagType GetMiningBagType()
         {
             BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Dwarf, BagSizeConfig.BagShop.Clint };
-            double PriceMultiplier = 2.6;
+            double PriceMultiplier = 2.4;
             HashSet<int> BigCraftableIds = new HashSet<int>();
 
             return new BagType()
@@ -678,7 +678,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { 24, 16, 17, 19 }; // Mayonnaise Machine, Cheese Press, Loom, Oil Maker
             BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Marnie, BagSizeConfig.BagShop.Pierre };
-            double PriceMultiplier = 2.2;
+            double PriceMultiplier = 2.1;
 
             return new BagType()
             {
@@ -1089,7 +1089,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { };
             BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Sandy, BagSizeConfig.BagShop.Pierre };
-            double PriceMultiplier = 2.4;
+            double PriceMultiplier = 2.3;
 
             return new BagType()
             {
@@ -1498,7 +1498,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { 154 }; // Worm Bin
             BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Willy };
-            double PriceMultiplier = 1.25;
+            double PriceMultiplier = 1.05;
 
             List<int> FishIds = new List<int>()
             {
@@ -1620,7 +1620,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { 154 }; // Worm Bin
             BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Willy };
-            double PriceMultiplier = 1.05;
+            double PriceMultiplier = 0.85;
 
             List<int> FishIds = new List<int>()
             {
@@ -1742,7 +1742,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { 154 }; // Worm Bin
             BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Willy };
-            double PriceMultiplier = 0.8;
+            double PriceMultiplier = 0.6;
 
             List<int> FishIds = new List<int>()
             {
@@ -1863,7 +1863,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { 154 }; // Worm Bin
             BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Willy };
-            double PriceMultiplier = 0.95;
+            double PriceMultiplier = 0.75;
 
             List<int> FishIds = new List<int>()
             {
@@ -1980,11 +1980,187 @@ namespace ItemBags.Persistence
             };
         }
 
-        //If you create more BagTypes, make sure you add them to BagConfig.InitializeDefaults()
+        public static BagType GetFishBagType()
+        {
+            HashSet<int> BigCraftableIds = new HashSet<int>() { 154 }; // Worm Bin
+            BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Willy };
+            double PriceMultiplier = 2.45;
 
-        //Scarecrow - regular, deluxe, rarecrows
-        //Fertilizer - SpringObjects, 9,15
-        //Crab pot = SpringOBjects 14,29 or maybe a crayfish
+            List<int> SeasonlessCommonFishIds = new List<int>() {
+                142, 132, 702, 700, 136 // Carp, Bream, Chub, Bullhead, Largemouth Bass
+            };
+            List<int> SpringFishIds = new List<int>() {
+                129, 147, 145, 131, 137, 706, 708, 148, 267, 143 // Anchovy, Herring, Sunfish, Sardine, Smallmouth Bass, Shad, Halibut, Eel, Flounder, Catfish
+            };
+            List<int> SummerFishIds = new List<int>() {
+                150, 138, 146, 701, 130, 704, 144, 149, 698, 128, 155 // Red Snapper, Rainbow Trout, Red Mullet, Tilapia, Tuna, Dorado, Pike, Octopus, Sturgeon, Pufferfish, Super Cucumber
+            };
+            List<int> FallFishIds = new List<int>() {
+                154, 705, 139, 140, 269, 699 // Sea Cucumber, Albacore, Salmon, Walleye, Midnight Carp, Tiger Trout
+            };
+            List<int> WinterFishIds = new List<int>() {
+                141, 151, 707 // Perch, Squid, Lingcod
+            };
+            List<int> CrabPotFishIds = new List<int>() {
+                722, 719, 723, 372, 718, 720, 721, 716, 717, 715 // Periwinkle, Mussel, Oyster, Clam, Cockle, Shrimp, Snail, Crayfish, Crab, Lobster
+            };
+            List<int> MineFishIds = new List<int>() {
+                156, 158, 161, 162 // Ghostfish, Stonefish, Ice Pip, Lava Eel
+            };
+            List<int> DesertFishIds = new List<int>() {
+                164, 165 // Sandfish, Scorpion Carp
+            };
+            List<int> ForestFishIds = new List<int>() {
+                734 // Woodskip
+            };
+            List<int> NightMarketFishIds = new List<int>() {
+                798, 799, 800 // Midnight Squid, Spook Fish, Blobfish
+            };
+            List<int> SpecialFishIds = new List<int>() {
+                796, 795 // Slimejack, Void Salmon
+            };
+            List<int> LegendaryFishIds = new List<int>() {
+                160, 775, 682, 159, 163 // Angler, Glacierfish, Mutant Carp, Crimsonfish, Legend
+            };
+
+            return new BagType()
+            {
+                Id = "62e478ee-9d5d-4b88-a34d-c9f490db8c6c",
+                Name = "Fish Bag",
+                Description = "A bag for storing fish.",
+                IconSourceTexture = BagType.SourceTexture.Tools,
+                IconSourceRect = new Rectangle(176, 0, 16, 16),
+                SizeSettings = new BagSizeConfig[]
+                {
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Small,
+                        Sellers = DefaultSellers,
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Small] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        CapacityMultiplier = 5.0 / DefaultCapacities[ContainerSize.Small],
+                        Items = CreateStoreableItemArray(
+                            SeasonlessCommonFishIds.Union(SpringFishIds).Union(MineFishIds.Take(1)),
+                            new List<int>() { 152, 153, 157, 685 }, // Seaweed, Green Algae, White Algae, Bait
+                            BigCraftableIds
+                        ),
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout()
+                            {
+                                ShowValueColumn = false,
+                                SlotSize = 64,
+                                GroupsPerRow = 4
+                            },
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 4 }
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Medium,
+                        Sellers = DefaultSellers,
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Medium] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Medium],
+                        Items = CreateStoreableItemArray(
+                            CrabPotFishIds.Union(SeasonlessCommonFishIds).Union(SpringFishIds).Union(SummerFishIds).Union(MineFishIds.Take(2)),
+                            new List<int>() { 152, 153, 157, 685, 710, 154, 219 }, // Seaweed, Green Algae, White Algae, Bait, Crab Pot, Worm Bin, Trout Soup
+                            BigCraftableIds
+                        ),
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout()
+                            {
+                                ShowValueColumn = false,
+                                SlotSize = 48,
+                                GroupsPerRow = 6
+                            },
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 7 }
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Large,
+                        Sellers = DefaultSellers,
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        CapacityMultiplier = 30.0 / DefaultCapacities[ContainerSize.Large],
+                        Items = CreateStoreableItemArray(
+                            CrabPotFishIds.Union(SeasonlessCommonFishIds).Union(SpringFishIds).Union(SummerFishIds).Union(FallFishIds).Union(WinterFishIds)
+                            .Union(ForestFishIds).Union(DesertFishIds).Union(MineFishIds.Take(3)),
+                            new List<int>() { 152, 153, 157, 685, 774, 710, 154, 219, 729, 213 }, // Seaweed, Green Algae, White Algae, Bait, Wild Bait, Crab Pot, Worm Bin, Trout Soup, Escargot, Fish Taco
+                            BigCraftableIds
+                        ),
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout()
+                            {
+                                ShowValueColumn = false,
+                                SlotSize = 48,
+                                GroupsPerRow = 8
+                            },
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 10 }
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Giant,
+                        Sellers = DefaultSellers,
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        CapacityMultiplier = 99.0 / DefaultCapacities[ContainerSize.Giant],
+                        Items = CreateStoreableItemArray(
+                            CrabPotFishIds.Union(SeasonlessCommonFishIds).Union(SpringFishIds).Union(SummerFishIds).Union(FallFishIds).Union(WinterFishIds)
+                            .Union(ForestFishIds).Union(DesertFishIds).Union(MineFishIds).Union(NightMarketFishIds).Union(SpecialFishIds),
+                            new List<int>() {
+                                152, 153, 157, 685, 774, 710, 154, 166, // Seaweed, Green Algae, White Algae, Bait, Wild Bait, Crab Pot, Worm Bin, Treasure Chest
+                                219, 729, 213, 242, 728, 730 // Trout Soup, Escargot, Fish Taco, Dish O' the Sea, Fish Stew, Lobster Bisque
+                            },
+                            BigCraftableIds
+                        ),
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout()
+                            {
+                                ShowValueColumn = false,
+                                SlotSize = 48,
+                                GroupsPerRow = 8
+                            },
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 8 }
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Massive,
+                        Sellers = DefaultSellers,
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Massive] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        //CapacityMultiplier = 9999.0 / DefaultCapacities[ContainerSize.Massive],
+                        Items = CreateStoreableItemArray(
+                            CrabPotFishIds.Union(SeasonlessCommonFishIds).Union(SpringFishIds).Union(SummerFishIds).Union(FallFishIds).Union(WinterFishIds)
+                            .Union(ForestFishIds).Union(DesertFishIds).Union(MineFishIds).Union(NightMarketFishIds).Union(SpecialFishIds).Union(LegendaryFishIds),
+                            new List<int>() {
+                                152, 153, 157, 685, 774, 710, 154, 166, // Seaweed, Green Algae, White Algae, Bait, Wild Bait, Crab Pot, Worm Bin, Treasure Chest
+                                219, 729, 213, 242, 728, 730, 265 // Trout Soup, Escargot, Fish Taco, Dish O' the Sea, Fish Stew, Lobster Bisque, Seafoam Pudding
+                            },
+                            BigCraftableIds
+                        ),
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout()
+                            {
+                                ShowValueColumn = false,
+                                SlotSize = 48,
+                                GroupsPerRow = 8
+                            },
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 8 }
+                        }
+                    }
+                }
+            };
+        }
+
+        //If you create more BagTypes, make sure you add them to BagConfig.InitializeDefaults()
 
         /// <param name="CraftableIds">Optional. If any of these Ids are in <paramref name="UngroupedIds"/>, 
         /// then the corresponding ungrouped items will have <see cref="StoreableBagItem.IsBigCraftable"/>=true</param>

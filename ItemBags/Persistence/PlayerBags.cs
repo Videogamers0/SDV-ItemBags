@@ -1,4 +1,8 @@
 ﻿using ItemBags.Helpers;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using StardewModdingAPI;
+using StardewValley;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +17,8 @@ namespace ItemBags.Persistence
     [XmlRoot(ElementName = "PlayerBags", Namespace = "")]
     public class PlayerBags
     {
+        public const string OwnedBagsDataKey = "ownedbags";
+
         [XmlArray("Bags")]
         [XmlArrayItem("Bag")]
         public BagInstance[] Bags { get; set; }
@@ -25,6 +31,53 @@ namespace ItemBags.Persistence
         private void InitializeDefaults()
         {
             this.Bags = new BagInstance[] { };
+        }
+
+        /*private static JsonSerializerSettings JsonSettings { get; } = new JsonSerializerSettings
+        {
+            Formatting = Formatting.Indented,
+            ObjectCreationHandling = ObjectCreationHandling.Replace, // avoid issue where default ICollection<T> values are duplicated each time the config is loaded
+            Converters = new List<JsonConverter>
+            {
+                //new SemanticVersionConverter(),
+                new StringEnumConverter()
+            }
+        };*/
+
+        internal static PlayerBags DeserializeFromCurrentSaveFile()
+        {
+            if (!Game1.IsMultiplayer || Game1.player.IsMainPlayer)
+            {
+                return ItemBagsMod.ModInstance.Helper.Data.ReadSaveData<PlayerBags>(OwnedBagsDataKey);
+            }
+            else
+            {
+                /*string FilePath = Path.Combine(Constants.SavesPath, Constants.SaveFolderName, string.Format("{0}.json", OwnedBagsDataKey));
+                if (!File.Exists(FilePath))
+                    return null;
+                else
+                    return JsonConvert.DeserializeObject<PlayerBags>(File.ReadAllText(FilePath), JsonSettings);*/
+                return null;
+
+                //return ItemBagsMod.ModInstance.Helper.Data.ReadJsonFile<PlayerBags>(FilePath);
+            }
+        }
+
+        internal void SerializeToCurrentSaveFile()
+        {
+            if (!Game1.IsMultiplayer || Game1.player.IsMainPlayer)
+            {
+                ItemBagsMod.ModInstance.Helper.Data.WriteSaveData(OwnedBagsDataKey, this);
+            }
+            else
+            {
+                /*string FilePath = Path.Combine(Constants.SavesPath, Constants.SaveFolderName, string.Format("{0}.json", OwnedBagsDataKey));
+                if (File.Exists(FilePath))
+                {
+                    JsonConvert.SerializeObject(this, Formatting.Indented, JsonSettings);
+                    //ItemBagsMod.ModInstance.Helper.Data.WriteJsonFile(FilePath, this);
+                }*/
+            }
         }
 
         /*public const string SettingsFilename = "Mod_ItemBags_Data.xml";

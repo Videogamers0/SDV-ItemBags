@@ -3,26 +3,32 @@ using ItemBags.Menus;
 using ItemBags.Persistence;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using PyTK.CustomElementHandler;
+using StardewModdingAPI;
 using StardewValley;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Object = StardewValley.Object;
 
 namespace ItemBags.Bags
 {
     /// <summary>A bag that can store other bags inside of it.</summary>
-    public class OmniBag : ItemBag
+    [XmlRoot(ElementName = "OmniBag", Namespace = "")]
+    public class OmniBag : ItemBag, ISyncableElement
     {
         public const string OmniBagTypeId = "6eb4c15d-3ad3-4b47-aab5-eb2f5daa8b3f";
 
         public List<ItemBag> NestedBags { get; }
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
-        protected OmniBag() : base(ItemBagsMod.Translate("OmniBagName"), ItemBagsMod.Translate("OmniBagDescription"), ContainerSize.Small, null, null, new Vector2(16, 16), 0.5f, 1f)
+        public OmniBag() : base(ItemBagsMod.Translate("OmniBagName"), ItemBagsMod.Translate("OmniBagDescription"), ContainerSize.Small, null, null, new Vector2(16, 16), 0.5f, 1f)
         {
+            this.syncObject = new PySync(this);
+
             string SizeName = ItemBagsMod.Translate(string.Format("Size{0}Name", Size.GetDescription()));
             DescriptionAlias = string.Format("{0}\n({1})\n({2})",
                 ItemBagsMod.Translate("OmniBagDescription"),
@@ -38,6 +44,8 @@ namespace ItemBags.Bags
         public OmniBag(ContainerSize Size)
             : base(ItemBagsMod.Translate("OmniBagName"), ItemBagsMod.Translate("OmniBagDescription"), Size, null, null, new Vector2(16, 16), 0.5f, 1f)
         {
+            this.syncObject = new PySync(this);
+
             string SizeName = ItemBagsMod.Translate(string.Format("Size{0}Name", Size.GetDescription()));
             DescriptionAlias = string.Format("{0}\n({1})\n({2})",
                 ItemBagsMod.Translate("OmniBagDescription"),
@@ -68,6 +76,87 @@ namespace ItemBags.Bags
                 this.IconTexturePosition = SavedData.OverriddenIcon;
             }
         }
+
+        #region PyTK CustomElementHandler
+        public object getReplacement()
+        {
+            return new Object(171, 1);
+        }
+
+        public Dictionary<string, string> getAdditionalSaveData()
+        {
+            return new BagInstance(-1, this).ToPyTKAdditionalSaveData();
+        }
+
+        public void rebuild(Dictionary<string, string> additionalSaveData, object replacement)
+        {
+            BagInstance Data = BagInstance.FromPyTKAdditionalSaveData(additionalSaveData);
+            LoadSettings(Data);
+        }
+
+        public PySync syncObject { get; set; }
+
+        public Dictionary<string, string> getSyncData()
+        {
+            return new BagInstance(-1, this).ToPyTKAdditionalSaveData();
+        }
+
+        public void sync(Dictionary<string, string> syncData)
+        {
+            BagInstance Data = BagInstance.FromPyTKAdditionalSaveData(syncData);
+            LoadSettings(Data);
+        }
+
+        private void LoadSettings(BagInstance Data)
+        {
+            if (Data != null)
+            {
+                this.Size = Data.Size;
+
+                string SizeName = ItemBagsMod.Translate(string.Format("Size{0}Name", Size.GetDescription()));
+                DescriptionAlias = string.Format("{0}\n({1})\n({2})",
+                    ItemBagsMod.Translate("OmniBagDescription"),
+                    ItemBagsMod.Translate("CapacityDescription", new Dictionary<string, string>() { { "count", MaxStackSize.ToString() } }),
+                    ItemBagsMod.Translate("OmniBagCapacityDescription", new Dictionary<string, string>() { { "size", SizeName } })
+                );
+
+                //  Index the BagTypes by their guids
+                Dictionary<string, BagType> IndexedBagTypes = new Dictionary<string, BagType>();
+                foreach (BagType BagType in ItemBagsMod.BagConfig.BagTypes)
+                {
+                    if (!IndexedBagTypes.ContainsKey(BagType.Id))
+                    {
+                        IndexedBagTypes.Add(BagType.Id, BagType);
+                    }
+                }
+
+                this.NestedBags.Clear();
+                foreach (BagInstance NestedInstance in Data.NestedBags)
+                {
+                    if (NestedInstance.TryDecode(IndexedBagTypes, out ItemBag NestedBag))
+                    {
+                        this.NestedBags.Add(NestedBag);
+                    }
+                }
+
+                Contents.Clear();
+                foreach (BagItem Item in Data.Contents)
+                {
+                    this.Contents.Add(Item.ToObject());
+                }
+
+                if (Data.IsCustomIcon)
+                {
+                    this.Icon = Game1.objectSpriteSheet;
+                    this.IconTexturePosition = Data.OverriddenIcon;
+                }
+                else
+                {
+                    ResetIcon();
+                }
+            }
+        }
+        #endregion PyTK CustomElementHandler
 
         /// <summary>The 16x16 portion of <see cref="CursorsTexture"/> that contains the omnibag icon</summary>
         private static Texture2D OriginalTexture { get; set; }

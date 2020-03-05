@@ -19,8 +19,6 @@ namespace ItemBags.Helpers
 {
     public class SaveLoadHelpers
     {
-        public const string OwnedBagsDataKey = "ownedbags";
-
         /// <summary>An arbitrary offset for the <see cref="Item.ParentSheetIndex"/> property of encoded custom items, so that we can guaranteeably differentiate between 
         /// items managed by this mod and items that are coincidentally the same type of item but weren't created by this mod.</summary>
         private const int EncodedItemStartIndex = 5000;
@@ -29,6 +27,10 @@ namespace ItemBags.Helpers
         /// The custom items are saved to a separate file using <see cref="StardewModdingAPI.IDataHelper.WriteSaveData{TModel}(string, TModel)"/></summary>
         internal static void OnSaving()
         {
+            //  This logic is no longer needed now that I'm using PyTK mod to handle saving/loading custom items
+#if NEVER
+            ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnSaving started.", LogLevel.Info);
+
             int CurrentBagId = 0;
             List<BagInstance> BagInstances = new List<BagInstance>();
 
@@ -47,7 +49,7 @@ namespace ItemBags.Helpers
             PlayerBags PreviousBagData = null;
             if (CorruptedBagIds.Any())
             {
-                PreviousBagData = ItemBagsMod.ModInstance.Helper.Data.ReadSaveData<PlayerBags>(OwnedBagsDataKey);
+                PreviousBagData = PlayerBags.DeserializeFromCurrentSaveFile();
                 if (PreviousBagData != null && PreviousBagData.Bags != null)
                 {
                     Dictionary<int, BagInstance> IndexedInstances = new Dictionary<int, BagInstance>();
@@ -99,13 +101,28 @@ namespace ItemBags.Helpers
 
             PlayerBags OwnedBags = new PlayerBags();
             OwnedBags.Bags = BagInstances.ToArray();
-            ItemBagsMod.ModInstance.Helper.Data.WriteSaveData(OwnedBagsDataKey, OwnedBags);
+            OwnedBags.SerializeToCurrentSaveFile();
+
+            ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnSaving finished.", LogLevel.Info);
+#endif
         }
 
         internal static void OnSaved() { LoadCustomItems(); }
         internal static void OnLoaded()
         {
-            LoadCustomItems();
+            //ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnLoaded started.", LogLevel.Info);
+
+            foreach (Item Item in Game1.player.Items)
+            {
+                if (Item != null && Item.Name.Contains("PyTK"))
+                {
+                    string Name = Item.Name;
+                }
+            }
+
+            try { LoadCustomItems(); }
+            catch (Exception ex) { ItemBagsMod.ModInstance.Monitor.Log("ItemBags error during legacy LoadCustomItems: " + ex.Message, LogLevel.Info); }
+
             CommunityCenterBundles.Instance = null;
             CommunityCenterBundles.Instance = new CommunityCenterBundles();
 
@@ -119,12 +136,15 @@ namespace ItemBags.Helpers
                 }
             }
 #endif
+
+            //ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnLoaded finished.", LogLevel.Info);
         }
 
-        /// <summary>Restores custom items used by this mod that were modified by <see cref="OnSaving"/>. Intended to be used after the game is saved or a save file is loaded.</summary>
+        /// <summary>This function is no longer needed now that PyTK is handling saving/loading of custom items. This function is only still here for legacy support of save files from old versions of ItemBags.<para/>
+        /// Restores custom items used by this mod that were modified by <see cref="OnSaving"/>. Intended to be used after the game is saved or a save file is loaded.</summary>
         private static void LoadCustomItems()
         {
-            PlayerBags OwnedBags = ItemBagsMod.ModInstance.Helper.Data.ReadSaveData<PlayerBags>(OwnedBagsDataKey);
+            PlayerBags OwnedBags = PlayerBags.DeserializeFromCurrentSaveFile();
             if (OwnedBags == null)
             {
                 return;
@@ -160,7 +180,7 @@ namespace ItemBags.Helpers
                     else
                     {
                         string Warning = string.Format("Warning - multiple bag instances were found with the same InstanceId. Did you manually edit your {0} json file? Only the first bag with InstanceId = {1} will be loaded.",
-                            OwnedBagsDataKey, BagInstance.InstanceId);
+                            PlayerBags.OwnedBagsDataKey, BagInstance.InstanceId);
                         ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
                     }
                 }
@@ -179,7 +199,7 @@ namespace ItemBags.Helpers
                     else
                     {
                         string Warning = string.Format("Warning - no saved Bag was found with InstanceId = {0}. Did you manually edit your {1} json file?",
-                            BagInstanceId, OwnedBagsDataKey);
+                            BagInstanceId, PlayerBags.OwnedBagsDataKey);
                         ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
                         return Encoded;
                     }
@@ -199,6 +219,14 @@ namespace ItemBags.Helpers
             return item is MeleeWeapon && item.ParentSheetIndex >= EncodedItemStartIndex && item.Name.Equals("Rusty Sword", StringComparison.CurrentCultureIgnoreCase);
         }
 
+        /// <summary>Attempts to find all Items in the entire game (in the player inventory, inside chests, fridges, storage furniture etc) that match the given Predicate</summary>
+        public static List<Item> GetAllInstances(Predicate<Item> Predicate)
+        {
+            List<Item> Results = new List<Item>();
+            ReplaceAllInstances(Predicate, x => { Results.Add(x); return x; });
+            return Results;
+        }
+
         /// <summary>Attempts to find all Items in the entire game (in the player inventory, inside chests, fridges, storage furniture etc) 
         /// that match the given Predicate, and replace that Item with the return value of the given Replacer function.</summary>
         /// <param name="Predicate">A condition that returns true if the Item should be replaced</param>
@@ -207,23 +235,26 @@ namespace ItemBags.Helpers
         public static void ReplaceAllInstances(Predicate<Item> Predicate, Func<Item, Item> Replacer)
         {
             //  Handle items in player inventory
-            List<int> InventoryItemIndices = new List<int>();
-            for (int i = 0; i < Game1.player.Items.Count; i++)
+            foreach (Farmer Farmer in Game1.getAllFarmers())
             {
-                Item item = Game1.player.Items[i];
-                if (item != null && Predicate(item))
+                List<int> InventoryItemIndices = new List<int>();
+                for (int i = 0; i < Farmer.Items.Count; i++)
                 {
-                    InventoryItemIndices.Add(i);
+                    Item item = Farmer.Items[i];
+                    if (item != null && Predicate(item))
+                    {
+                        InventoryItemIndices.Add(i);
+                    }
                 }
-            }
-            foreach (int Index in InventoryItemIndices)
-            {
-                Item ToRemove = Game1.player.Items[Index];
-                Item Replacement = Replacer(ToRemove);
-                if (ToRemove != Replacement)
+                foreach (int Index in InventoryItemIndices)
                 {
-                    Item Removed = Game1.player.removeItemFromInventory(Index);
-                    Game1.player.addItemToInventory(Replacement, Index);
+                    Item ToRemove = Farmer.Items[Index];
+                    Item Replacement = Replacer(ToRemove);
+                    if (ToRemove != Replacement)
+                    {
+                        Item Removed = Farmer.removeItemFromInventory(Index);
+                        Farmer.addItemToInventory(Replacement, Index);
+                    }
                 }
             }
 

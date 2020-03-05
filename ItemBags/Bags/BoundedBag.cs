@@ -19,12 +19,15 @@ using ItemBags.Menus;
 using ItemBags.Persistence;
 using ItemBags.Helpers;
 using System.Runtime.Serialization;
+using PyTK.CustomElementHandler;
 
 namespace ItemBags.Bags
 {
     /// <summary>Represents an <see cref="ItemBag"/> that can only store certain, pre-defined Items in it.</summary>
+    [XmlRoot(ElementName = "BoundedBag", Namespace = "")]
     [KnownType(typeof(BundleBag))]
-    public class BoundedBag : ItemBag
+    [XmlInclude(typeof(BundleBag))]
+    public class BoundedBag : ItemBag, ISyncableElement
     {
         public class AllowedObject
         {
@@ -84,21 +87,23 @@ namespace ItemBags.Bags
         }
 
         /// <summary>The Objects that can be stored in this bag.</summary>
-        public ReadOnlyCollection<AllowedObject> AllowedObjects { get; }
+        public ReadOnlyCollection<AllowedObject> AllowedObjects { get; protected set; }
 
         /// <summary>The type that this Bag instance is using. The <see cref="BagType"/> defines things like the name, description, what kinds of items can be stored etc. 
         /// A <see cref="BagType"/> is unique, but there can be multiple <see cref="BoundedBag"/> instances that are using the same type's metadata.<para/>
         /// See also: <see cref="ItemBag.Id"/> for the Id that uniquely identifies the instance of the type.</summary>
-        public BagType TypeInfo { get; }
-        public BagSizeConfig SizeInfo { get; }
+        public BagType TypeInfo { get; protected set; }
+        public BagSizeConfig SizeInfo { get; protected set; }
 
-        private int _MaxStackSize { get; }
+        private int _MaxStackSize { get; set; }
         public override int MaxStackSize { get { return _MaxStackSize; } }
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
-        protected BoundedBag()
-            : base(ItemBagsMod.Translate("DefaultBagName"), ItemBagsMod.Translate("DefaultBagDescription"), ContainerSize.Small, null, null, null, 1, 1)
+        public BoundedBag()
+            : base(ItemBagsMod.Translate("DefaultBagName"), ItemBagsMod.Translate("DefaultBagDescription"), ContainerSize.Small, null, null, new Vector2(16, 16), 0.5f, 1f)
         {
+            this.syncObject = new PySync(this);
+
             this.TypeInfo = ItemBagsMod.BagConfig.BagTypes.First();
             this.SizeInfo = TypeInfo.SizeSettings.FirstOrDefault(x => x.Size == ContainerSize.Small);
             this.Autofill = false;
@@ -111,6 +116,8 @@ namespace ItemBags.Bags
         public BoundedBag(BagType TypeInfo, ContainerSize Size, bool Autofill)
             : base(BagType.GetTranslatedName(TypeInfo), "", Size, TypeInfo.GetIconTexture(), TypeInfo.IconSourceRect, new Vector2(16, 16), 0.5f, 1f)
         {
+            this.syncObject = new PySync(this);
+
             this.TypeInfo = TypeInfo;
             this.SizeInfo = TypeInfo.SizeSettings.FirstOrDefault(x => x.Size == Size);
             if (SizeInfo == null) // This should never happen but just in case...
@@ -149,9 +156,100 @@ namespace ItemBags.Bags
             : base(BaseName, Description, Size, TextureHelpers.JunimoNoteTexture, new Rectangle(0, 244, 16, 16), new Vector2(16, 16), 0.5f, 1f)
         {
             this.Autofill = Autofill;
-
-
         }
+
+        #region PyTK CustomElementHandler
+        public virtual object getReplacement()
+        {
+            return new Object(168, 1);
+        }
+
+        public Dictionary<string, string> getAdditionalSaveData()
+        {
+            return new BagInstance(-1, this).ToPyTKAdditionalSaveData();
+        }
+
+        public void rebuild(Dictionary<string, string> additionalSaveData, object replacement)
+        {
+            BagInstance Data = BagInstance.FromPyTKAdditionalSaveData(additionalSaveData);
+            LoadSettings(Data);
+        }
+
+        public PySync syncObject { get; set; }
+
+        public Dictionary<string, string> getSyncData()
+        {
+            return new BagInstance(-1, this).ToPyTKAdditionalSaveData();
+        }
+
+        public void sync(Dictionary<string, string> syncData)
+        {
+            BagInstance Data = BagInstance.FromPyTKAdditionalSaveData(syncData);
+            LoadSettings(Data);
+        }
+
+        protected virtual void LoadSettings(BagInstance Data)
+        {
+            if (Data != null)
+            {
+                this.Size = Data.Size;
+                this.Autofill = Data.Autofill;
+
+                //  Load the type
+                this.TypeInfo = ItemBagsMod.BagConfig.BagTypes.FirstOrDefault(x => x.Id == Data.TypeId);
+                if (TypeInfo == null)
+                {
+                    string Warning = string.Format("Warning - no BagType with Id = {0} was found. Did you manually edit your {1} json file? The saved bag cannot be properly loaded without a corresponding type!"
+                        + " To prevent crashes, this bag will be automatically converted to a default BagType.", Data.TypeId, ItemBagsMod.BagConfigDataKey);
+                    ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
+
+                    //  To prevent crashes, convert this bag into a different bag type that exists
+                    this.TypeInfo = ItemBagsMod.BagConfig.GetDefaultBoundedBagType();
+                }
+
+                //  Load the size configuration
+                this.SizeInfo = TypeInfo.SizeSettings.FirstOrDefault(x => x.Size == Size);
+                if (SizeInfo == null)
+                {
+                    string Warning = string.Format("Warning - BagType with Id = {0} does not contain any settings for Size={1}. Did you manually edit your {2} json file?"
+                        + " The saved bag cannot be properly loaded without the corresponding settings for this size! To prevent crashes, this bag will be automatically converted to a default size for this BagType.",
+                        this.TypeInfo.Id, this.Size.ToString(), ItemBagsMod.BagConfigDataKey);
+                    ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
+
+                    this.SizeInfo = TypeInfo.SizeSettings.First();
+                }
+
+                this.Autofill = Autofill;
+
+                _MaxStackSize = ItemBagsMod.UserConfig.GetStandardBagCapacity(Size, TypeInfo);
+
+                DescriptionAlias = string.Format("{0}\n({1})",
+                    BagType.GetTranslatedDescription(TypeInfo),
+                    ItemBagsMod.Translate("CapacityDescription", new Dictionary<string, string>() { { "count", MaxStackSize.ToString() } }));
+
+                if (SizeInfo.Size != Size)
+                    this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(new List<AllowedObject>());
+                else
+                    this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(SizeInfo.Items.Select(x => new AllowedObject(x)).ToList());
+
+                this.Contents.Clear();
+                foreach (BagItem Item in Data.Contents)
+                {
+                    this.Contents.Add(Item.ToObject());
+                }
+
+                if (Data.IsCustomIcon)
+                {
+                    this.Icon = Game1.objectSpriteSheet;
+                    this.IconTexturePosition = Data.OverriddenIcon;
+                }
+                else
+                {
+                    ResetIcon();
+                }
+            }
+        }
+        #endregion PyTK CustomElementHandler
 
         public override void ResetIcon()
         {

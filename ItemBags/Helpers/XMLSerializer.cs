@@ -14,6 +14,50 @@ namespace ItemBags.Helpers
 {
     public static class XMLSerializer
     {
+        public static bool TrySerializeToString<T>(T Data, out string Result, out Exception Error)
+        {
+            try
+            {
+                XmlSerializer Serializer = new XmlSerializer(typeof(T));
+                using (var StringOutput = new StringWriter())
+                {
+                    using (var TextWriter = new XmlTextWriter(StringOutput) { Formatting = Formatting.Indented })
+                    {
+                        Serializer.Serialize(TextWriter, Data);
+                        Result = StringOutput.ToString();
+                        Error = null;
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Result = null;
+                Error = ex;
+                return false;
+            }
+        }
+
+        public static bool TryDeserializeFromString<T>(string Data, out T Result, out Exception Error)
+        {
+            try
+            {
+                XmlSerializer Serializer = new XmlSerializer(typeof(T));
+                using (TextReader Reader = new StringReader(Data))
+                {
+                    Result = (T)Serializer.Deserialize(Reader);
+                    Error = null;
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Result = default(T);
+                Error = ex;
+                return false;
+            }
+        }
+
         ///<summary>Serializes this object to the given file.  Warning: this will overwrite existing files.</summary>
         public static void Serialize<T>(T Data, string FullFilePath, out bool Successful, out Exception Error)
         {

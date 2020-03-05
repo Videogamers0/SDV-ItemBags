@@ -1,4 +1,5 @@
 ﻿using ItemBags.Bags;
+using ItemBags.Helpers;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using System;
@@ -136,8 +137,8 @@ namespace ItemBags.Persistence
                 }
                 else
                 {
-                    string Warning = string.Format("Warning - BagType with Id = {0} was found, but it does not contain any settings for Size={1}. Did you manually edit your {2} json file? The saved bag with InstanceId = {3} cannot be loaded without the corresponding settings for this size!",
-                        this.TypeId, this.Size.ToString(), ItemBagsMod.BagConfigDataKey, this.InstanceId);
+                    string Warning = string.Format("Warning - BagType with Id = {0} was found, but it does not contain any settings for Size={1}. Did you manually edit your {2} json file? The saved bag cannot be loaded without the corresponding settings for this size!",
+                        this.TypeId, this.Size.ToString(), ItemBagsMod.BagConfigDataKey);
                     ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
                     Decoded = null;
                     return false;
@@ -145,8 +146,8 @@ namespace ItemBags.Persistence
             }
             else
             {
-                string Warning = string.Format("Warning - no BagType with Id = {0} was found. Did you manually edit your {1} json file? The saved bag with InstanceId = {2} cannot be loaded without a corresponding type!",
-                    this.TypeId, ItemBagsMod.BagConfigDataKey, this.InstanceId);
+                string Warning = string.Format("Warning - no BagType with Id = {0} was found. Did you manually edit your {1} json file? The saved bag cannot be loaded without a corresponding type!",
+                    this.TypeId, ItemBagsMod.BagConfigDataKey);
                 ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
                 Decoded = null;
                 return false;
@@ -167,6 +168,37 @@ namespace ItemBags.Persistence
             this.SortOrder = SortingOrder.Ascending;
             this.NestedBags = new BagInstance[] { };
         }
+
+        #region PyTK CustomElementHandler
+        private const string PyTKSaveDataKey = "BagInstanceXmlString";
+        private const string PyTKEqualsSignEncoding = "~~~";
+
+        public Dictionary<string, string> ToPyTKAdditionalSaveData()
+        {
+            Dictionary<string, string> SaveData = new Dictionary<string, string>();
+
+            if (XMLSerializer.TrySerializeToString(this, out string DataString, out Exception Error))
+            {
+                string CompatibleDataString = DataString.Replace("=", PyTKEqualsSignEncoding); // PyTK Mod doesn't like it when the Value contains '=' characters (the string will be truncated in ISaveElement.rebuild), so replace = with something else
+                SaveData.Add(PyTKSaveDataKey, CompatibleDataString);
+            }
+
+            return SaveData;
+        }
+
+        public static BagInstance FromPyTKAdditionalSaveData(Dictionary<string, string> PyTKData)
+        {
+            if (PyTKData != null && PyTKData.TryGetValue(PyTKSaveDataKey, out string DataString))
+            {
+                if (XMLSerializer.TryDeserializeFromString(DataString.Replace(PyTKEqualsSignEncoding, "="), out BagInstance Data, out Exception Error))
+                {
+                    return Data;
+                }
+            }
+
+            return null;
+        }
+        #endregion PyTK CustomElementHandler
 
         [OnSerializing]
         private void OnSerializing(StreamingContext sc) { }

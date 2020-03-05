@@ -146,8 +146,11 @@ namespace ItemBags.Menus
 
         protected void InitializeLayout()
         {
-            bool FitsOnScreen;
             ResizeIteration = 0;
+            int PreviousWidth = -1;
+            int PreviousHeight = -1;
+
+            bool AttemptResize;
             do
             {
                 ResizeIteration++;
@@ -170,13 +173,24 @@ namespace ItemBags.Menus
                 InitializeContentsLayout();
 
                 //  Compute size of menu
-                width = Math.Max(InventoryMenu.RelativeBounds.Width + InventoryMargin * 2 + SidebarWidth * 2, GetRelativeContentBounds().Width + ContentsMargin * 2 /*+ BagInfo.RelativeBounds.Width*/);
+                int InventoryWidth = InventoryMenu.RelativeBounds.Width + InventoryMargin * 2 + SidebarWidth * 2;
+                int ContentsWidth = GetRelativeContentBounds().Width + ContentsMargin * 2 /*+ BagInfo.RelativeBounds.Width*/;
+                width = Math.Max(InventoryWidth, ContentsWidth);
+                bool IsWidthBoundToContents = ContentsWidth > InventoryWidth;
                 height = Math.Max(InventoryMenu.RelativeBounds.Height + InventoryMargin * 2, SidebarHeight) + Math.Max(GetRelativeContentBounds().Height + ContentsMargin * 2, /*BagInfo.RelativeBounds.Height*/0);
                 xPositionOnScreen = (Game1.viewport.Size.Width - width) / 2;
                 yPositionOnScreen = (Game1.viewport.Size.Height - height) / 2;
 
-                FitsOnScreen = width <= Game1.viewport.Size.Width && height <= Game1.viewport.Size.Height;
-            } while (!FitsOnScreen && ResizeIteration < 5 && CanResize());
+                //  Check if menu fits on screen
+                bool IsMenuTooWide = width > Game1.viewport.Size.Width;
+                bool IsMenuTooTall = height > Game1.viewport.Size.Height;
+                bool FitsOnScreen = !IsMenuTooWide && !IsMenuTooTall;
+                bool DidSizeChange = width != PreviousWidth || height != PreviousHeight;
+                PreviousWidth = width;
+                PreviousHeight = height;
+
+                AttemptResize = !FitsOnScreen && ResizeIteration < 5 && CanResize() && DidSizeChange && (IsWidthBoundToContents || IsMenuTooTall);
+            } while (AttemptResize);
 
             //  Set position of inventory and contents
             InventoryMenu.SetTopLeft(new Point(

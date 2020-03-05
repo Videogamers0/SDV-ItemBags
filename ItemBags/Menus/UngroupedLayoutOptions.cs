@@ -388,7 +388,9 @@ namespace ItemBags.Menus
             if (HoveredSlot.HasValue)
             {
                 Object HoveredItem = GetHoveredItem();
-                DrawHelpers.DrawToolTipInfo(b, HoveredSlot.Value, HoveredItem, true, true, true, true, true, Bag.MaxStackSize);
+                //Rectangle Location = HoveredSlot.Value;
+                Rectangle Location = new Rectangle(Game1.getMouseX() - 8, Game1.getMouseY() + 36, 8 + 36, 1);
+                DrawHelpers.DrawToolTipInfo(b, Location, HoveredItem, true, true, true, true, true, Bag.MaxStackSize);
             }
         }
 

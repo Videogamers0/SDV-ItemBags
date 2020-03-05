@@ -19,6 +19,8 @@ using ItemBags.Helpers;
 using System.Xml.Serialization;
 using ItemBags.Persistence;
 using System.Runtime.Serialization;
+using Netcode;
+using PyTK.CustomElementHandler;
 
 namespace ItemBags.Bags
 {
@@ -59,9 +61,15 @@ namespace ItemBags.Bags
         Iridium = 4 // Might not be correct. According the the game code, if (StardewValley.Object.Quality > 3) then it draws iridium icon. So maybe it's possible for multiple qualities to map to iridium? Not sure why they didn't just use (StardewValley.Object.Quality == 3)
     }
 
+    [XmlRoot(ElementName = "ItemBag", Namespace = "")]
     [KnownType(typeof(BoundedBag))]
+    [KnownType(typeof(BundleBag))]
     [KnownType(typeof(Rucksack))]
     [KnownType(typeof(OmniBag))]
+    [XmlInclude(typeof(BoundedBag))]
+    [XmlInclude(typeof(BundleBag))]
+    [XmlInclude(typeof(Rucksack))]
+    [XmlInclude(typeof(OmniBag))]
     public abstract class ItemBag : GenericTool
     {
         /// <summary>The default color tints to use when rendering the bag icon in your inventory/toolbar.</summary>
@@ -210,6 +218,20 @@ namespace ItemBags.Bags
             }
         }
 
+        /// <summary>Attempts to find all ItemBags in the entire game (in the player inventory, inside chests, fridges, storage furniture etc)</summary>
+        /// <param name="IncludeNestedBags">If true, bags inside of <see cref="OmniBag"/>s will be included</param>
+        public static List<ItemBag> GetAllBags(bool IncludeNestedBags)
+        {
+            List<ItemBag> Results = new List<ItemBag>();
+            foreach (ItemBag Bag in SaveLoadHelpers.GetAllInstances(x => x is ItemBag).Cast<ItemBag>())
+            {
+                Results.Add(Bag);
+                if (IncludeNestedBags && Bag is OmniBag OB)
+                    Results.AddRange(OB.NestedBags);
+            }
+            return Results;
+        }
+
         #region Textures
         /// <summary>The unmodified LooseSprites/cursors.xnb texture</summary>
         protected static Texture2D CursorsTexture { get { return Game1.mouseCursors; } }
@@ -315,10 +337,14 @@ namespace ItemBags.Bags
         #endregion Textures
 
         /// <summary>Same purpose as <see cref="Tool.Description"/> except this is a read-only property that doesn't call a function</summary>
+        [XmlElement("DescriptionAlias")]
         public string DescriptionAlias { get; protected set; }
 
-        public ContainerSize Size { get; }
+        [XmlElement("ContainerSize")]
+        public ContainerSize Size { get; protected set; }
         /// <summary>Never Add/Remove from this List directly. Use <see cref="MoveToBag(Object, int, out int, bool, IList{Item})"/> and <see cref="MoveFromBag(Object, int, out int, bool, IList{Item}, int)"/></summary>
+        [XmlArray("BagContents")]
+        [XmlArrayItem("BagItem")]
         public List<Object> Contents { get; }
         /// <summary>Invoked when Items are added to or removed from the bag</summary>
         public EventHandler<EventArgs> OnContentsChanged;
@@ -326,22 +352,30 @@ namespace ItemBags.Bags
         internal const int RecentlyModifiedHistorySize = 12;
         /// <summary>Key = An Object that was recently added to this bag's <see cref="Contents"/>, or had it's Quantity increased.<para/>
         /// Value = DateTime of when that event happened. Only stores up to 1 KeyValuePair for each distinct Object, and only the most recent <see cref="RecentlyModifiedHistorySize"/> changes</summary>
+        [XmlIgnore]
         internal Dictionary<Object, DateTime> RecentlyModified { get; private set; }
 
         /// <summary>The sum of the value of all items stored in this bag</summary>
+        [XmlIgnore]
         public int ContentsValue { get { return Contents == null ? 0 : Contents.Sum(x => GetSingleItemPrice(x) * x.Stack); } }
         public bool IsEmpty() { return Contents == null || !Contents.Any(x => x != null); }
 
+        [XmlIgnore]
         public Texture2D Icon { get; set; }
         /// <summary>The SourceRectangle portion of the <see cref="Icon"/> Texture</summary>
+        [XmlElement("IconTexturePosition")]
         public Rectangle? IconTexturePosition { get; set; }
 
         /// <summary>An offset to use when rendering <see cref="Icon"/>. If zero/null, then the additional icon would appear in the center of the bag's inventory icon.</summary>
+        [XmlElement("IconRenderOffset")]
         public Vector2? IconRenderOffset { get; }
+        [XmlElement("IconScale")]
         public float IconScale { get; }
+        [XmlElement("IconTransparency")]
         public float IconTransparency { get; }
 
         /// <summary>The maximum number of the same item that can be stored in a single slot of this bag.</summary>
+        [XmlIgnore]
         public abstract int MaxStackSize { get; }
         protected virtual int GetMaxStackSize(Object Item) { return this.MaxStackSize; }
 
@@ -409,7 +443,9 @@ namespace ItemBags.Bags
         }
 
         #region Open/Close Menu
+        [XmlIgnore]
         public ItemBagMenu ContentsMenu { get; private set; }
+        [XmlIgnore]
         public IClickableMenu PreviousMenu { get; private set; }
 
         /// <param name="Source">The source items that should appear in the bottom half of the bag's interface. Typically this is <see cref="Game1.player.Items"/> if moving to/from the inventory.</param>
@@ -429,6 +465,7 @@ namespace ItemBags.Bags
             Game1.playSound("bigSelect");
         }
 
+        [XmlIgnore]
         protected bool IsClosingContents { get; set; } = false;
 
         public virtual void CloseContents()
@@ -441,27 +478,30 @@ namespace ItemBags.Bags
             try
             {
                 IsClosingContents = true;
-                ContentsMenu.OnClose();
-                if (RestorePreviousMenu)
+                if (ContentsMenu != null)
                 {
-                    if (PreviousMenu is ItemGrabMenu IGM && IGM.context is Chest Chest)
+                    ContentsMenu.OnClose();
+                    if (RestorePreviousMenu)
                     {
-                        //  Fix chest item indices by removing nulls
-                        //  (While the bag contents was open, user may have moved items from chest into bag. But unlike a regular inventory,
-                        //  chests are supposed to keep all items adjacent to each other with no empty slots in between, so we must remove the null items from list)
-                        IList<Item> Items = IGM.ItemsToGrabMenu.actualInventory;
-                        for (int i = Items.Count - 1; i >= 0; i--)
+                        if (PreviousMenu is ItemGrabMenu IGM && IGM.context is Chest Chest)
                         {
-                            if (Items[i] == null)
-                                Items.RemoveAt(i);
+                            //  Fix chest item indices by removing nulls
+                            //  (While the bag contents was open, user may have moved items from chest into bag. But unlike a regular inventory,
+                            //  chests are supposed to keep all items adjacent to each other with no empty slots in between, so we must remove the null items from list)
+                            IList<Item> Items = IGM.ItemsToGrabMenu.actualInventory;
+                            for (int i = Items.Count - 1; i >= 0; i--)
+                            {
+                                if (Items[i] == null)
+                                    Items.RemoveAt(i);
+                            }
                         }
+                        Game1.activeClickableMenu = PreviousMenu;
                     }
-                    Game1.activeClickableMenu = PreviousMenu;
+                    this.ContentsMenu = null;
+                    PreviousMenu = null;
+                    if (PlaySoundEffect)
+                        Game1.playSound("bigDeSelect");
                 }
-                this.ContentsMenu = null;
-                PreviousMenu = null;
-                if (PlaySoundEffect)
-                    Game1.playSound("bigDeSelect");
             }
             finally
             {
@@ -1035,14 +1075,6 @@ namespace ItemBags.Bags
             return 0;
         }
 
-        public override bool canBeDropped()
-        {
-            //return base.canBeDropped();
-
-            //return false;
-            return base.canBeDropped() && IsEmpty(); // Note that the game doesn't allow dropping an item where canBeTrashed()==false
-        }
-
         public override bool canBeGivenAsGift()
         {
             //return base.canBeGivenAsGift();
@@ -1061,13 +1093,33 @@ namespace ItemBags.Bags
             return false;
         }
 
+        public override bool canBeDropped()
+        {
+            //return base.canBeDropped();
+
+            if (Game1.IsMultiplayer)
+            {
+                return false;
+            }
+            else
+            {
+                //return false;
+                return base.canBeDropped() && IsEmpty(); // Note that the game doesn't allow dropping an item where canBeTrashed()==false
+            }
+        }
+
         public override bool canBeTrashed()
         {
             //return base.canBeTrashed();
 
-            //  Warning - It looks like the game checks canBeTrashed() before checking canBeDropped()
-            //  So if you want to allow dropping a non-empty bag, would need to change/remove this condition
-            return IsEmpty();
+            if (Game1.IsMultiplayer)
+            {
+                return false;
+            }
+            else
+            {
+                return IsEmpty();
+            }
         }
 
         public override bool canThisBeAttached(StardewValley.Object o)

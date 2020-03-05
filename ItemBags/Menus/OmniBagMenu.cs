@@ -165,9 +165,12 @@ namespace ItemBags.Menus
                         OmniBag.MoveFromBag(PressedBag, true, InventorySource, ActualInventoryCapacity, true);
                     else if (e.Button == SButton.MouseRight)
                     {
-                        IClickableMenu PreviousMenu = this.Bag.PreviousMenu;
-                        this.Bag.CloseContents(false, false);
-                        PressedBag.OpenContents(InventorySource, ActualInventoryCapacity, PreviousMenu);
+                        //IClickableMenu PreviousMenu = this.Bag.PreviousMenu;
+                        //this.Bag.CloseContents(false, false);
+                        //PressedBag.OpenContents(InventorySource, ActualInventoryCapacity, PreviousMenu);
+                        PressedBag.OpenContents(InventorySource, ActualInventoryCapacity, this.Bag.ContentsMenu);
+
+                        this.HoveredSlot = null;
                     }
                 }
             }
@@ -274,7 +277,23 @@ namespace ItemBags.Menus
             {
                 ItemBag HoveredBag = GetHoveredBag();
                 if (HoveredBag != null)
-                    DrawHelpers.DrawToolTipInfo(b, HoveredSlot.Value, HoveredBag, true, true, true, true, true, Bag.MaxStackSize);
+                {
+                    //Rectangle Location = HoveredSlot.Value;
+                    Rectangle Location = new Rectangle(Game1.getMouseX() - 8, Game1.getMouseY() + 36, 8 + 36, 1);
+
+                    //if (HoveredBag is Rucksack RS)
+                    //{
+                    //    int XPos = Location.Right;
+                    //    int YPos = Location.Bottom;
+                    //    RS.drawTooltip(b, ref XPos, ref YPos, Game1.smallFont, 1f, RS.Description);
+                    //}
+                    //else
+                    //{
+                    //    DrawHelpers.DrawToolTipInfo(b, Location, HoveredBag, true, true, true, true, true, Bag.MaxStackSize);
+                    //}
+
+                    DrawHelpers.DrawToolTipInfo(b, Location, HoveredBag, true, true, true, true, true, Bag.MaxStackSize);
+                }
             }
         }
 

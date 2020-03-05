@@ -28,17 +28,15 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 2, 3); // Last updated 2/24/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 2, 4); // Last updated 3/5/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
 
         //Possible TODO 
-        //  Netplay support. Not sure where to begin but should probably start by storing the entire Object in BagItem.cs instead of just saving a handful of properties like Id/Quantity/Price.
-        //      and convert ItemBag fields into their Net equivalents, such as BoundedBag.Autofill could be a NetBool instead of bool. And Add XmlElement tags to the properties that need serialized.
-        //      Then probably need to add checks for IsLocalPlayer, and maybe use Game1.MasterPlayer.Items instead of Game1.player.Items? Idk
-        //      Then re-work the SaveLoadHelpers. Maybe the ReplaceAllInstances needs to iterate the inventories of all the farmhands?
-        //  dynamically load json files in the mod directory that can be deserialized into BagTypes, giving users an easier way to use custom bags without needing the edit the behemoth that is bagconfig.json.
-        //  Rucksack tooltips: if not in shopmenu, draw a scaled-down version of the contents interface, maybe 32x32 slots, without quantity, and maybe cap it to the first 72 slots in case
-        //      user has edited the config files to make the bag store a ridiculous amount of items
+        //  "Equipment Bag" : subclass of BoundedBag - has a List<Weapon>, List<Hat> etc. List<AllowedHat> AllowedHats List<AllowedWeapon> AllowedWeapons etc
+        //      would need to override IsValidBagItem, and the MoveToBag/MoveFromBag needs a new implementation to handle non-Objects. Allow the items to stack even if item.maximumStackSize == 1
+        //  Farmer's Bag, Fruit Bag, Vegetable Bag, Food Bag
+        //  Allow Bundle Bags to hold items that have a higher quality than what the BundleTask requires.
+        //  Dynamically load json files in the mod directory that can be deserialized into BagTypes, giving users an easier way to use custom bags without needing the edit the behemoth that is bagconfig.json.
         //  An additional sidebar button in topleft of bag contents interface. hovering over it displays a tooltip with total bag content's summed values
         //  Rucksack filtering. if Rucksack has >=36 slots, add some category filter buttons to the left sidebar. Also make OnBagContentsChanged have a Removed, Added, Modified list
         //      so in RucksackMenu, when detecting a BagContentsChanged, only need to refresh the view if not filtering by category, or at least 1 changed item belongs to current category filter.
@@ -58,14 +56,17 @@ namespace ItemBags
         private const string UserConfigFilename = "config.json";
         public static UserConfig UserConfig { get; private set; }
 
-        internal static bool IsMegaStorageInstalled { get; private set; } = false;
+        internal static ISemanticVersion MegaStorageInstalledVersion { get; private set; } = null;
 
         public override void Entry(IModHelper helper)
         {
             ModInstance = this;
 
-            IsMegaStorageInstalled = Helper.ModRegistry.IsLoaded("Alek.MegaStorage") || 
-                Helper.ModRegistry.GetAll().Any(x => x.Manifest.Name.Equals("Mega Storage", StringComparison.CurrentCultureIgnoreCase));
+            string MegaStorageId = "Alek.MegaStorage";
+            if (Helper.ModRegistry.IsLoaded(MegaStorageId))
+            {
+                MegaStorageInstalledVersion = Helper.ModRegistry.Get(MegaStorageId).Manifest.Version;
+            }
 
             //  Load global user settings into memory
             UserConfig GlobalUserConfig = helper.Data.ReadJsonFile<UserConfig>(UserConfigFilename);
@@ -92,6 +93,7 @@ namespace ItemBags
             if (GlobalBagConfig != null)
             {
                 bool RewriteConfig = false;
+
                 if (GlobalBagConfig.CreatedByVersion == null)
                 {
                     GlobalBagConfig.EnsureBagTypesExist(
@@ -100,6 +102,15 @@ namespace ItemBags
                         BagTypeFactory.GetLakeFishBagType(),
                         BagTypeFactory.GetMiscFishBagType());
                     RewriteConfig = true;
+                }
+
+                if (GlobalBagConfig.CreatedByVersion == null || GlobalBagConfig.CreatedByVersion < new Version(1, 2, 4))
+                {
+                    if (Constants.TargetPlatform != GamePlatform.Android)
+                    {
+                        GlobalBagConfig.EnsureBagTypesExist(BagTypeFactory.GetFishBagType());
+                        RewriteConfig = true;
+                    }
                 }
 
                 //  Suppose you just added a new BagType "Scarecrow Bag" to version 1.0.12
@@ -359,101 +370,99 @@ namespace ItemBags
                 try
                 {
                     IsHandlingInventoryChanged = true;
-                    if (e.IsLocalPlayer)
-                    {
-                        HashSet<ItemBag> NestedBags = new HashSet<ItemBag>();
 
-                        //  Get all bags in the player's inventory that can be autofilled
-                        List<ItemBag> AutofillableBags = new List<ItemBag>();
-                        foreach (Item Item in e.Player.Items)
+                    HashSet<ItemBag> NestedBags = new HashSet<ItemBag>();
+
+                    //  Get all bags in the player's inventory that can be autofilled
+                    List<ItemBag> AutofillableBags = new List<ItemBag>();
+                    foreach (Item Item in e.Player.Items)
+                    {
+                        if (Item != null && Item is ItemBag)
                         {
-                            if (Item != null && Item is ItemBag)
+                            if (Item is BoundedBag BB)
                             {
-                                if (Item is BoundedBag BB)
+                                if (BB.Autofill)
+                                    AutofillableBags.Add(BB);
+                            }
+                            else if (Item is Rucksack RS)
+                            {
+                                if (RS.Autofill)
+                                    AutofillableBags.Add(RS);
+                            }
+                            else if (Item is OmniBag OB)
+                            {
+                                foreach (ItemBag NestedBag in OB.NestedBags)
                                 {
-                                    if (BB.Autofill)
-                                        AutofillableBags.Add(BB);
-                                }
-                                else if (Item is Rucksack RS)
-                                {
-                                    if (RS.Autofill)
-                                        AutofillableBags.Add(RS);
-                                }
-                                else if (Item is OmniBag OB)
-                                {
-                                    foreach (ItemBag NestedBag in OB.NestedBags)
+                                    if (NestedBag is BoundedBag NestedBB)
                                     {
-                                        if (NestedBag is BoundedBag NestedBB)
+                                        if (NestedBB.Autofill)
                                         {
-                                            if (NestedBB.Autofill)
-                                            {
-                                                AutofillableBags.Add(NestedBB);
-                                                NestedBags.Add(NestedBag);
-                                            }
+                                            AutofillableBags.Add(NestedBB);
+                                            NestedBags.Add(NestedBag);
                                         }
-                                        else if (NestedBag is Rucksack NestedRS)
+                                    }
+                                    else if (NestedBag is Rucksack NestedRS)
+                                    {
+                                        if (NestedRS.Autofill)
                                         {
-                                            if (NestedRS.Autofill)
-                                            {
-                                                AutofillableBags.Add(NestedRS);
-                                                NestedBags.Add(NestedBag);
-                                            }
+                                            AutofillableBags.Add(NestedRS);
+                                            NestedBags.Add(NestedBag);
                                         }
                                     }
                                 }
                             }
                         }
+                    }
 
-                        if (AutofillableBags.Any())
+                    if (AutofillableBags.Any())
+                    {
+                        foreach (Item NewItem in e.Added)
                         {
-                            foreach (Item NewItem in e.Added)
+                            if (NewItem is Object NewObject && NewItem.Stack > 0)
                             {
-                                if (NewItem is Object NewObject && NewItem.Stack > 0)
+                                List<ItemBag> ValidTargets = new List<ItemBag>();
+                                foreach (ItemBag Bag in AutofillableBags.Where(x => x.IsValidBagObject(NewObject) && !x.IsFull(NewObject)))
                                 {
-                                    List<ItemBag> ValidTargets = new List<ItemBag>();
-                                    foreach (ItemBag Bag in AutofillableBags.Where(x => x.IsValidBagObject(NewObject) && !x.IsFull(NewObject)))
+                                    //  Don't allow Rucksacks to be autofilled with the new item unless they already have an existing stack of it
+                                    if (!(Bag is Rucksack) || Bag.Contents.Any(x => x != null && ItemBag.AreItemsEquivalent(NewObject, x, true)))
+                                        ValidTargets.Add(Bag);
+                                }
+
+                                if (ValidTargets.Any())
+                                {
+                                    List<ItemBag> SortedTargets = ValidTargets.OrderBy(x =>
                                     {
-                                        //  Don't allow Rucksacks to be autofilled with the new item unless they already have an existing stack of it
-                                        if (!(Bag is Rucksack) || Bag.Contents.Any(x => x != null && ItemBag.AreItemsEquivalent(NewObject, x, true)))
-                                            ValidTargets.Add(Bag);
-                                    }
-
-                                    if (ValidTargets.Any())
-                                    {
-                                        List<ItemBag> SortedTargets = ValidTargets.OrderBy(x =>
+                                        int NestedPenalty = NestedBags.Contains(x) ? 10 : 0; // Items nested inside of Omni Bags have lower priority than non-nested bags
+                                        if (x is BundleBag)
+                                            return 0 + NestedPenalty; // Prioritize filling Bundle Bags first
+                                        else if (x is Rucksack RS)
                                         {
-                                            int NestedPenalty = NestedBags.Contains(x) ? 10 : 0; // Items nested inside of Omni Bags have lower priority than non-nested bags
-                                            if (x is BundleBag)
-                                                return 0 + NestedPenalty; // Prioritize filling Bundle Bags first
-                                            else if (x is Rucksack RS)
-                                            {
-                                                int Priority = RS.AutofillPriority == AutofillPriority.High ? 1 : 4;
-                                                return Priority + NestedPenalty; // Prioritize Rucksacks with HighPriority over BoundedBags
-                                            }
-                                            else if (x is BoundedBag BB)
-                                            {
-                                                //  Prioritize BoundedBags that already have an existing stack of the item over BoundedBags that don't
-                                                if (x.Contents.Any(BagItem => BagItem != null && ItemBag.AreItemsEquivalent(NewObject, BagItem, false)))
-                                                    return 2 + NestedPenalty;
-                                                else
-                                                    return 3 + NestedPenalty;
-                                            }
-                                            else
-                                                throw new NotImplementedException(string.Format("Unexpected Bag type in Autofill sorter: {0}", x.GetType().ToString()));
-                                        }).ToList();
-
-                                        for (int i = 0; i < SortedTargets.Count; i++)
-                                        {
-                                            ItemBag Target = SortedTargets[i];
-                                            Target.MoveToBag(NewObject, NewObject.Stack, out int MovedQty, false, Game1.player.Items);
-                                            if (MovedQty > 0)
-                                            {
-                                                Game1.addHUDMessage(new HUDMessage(string.Format("Moved {0} to {1}", NewItem.DisplayName, Target.DisplayName), MovedQty, true, Color.White, Target));
-                                            }
-
-                                            if (NewObject.Stack <= 0)
-                                                break;
+                                            int Priority = RS.AutofillPriority == AutofillPriority.High ? 1 : 4;
+                                            return Priority + NestedPenalty; // Prioritize Rucksacks with HighPriority over BoundedBags
                                         }
+                                        else if (x is BoundedBag BB)
+                                        {
+                                            //  Prioritize BoundedBags that already have an existing stack of the item over BoundedBags that don't
+                                            if (x.Contents.Any(BagItem => BagItem != null && ItemBag.AreItemsEquivalent(NewObject, BagItem, false)))
+                                                return 2 + NestedPenalty;
+                                            else
+                                                return 3 + NestedPenalty;
+                                        }
+                                        else
+                                            throw new NotImplementedException(string.Format("Unexpected Bag type in Autofill sorter: {0}", x.GetType().ToString()));
+                                    }).ToList();
+
+                                    for (int i = 0; i < SortedTargets.Count; i++)
+                                    {
+                                        ItemBag Target = SortedTargets[i];
+                                        Target.MoveToBag(NewObject, NewObject.Stack, out int MovedQty, false, Game1.player.Items);
+                                        if (MovedQty > 0)
+                                        {
+                                            Game1.addHUDMessage(new HUDMessage(string.Format("Moved {0} to {1}", NewItem.DisplayName, Target.DisplayName), MovedQty, true, Color.White, Target));
+                                        }
+
+                                        if (NewObject.Stack <= 0)
+                                            break;
                                     }
                                 }
                             }
@@ -550,23 +559,14 @@ namespace ItemBags
             }
 
             //  Add Bag items to the shop's stock
-            if (e.NewMenu is ShopMenu SM)
+            if (e.NewMenu is ShopMenu SM && (!Game1.IsMultiplayer || Game1.player.IsMainPlayer))
             {
                 bool IsTravellingMerchant = SM.portraitPerson == null && SM.storeContext != null && SM.storeContext.Equals("Forest", StringComparison.CurrentCultureIgnoreCase);
                 string ShopOwnerName = IsTravellingMerchant ? "TravellingCart" : SM.portraitPerson?.Name;
 
                 if (!string.IsNullOrEmpty(ShopOwnerName))
                 {
-                    List<ItemBag> OwnedBags = new List<ItemBag>();
-                    if (UserConfig.HideObsoleteBagsFromShops)
-                    {
-                        SaveLoadHelpers.ReplaceAllInstances(x => x is ItemBag, x =>
-                        {
-                            OwnedBags.Add(x as ItemBag);
-                            return x;
-                        });
-                    }
-
+                    List<ItemBag> OwnedBags = UserConfig.HideObsoleteBagsFromShops ? ItemBag.GetAllBags(true) : new List<ItemBag>();
                     Dictionary<ISalable, int[]> Stock = SM.itemPriceAndStock;
 
                     bool ShouldModifyStock = true;
@@ -829,8 +829,9 @@ namespace ItemBags
                         }
                     }
 
-                    bool IsUnmoddedChest = !IsMegaStorageInstalled || IGM.ItemsToGrabMenu.capacity == DefaultChestCapacity; //ChestSource.Name.Equals("Chest", StringComparison.CurrentCultureIgnoreCase))
-                    if (!Handled && IsUnmoddedChest)
+                    bool IsMegaStorageCompatibleWithCurrentChest = IGM.ItemsToGrabMenu.capacity == DefaultChestCapacity || 
+                        MegaStorageInstalledVersion == null || MegaStorageInstalledVersion.IsNewerThan(new SemanticVersion(1, 4, 4));
+                    if (!Handled && IsMegaStorageCompatibleWithCurrentChest)
                     {
                         //  Check if they clicked a Bag in the chest part of the chest interface
                         for (int i = 0; i < IGM.ItemsToGrabMenu.inventory.Count; i++)
