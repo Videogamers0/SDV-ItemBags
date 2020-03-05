@@ -28,7 +28,7 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 2, 4); // Last updated 3/5/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 3, 0); // Last updated 3/5/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
 
         //Possible TODO 
