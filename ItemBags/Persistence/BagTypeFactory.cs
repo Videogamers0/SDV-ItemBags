@@ -2160,6 +2160,305 @@ namespace ItemBags.Persistence
             };
         }
 
+        public static BagType GetFarmerBagType()
+        {
+            HashSet<int> BigCraftableIds = new HashSet<int>() {
+                8, 110, 113, 126, 136, 137, 138, 139, 140, 167, // Scarecrow, Rarecrows 1-8, Deluxe Scarecrow
+                25 // Seed Maker
+            };
+            BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Marnie };
+            double PriceMultiplier = 0.35;
+
+            //Fertilizers: Basic Fertilizer 368, Quality Fertilizer 369, Basic Retaining Soil 370, Quality Retaining Soil 371, Speed-Gro 465, Deluxe Speed-Gro 466, Tree Fertilizer 805
+            //Scarecrows: Scarecrow 8, Rarecrows 110, 113, 126, 136, 137, 138, 139, 140, Deluxe Scarecrow 167
+            //Sprinklers: Sprinkler 599, Quality Sprinkler 621, Iridium Sprinkler 645
+            //Totems: Warp Totem: Farm 688, Warp Totem: Mountains 689, Warp Totem: Beach 690, Warp Totem: Desert 261, Rain Totem 681
+            //Foods: Hashbrowns 210, Pepper Poppers 215, Tom Kha Soup 218, Complete Breakfast 201, Farmer's Lunch 240
+            //Clay 330
+
+            return new BagType()
+            {
+                Id = "49d045ab-47d8-47fc-aed0-745da4a6d8fa",
+                Name = "Farmers Bag",
+                Description = "A bag for storing sprinklers, fertilizers, and scarecrows.",
+                IconSourceTexture = BagType.SourceTexture.SpringObjects,
+                IconSourceRect = new Rectangle(8 * 16, 15 * 16, 16, 16),
+                SizeSettings = new BagSizeConfig[]
+                {
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Small,
+                        Sellers = DefaultSellers,
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Small] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        Items = CreateStoreableItemArray(
+                            new int[] { }, 
+                            new int[] { 8, 368, 370, 465, 599, 330 }, // Scarecrow, Basic Fertilizer, Basic Retaining Soil, Basic Speed-Gro, Sprinkler, Clay
+                            BigCraftableIds
+                        ),
+                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Small],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout(),
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 6 }
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Medium,
+                        Sellers = DefaultSellers,
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Medium] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        Items = CreateStoreableItemArray(
+                            new int[] { },
+                            new int[] 
+                            {
+                                8, 110, 113, 136, 137, 138, 139, 140, // Scarecrow, Rarecrows 1-8 except 3
+                                368, 370, 371, 465, 805, 599, 621, 330 // Basic Fertilizer, Basic Retaining Soil, Quality Retaining Soil, Speed-Gro, Tree Fertilizer, Sprinkler, Quality Sprinkler, Clay
+                            },
+                            BigCraftableIds
+                        ),
+                        CapacityMultiplier = 30.0 / DefaultCapacities[ContainerSize.Medium],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout(),
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 8 }
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Large,
+                        Sellers = DefaultSellers.ToArray(),
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        Items = CreateStoreableItemArray(
+                            new int[] { },
+                            new int[]
+                            {
+                                8, 110, 113, 126, 136, 137, 138, 139, 140, // Scarecrow, Rarecrows 1-8
+                                368, 369, 370, 371, 465, 466, 805, 599, 621, 645, // Basic Fertilizer, Quality Fertilizer, Basic Retaining Soil, Quality Retaining Soil, Speed-Gro, Deluxe Speed-Gro, Tree Fertilizer, Sprinkler, Quality Sprinkler, Iridium Sprinkler
+                                25, 688, 681, 330, 210 // Seed Maker, Warp Totem: Farm, Rain Totem, Clay, Hashbrowns
+                            },
+                            BigCraftableIds
+                        ),
+                        CapacityMultiplier = 100.0 / DefaultCapacities[ContainerSize.Large],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout(),
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout()
+                            {
+                                Columns = 10,
+                                LineBreakIndices = new int[] { 8, 18 }
+                            }
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Giant,
+                        Sellers = DefaultSellers.ToArray(),
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        Items = CreateStoreableItemArray(
+                            new int[] { },
+                            new int[]
+                            {
+                                8, 110, 113, 126, 136, 137, 138, 139, 140, 167, // Scarecrow, Rarecrows 1-8, Deluxe Scarecrow
+                                368, 369, 370, 371, 465, 466, 805, 599, 621, 645, // Basic Fertilizer, Quality Fertilizer, Basic Retaining Soil, Quality Retaining Soil, Speed-Gro, Deluxe Speed-Gro, Tree Fertilizer, Sprinkler, Quality Sprinkler, Iridium Sprinkler
+                                688, 689, 690, 261, 681, // Warp Totem: Farm, Warp Totem: Mountains, Warp Totem: Beach, Warp Totem: Desert, Rain Totem
+                                210, 215, 218, 201, // Hashbrowns, Pepper Poppers, Tom Kha Soup, Complete Breakfast
+                                25, 330 // Seed Maker, Clay
+                            },
+                            BigCraftableIds
+                        ),
+                        //CapacityMultiplier = 200.0 / DefaultCapacities[ContainerSize.Giant],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout(),
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 10 }
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Massive,
+                        Sellers = DefaultSellers.ToArray(),
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Massive] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        Items = CreateStoreableItemArray(
+                            new int[] { },
+                            new int[]
+                            {
+                                8, 110, 113, 126, 136, 137, 138, 139, 140, 167, // Scarecrow, Rarecrows 1-8, Deluxe Scarecrow
+                                368, 369, 370, 371, 465, 466, 805, 599, 621, 645, // Basic Fertilizer, Quality Fertilizer, Basic Retaining Soil, Quality Retaining Soil, Speed-Gro, Deluxe Speed-Gro, Tree Fertilizer, Sprinkler, Quality Sprinkler, Iridium Sprinkler
+                                688, 689, 690, 261, 681, // Warp Totem: Farm, Warp Totem: Mountains, Warp Totem: Beach, Warp Totem: Desert, Rain Totem
+                                210, 215, 218, 201, 240, // Hashbrowns, Pepper Poppers, Tom Kha Soup, Complete Breakfast, Farmer's Lunch
+                                25, 330 // Seed Maker, Clay
+                            },
+                            BigCraftableIds
+                        ),
+                        //CapacityMultiplier = 999.0 / DefaultCapacities[ContainerSize.Massive],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout(),
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 10 }
+                        }
+                    }
+                }
+            };
+        }
+
+        public static BagType GetFoodBagType()
+        {
+            HashSet<int> BigCraftableIds = new HashSet<int>() { 12 }; // Keg
+            BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Gus };
+            double PriceMultiplier = 0.55;
+
+            List<int> HasQualitiesIds = new List<int>() { 346, 459, 303 }; // Beer, Mead, Pale Ale
+
+            List<int> Ingredients = new List<int>() {
+                246, 245, 247, 419, 724, 814 // Wheat Flour, Sugar, Oil, Vinegar, Rice, Maple Syrup, Squid Ink
+            };
+
+            List<int> CraftedFoods = new List<int>() {
+                403, 773, 772 // Field Snack, Life Elixir, Oil of Garlic
+            };
+
+            List<int> Medicines = new List<int>() {
+                349, 351 // Energy Tonic, Muscle Remedy
+            };
+
+            List<int> Drinks = new List<int>() {
+                395, 253, 346, 459, 303, 12 // Coffee, Triple Shot Espresso, Beer, Mead, Pale Ale, Keg
+            };
+
+            List<int> Dishes = new List<int>() {
+                194, 229, 216, 227, 211, 198, // Fried Egg, Tortilla, Bread, Sashimi, Pancakes, Baked Fish
+                207, 219, 244, 456, 196, 199, // Bean Hotpot, Trout Soup, Roots Platter, Algae Soup, Salad, Parsnip Soup
+                200, 210, 224, 225, 233, 238, // Vegetable Medley, Hashbrowns, Spaghetti, Fried Eel, Ice Cream, Cranberry Sauce
+                195, 729, 727, 223, 202, 209, // Omelet, Escargot, Chowder, Cookie, Fried Calamari, Carp Surprise
+                214, 234, 240, 457, 733, 239, // Crispy Bass, Blueberry Tart, Farmer's Lunch, Pale Broth, Shrimp Cocktail, Stuffing
+                226, 612, 728, 241, 205, 208, // Spicy Eel, Cranberry Candy, Fish Stew, Survival Burger, Fried Mushroom, Glazed Yams
+                215, 220, 231, 243, 730, 605, // Pepper Poppers, Chocolate Cake, Eggplant Parmesan, Miner's Treat, Lobster Bisque, Artichoke Dip
+                618, 228, 237, 242, 203, 204, // Bruschetta, Maki Roll, Super Meal, Dish O' The Sea, Strange Bun, Lucky Lunch
+                218, 651, 232, 604, 611, 607, // Tom Kha Soup, Poppyseed Muffin, Rice Pudding, Plum Pudding, Blackberry Cobbler, Roasted Hazelnuts
+                732, 197, 206, 212, 236, 265, // Crab Cakes, Cheese Cauliflower, Pizza, Salmon Dinner, Pumpkin Soup, Seafoam Pudding
+                609, 731, 606, 648, 201, 235, // Radish Salad, Maple Bar, Stir Fry, Coleslaw, Complete Breakfast, Autumn's Bounty
+                649, 608, 222, 230, 610, 221, // Fiddlehead Risotto, Pumpkin Pie, Rhubarb Pie, Red Plate, Fruit Salad, Pink Cake
+                213 // Fish Taco
+            };
+
+            List<int> MiscFoods = new List<int>() {
+                78 // Cave Carrot
+            };
+
+            return new BagType()
+            {
+                Id = "f2d4a639-53ab-4124-a80d-c59b1ce67a4b",
+                Name = "Food Bag",
+                Description = "A bag for storing cooked dishes and ingredients.",
+                IconSourceTexture = BagType.SourceTexture.SpringObjects,
+                IconSourceRect = new Rectangle(4 * 16, 8 * 16, 16, 16),
+                SizeSettings = new BagSizeConfig[]
+                {
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Small,
+                        Sellers = DefaultSellers,
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Small] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        Items = CreateStoreableItemArray(
+                            new int[] { },
+                            Dishes.Take(16).Union(Ingredients.Take(4)),
+                            BigCraftableIds
+                        ),
+                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Small],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = false,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout(),
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 12 }
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Medium,
+                        Sellers = DefaultSellers,
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Medium] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        Items = CreateStoreableItemArray(
+                            new int[] { },
+                            Dishes.Take(32).Union(Drinks.Take(2)).Union(CraftedFoods).Union(Ingredients.Take(6)),
+                            BigCraftableIds
+                        ),
+                        CapacityMultiplier = 30.0 / DefaultCapacities[ContainerSize.Medium],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = false,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout(),
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 16 }
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Large,
+                        Sellers = DefaultSellers.ToArray(),
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        Items = 
+                            Dishes.Take(48).Union(Drinks.Take(5)).Union(CraftedFoods).Union(Medicines).Union(Ingredients)
+                            .Select(x => new StoreableBagItem(x, HasQualitiesIds.Contains(x), null, BigCraftableIds.Contains(x))).ToArray(),
+                        CapacityMultiplier = 100.0 / DefaultCapacities[ContainerSize.Large],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = false,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout(),
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout()
+                            {
+                                Columns = 16,
+                                LineBreakIndices = new int[] { 15, 31, 47, 61 }
+                            }
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Giant,
+                        Sellers = DefaultSellers.ToArray(),
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        Items =
+                            Dishes.Take(64).Union(Drinks).Union(CraftedFoods).Union(Medicines).Union(MiscFoods).Union(Ingredients)
+                            .Select(x => new StoreableBagItem(x, HasQualitiesIds.Contains(x), null, BigCraftableIds.Contains(x))).ToArray(),
+                        CapacityMultiplier = 300.0 / DefaultCapacities[ContainerSize.Giant],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = false,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout(),
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout()
+                            {
+                                Columns = 16,
+                                LineBreakIndices = new int[] { 15, 31, 47, 63, 78 }
+                            }
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Massive,
+                        Sellers = DefaultSellers.ToArray(),
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Massive] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        Items =
+                            Dishes.Union(Drinks).Union(CraftedFoods).Union(Medicines).Union(MiscFoods).Union(Ingredients)
+                            .Select(x => new StoreableBagItem(x, HasQualitiesIds.Contains(x), null, BigCraftableIds.Contains(x))).ToArray(),
+                        //CapacityMultiplier = 999.0 / DefaultCapacities[ContainerSize.Massive],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = false,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout(),
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout()
+                            {
+                                Columns = 16,
+                                LineBreakIndices = new int[] { 15, 31, 47, 63, Dishes.Count - 1, Dishes.Count - 1 + 15 }
+                            }
+                        }
+                    }
+                }
+            };
+        }
+
         //If you create more BagTypes, make sure you add them to BagConfig.InitializeDefaults()
 
         /// <param name="CraftableIds">Optional. If any of these Ids are in <paramref name="UngroupedIds"/>, 

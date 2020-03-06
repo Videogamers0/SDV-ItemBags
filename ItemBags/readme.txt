@@ -21,10 +21,14 @@ This mod adds several new "Bag" items that are capable of holding other items in
 			-Foraging Bags
 			-Artifact Bags
 			-Seed Bags
-			-Ocean Fish Bags
-			-River Fish Bags
-			-Lake Fish Bags
-			-Miscellaneous Fish Bags
+			-Fish Bags
+				-There are also less expensive sub-types of Fish Bags
+					-Ocean Fish Bags
+					-River Fish Bags
+					-Lake Fish Bags
+					-Miscellaneous Fish Bags
+			-Farmer's Bags
+			-Food Bags
 	-Bundle Bag
 		-Capable of storing items that are required by incomplete community center bundles
 	-Rucksack
@@ -47,21 +51,13 @@ This mod adds several new "Bag" items that are capable of holding other items in
 	-For PC users: SMAPI 3.0.1+
 	-For Android users: SMAPI 3.2.0.3+
 -Compatible with Windows, Linux, and Android
--Does not support multiplayer
+-Multiplayer only works for the host, since bag data is not synchronized across the clients.
+	-If a farmhand interacts with a bag, it may lose its items! 
+	-So even if you are the host, you should always keep your bags in your inventory, or in a chest that your friends know not to mess with
 -Known mod compatibility issues:
 	-SaveAnywhere
 		-Requires ItemBags 1.2.3+ or else you'll crash when saving
 		-You may need to exit to title and re-load your game after saving to get your bags back
-			-This is a bug with SaveAnywhere's API.
-			-When your game is Saving, ItemBags temporarily encodes your bags as Rusty Swords
-				-This prevents possible save corruption if you were to uninstall ItemBags and still have modded items in your save file
-			-When your game is done saving, or when you load a save, ItemBags decodes these special Rusty Swords back into bags
-			-As of Save Anywhere 2.12.3, there is a bug where SaveAnywhere's API is not notifying other mods that a save has finished
-				-So if you have Rusty Swords in your inventory/chests, just exit to title and re-load to force ItemBags to decode them.
-	-Mega Storage
-		-Bags stored inside of modded chests might not be able to be decoded after a save, or after a game is loaded
-		-If this happens, try putting the Rusty Swords (your encoded bags) into your inventory, or into a non-modded chest
-			-Then re-save the game and they should be properly decoded back into bags.
 
 
 ======================================================================================================================================
@@ -108,12 +104,14 @@ This mod adds several new "Bag" items that are capable of holding other items in
 		-Tree Bags (All sizes)
 	-Willy
 		-Recycling Bags (Up to Giant)
+		-Fish Bags (All sizes)
 		-Ocean Fish Bags (All sizes)
 		-River Fish Bags (All sizes)
 		-Lake Fish Bags (All sizes)
 		-Misscellaneous Fish Bags (All sizes)
 	-Marnie
 		-Animal Products Bags (All sizes)
+		-Farmer's Bas (All sizes)
 	-Krobus
 		-Recycling Bags (All sizes)
 		-Artifact Bags (All sizes)
@@ -128,6 +126,8 @@ This mod adds several new "Bag" items that are capable of holding other items in
 	-Sandy
 		-Foraging Bags (All sizes)
 		-Seed Bags (All sizes)
+	-Gus
+		-Food Bags (All sizes)
 
 
 ======================================================================================================================================

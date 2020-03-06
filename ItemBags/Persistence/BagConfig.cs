@@ -65,7 +65,9 @@ namespace ItemBags.Persistence
                 BagTypeFactory.GetRiverFishBagType(),
                 BagTypeFactory.GetLakeFishBagType(),
                 BagTypeFactory.GetMiscFishBagType(),
-                BagTypeFactory.GetFishBagType()
+                BagTypeFactory.GetFishBagType(),
+                BagTypeFactory.GetFarmerBagType(),
+                BagTypeFactory.GetFoodBagType()
             };
 
             //this.CreatedByVersion = ItemBagsMod.CurrentVersion;

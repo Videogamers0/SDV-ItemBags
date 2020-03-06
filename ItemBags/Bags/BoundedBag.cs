@@ -76,9 +76,6 @@ namespace ItemBags.Bags
             else
             {
                 Object BagItem = this.Contents.FirstOrDefault(x => AreItemsEquivalent(x, Item, true));
-                //if (BagItem == null)
-                //    BagItem = this.Contents.FirstOrDefault(x => AreItemsEqual(x, Item, false));
-
                 if (BagItem == null)
                     return false;
                 else
@@ -90,8 +87,7 @@ namespace ItemBags.Bags
         public ReadOnlyCollection<AllowedObject> AllowedObjects { get; protected set; }
 
         /// <summary>The type that this Bag instance is using. The <see cref="BagType"/> defines things like the name, description, what kinds of items can be stored etc. 
-        /// A <see cref="BagType"/> is unique, but there can be multiple <see cref="BoundedBag"/> instances that are using the same type's metadata.<para/>
-        /// See also: <see cref="ItemBag.Id"/> for the Id that uniquely identifies the instance of the type.</summary>
+        /// A <see cref="BagType"/> is unique, but there can be multiple <see cref="BoundedBag"/> instances that are using the same type's metadata.</summary>
         public BagType TypeInfo { get; protected set; }
         public BagSizeConfig SizeInfo { get; protected set; }
 

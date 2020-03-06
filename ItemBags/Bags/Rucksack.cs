@@ -465,7 +465,7 @@ namespace ItemBags.Bags
             else if ((Game1.activeClickableMenu is GameMenu GM && GM.currentTab == GameMenu.inventoryTab) ||
                 (Game1.activeClickableMenu is ItemGrabMenu IGM && IGM.context is Chest))
             {
-                List<Object> DrawnObjects = this.Contents.Take(72).ToList();
+                List<Object> DrawnObjects = this.Contents.Take(72).ToList(); // Possible TODO: Should maybe only draw 1 of each unique Item Id (As in, group by Id first, then take first one of each group, since we're already not drawing the item qualities/quantities)
                 if (DrawnObjects.Any())
                 {
                     int DrawnSlots = DrawnObjects.Count;

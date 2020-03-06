@@ -42,6 +42,7 @@ namespace ItemBags.Bags
         {
             this.syncObject = new PySync(this);
 
+            this.Size = ValidSizes.Min();
             this.Autofill = true;
         }
 

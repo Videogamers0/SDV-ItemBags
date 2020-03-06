@@ -28,13 +28,13 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 3, 0); // Last updated 3/5/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 3, 1); // Last updated 3/6/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
 
         //Possible TODO 
         //  "Equipment Bag" : subclass of BoundedBag - has a List<Weapon>, List<Hat> etc. List<AllowedHat> AllowedHats List<AllowedWeapon> AllowedWeapons etc
         //      would need to override IsValidBagItem, and the MoveToBag/MoveFromBag needs a new implementation to handle non-Objects. Allow the items to stack even if item.maximumStackSize == 1
-        //  Farmer's Bag, Fruit Bag, Vegetable Bag, Food Bag
+        //  Fruit Bag, Vegetable Bag
         //  Allow Bundle Bags to hold items that have a higher quality than what the BundleTask requires.
         //  Dynamically load json files in the mod directory that can be deserialized into BagTypes, giving users an easier way to use custom bags without needing the edit the behemoth that is bagconfig.json.
         //  An additional sidebar button in topleft of bag contents interface. hovering over it displays a tooltip with total bag content's summed values
@@ -94,16 +94,17 @@ namespace ItemBags
             {
                 bool RewriteConfig = false;
 
+                //  Update the config with new Bag Types that were added in later versions
                 if (GlobalBagConfig.CreatedByVersion == null)
                 {
                     GlobalBagConfig.EnsureBagTypesExist(
                         BagTypeFactory.GetOceanFishBagType(),
                         BagTypeFactory.GetRiverFishBagType(),
                         BagTypeFactory.GetLakeFishBagType(),
-                        BagTypeFactory.GetMiscFishBagType());
+                        BagTypeFactory.GetMiscFishBagType()
+                    );
                     RewriteConfig = true;
                 }
-
                 if (GlobalBagConfig.CreatedByVersion == null || GlobalBagConfig.CreatedByVersion < new Version(1, 2, 4))
                 {
                     if (Constants.TargetPlatform != GamePlatform.Android)
@@ -111,6 +112,14 @@ namespace ItemBags
                         GlobalBagConfig.EnsureBagTypesExist(BagTypeFactory.GetFishBagType());
                         RewriteConfig = true;
                     }
+                }
+                if (GlobalBagConfig.CreatedByVersion == null || GlobalBagConfig.CreatedByVersion < new Version(1, 3, 1))
+                {
+                    GlobalBagConfig.EnsureBagTypesExist(
+                        BagTypeFactory.GetFarmerBagType(),
+                        BagTypeFactory.GetFoodBagType()
+                    );
+                    RewriteConfig = true;
                 }
 
                 //  Suppose you just added a new BagType "Scarecrow Bag" to version 1.0.12

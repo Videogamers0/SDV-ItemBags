@@ -112,14 +112,6 @@ namespace ItemBags.Helpers
         {
             //ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnLoaded started.", LogLevel.Info);
 
-            foreach (Item Item in Game1.player.Items)
-            {
-                if (Item != null && Item.Name.Contains("PyTK"))
-                {
-                    string Name = Item.Name;
-                }
-            }
-
             try { LoadCustomItems(); }
             catch (Exception ex) { ItemBagsMod.ModInstance.Monitor.Log("ItemBags error during legacy LoadCustomItems: " + ex.Message, LogLevel.Info); }
 

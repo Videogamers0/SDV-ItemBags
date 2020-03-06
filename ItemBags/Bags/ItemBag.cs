@@ -439,7 +439,7 @@ namespace ItemBags.Bags
                 !Item.specialItem &&
                 (Item.questItem == null || !Item.questItem.Value) &&
                 (Item.heldObject == null || Item.heldObject.Value == null) &&
-                !Item.isLostItem;
+                !Item.isLostItem && (!Item.GetType().IsSubclassOf(typeof(Object)) || Item is ColoredObject);
         }
 
         #region Open/Close Menu
