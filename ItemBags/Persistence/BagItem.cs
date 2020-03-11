@@ -16,8 +16,7 @@ namespace ItemBags.Persistence
     public class BagItem
     {
         //Possible TODO: should maybe just serialize the entire Object XML string?
-        //Then modify BagItem.ToObject, ItemBag.AreItemsEquivalent,
-        //And maybe switch the ItemBag properties over to Net versions (EX: ItemBag.Contents could be a NetRef<List<Object>>?)
+        //Then modify BagItem.ToObject to just return that saved Object.
 
         [XmlElement("Id")]
         public int Id { get; set; }
@@ -54,7 +53,16 @@ namespace ItemBags.Persistence
                 return Item;
             }
             else
-                return new Object(Id, Quantity, false, Price <= 0 ? -1 : Price, Quality);
+            {
+                Object Item = new Object(Id, Quantity, false, Price <= 0 ? -1 : Price, Quality);
+
+                //  Sanity check in case Stack > 999 and StardewValley is updated to set the Object.Stack in its constructor instead of Object.stack 
+                //  (Object.Stack has a setter that restricts maximum value to the range 0-999, while Object.stack (the backing Net field) does not)
+                if (Item.Stack != Quantity)
+                    ItemBag.ForceSetQuantity(Item, Quantity);
+
+                return Item;
+            }
         }
 
         private void InitializeDefaults()

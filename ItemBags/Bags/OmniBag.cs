@@ -18,7 +18,7 @@ namespace ItemBags.Bags
 {
     /// <summary>A bag that can store other bags inside of it.</summary>
     [XmlRoot(ElementName = "OmniBag", Namespace = "")]
-    public class OmniBag : ItemBag, ISyncableElement
+    public class OmniBag : ItemBag, ISaveElement
     {
         public const string OmniBagTypeId = "6eb4c15d-3ad3-4b47-aab5-eb2f5daa8b3f";
 
@@ -27,8 +27,6 @@ namespace ItemBags.Bags
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         public OmniBag() : base(ItemBagsMod.Translate("OmniBagName"), ItemBagsMod.Translate("OmniBagDescription"), ContainerSize.Small, null, null, new Vector2(16, 16), 0.5f, 1f)
         {
-            this.syncObject = new PySync(this);
-
             string SizeName = ItemBagsMod.Translate(string.Format("Size{0}Name", Size.GetDescription()));
             DescriptionAlias = string.Format("{0}\n({1})\n({2})",
                 ItemBagsMod.Translate("OmniBagDescription"),
@@ -44,8 +42,6 @@ namespace ItemBags.Bags
         public OmniBag(ContainerSize Size)
             : base(ItemBagsMod.Translate("OmniBagName"), ItemBagsMod.Translate("OmniBagDescription"), Size, null, null, new Vector2(16, 16), 0.5f, 1f)
         {
-            this.syncObject = new PySync(this);
-
             string SizeName = ItemBagsMod.Translate(string.Format("Size{0}Name", Size.GetDescription()));
             DescriptionAlias = string.Format("{0}\n({1})\n({2})",
                 ItemBagsMod.Translate("OmniBagDescription"),
@@ -58,13 +54,13 @@ namespace ItemBags.Bags
             LoadTextures();
         }
 
-        public OmniBag(BagInstance SavedData, Dictionary<string, BagType> IndexedBagTypes)
+        public OmniBag(BagInstance SavedData)
             : this(SavedData.Size)
         {
             this.NestedBags = new List<ItemBag>();
             foreach (BagInstance NestedInstance in SavedData.NestedBags)
             {
-                if (NestedInstance.TryDecode(IndexedBagTypes, out ItemBag NestedBag))
+                if (NestedInstance.TryDecode(out ItemBag NestedBag))
                 {
                     this.NestedBags.Add(NestedBag);
                 }
@@ -94,20 +90,7 @@ namespace ItemBags.Bags
             LoadSettings(Data);
         }
 
-        public PySync syncObject { get; set; }
-
-        public Dictionary<string, string> getSyncData()
-        {
-            return new BagInstance(-1, this).ToPyTKAdditionalSaveData();
-        }
-
-        public void sync(Dictionary<string, string> syncData)
-        {
-            BagInstance Data = BagInstance.FromPyTKAdditionalSaveData(syncData);
-            LoadSettings(Data);
-        }
-
-        private void LoadSettings(BagInstance Data)
+        protected override void LoadSettings(BagInstance Data)
         {
             if (Data != null)
             {
@@ -120,20 +103,10 @@ namespace ItemBags.Bags
                     ItemBagsMod.Translate("OmniBagCapacityDescription", new Dictionary<string, string>() { { "size", SizeName } })
                 );
 
-                //  Index the BagTypes by their guids
-                Dictionary<string, BagType> IndexedBagTypes = new Dictionary<string, BagType>();
-                foreach (BagType BagType in ItemBagsMod.BagConfig.BagTypes)
-                {
-                    if (!IndexedBagTypes.ContainsKey(BagType.Id))
-                    {
-                        IndexedBagTypes.Add(BagType.Id, BagType);
-                    }
-                }
-
                 this.NestedBags.Clear();
                 foreach (BagInstance NestedInstance in Data.NestedBags)
                 {
-                    if (NestedInstance.TryDecode(IndexedBagTypes, out ItemBag NestedBag))
+                    if (NestedInstance.TryDecode(out ItemBag NestedBag))
                     {
                         this.NestedBags.Add(NestedBag);
                     }
@@ -220,6 +193,7 @@ namespace ItemBags.Bags
 
                 if (NotifyIfContentsChanged)
                     OnContentsChanged?.Invoke(this, EventArgs.Empty);
+                Resync();
                 if (PlaySoundEffect)
                     Game1.playSound(MoveContentsSuccessSound);
                 return true;
@@ -259,6 +233,7 @@ namespace ItemBags.Bags
 
                     if (NotifyIfContentsChanged)
                         OnContentsChanged?.Invoke(this, EventArgs.Empty);
+                    Resync();
                     if (PlaySoundEffect)
                         Game1.playSound(MoveContentsSuccessSound);
                     return true;
@@ -295,7 +270,10 @@ namespace ItemBags.Bags
                 }
 
                 if (RemovedCount > 0)
+                {
                     ChangesMade = true;
+                    Resync();
+                }
             }
 
             return ChangesMade;

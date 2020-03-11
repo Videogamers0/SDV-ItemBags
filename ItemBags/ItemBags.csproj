@@ -57,15 +57,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AutofillHandler.cs" />
     <Compile Include="Bags\BoundedBag.cs" />
     <Compile Include="Bags\BundleBag.cs" />
     <Compile Include="Bags\OmniBag.cs" />
     <Compile Include="Bags\Rucksack.cs" />
+    <Compile Include="CommandHandler.cs" />
     <Compile Include="Community Center\BundleItem.cs" />
     <Compile Include="Community Center\BundleReward.cs" />
     <Compile Include="Community Center\BundleRoom.cs" />
     <Compile Include="Community Center\BundleTask.cs" />
     <Compile Include="Community Center\CommunityCenterBundles.cs" />
+    <Compile Include="CraftingHandler.cs" />
     <Compile Include="Helpers\DrawHelpers.cs" />
     <Compile Include="Helpers\Extensions.cs" />
     <Compile Include="Helpers\XMLSerializer.cs" />
@@ -81,6 +84,7 @@
     <Compile Include="Menus\RucksackMenu.cs" />
     <Compile Include="Menus\UngroupedLayoutOptions.cs" />
     <Compile Include="ItemBagsMod.cs" />
+    <Compile Include="MultiplayerHandler.cs" />
     <Compile Include="Persistence\BagConfig.cs" />
     <Compile Include="Persistence\BagInstance.cs" />
     <Compile Include="Persistence\BagItem.cs" />

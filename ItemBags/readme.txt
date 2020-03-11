@@ -51,9 +51,7 @@ This mod adds several new "Bag" items that are capable of holding other items in
 	-For PC users: SMAPI 3.0.1+
 	-For Android users: SMAPI 3.2.0.3+
 -Compatible with Windows, Linux, and Android
--Multiplayer only works for the host, since bag data is not synchronized across the clients.
-	-If a farmhand interacts with a bag, it may lose its items! 
-	-So even if you are the host, you should always keep your bags in your inventory, or in a chest that your friends know not to mess with
+-Multiplayer support was added in v1.3.1 and has not yet been thoroughly tested.
 -Known mod compatibility issues:
 	-SaveAnywhere
 		-Requires ItemBags 1.2.3+ or else you'll crash when saving
@@ -111,7 +109,7 @@ This mod adds several new "Bag" items that are capable of holding other items in
 		-Misscellaneous Fish Bags (All sizes)
 	-Marnie
 		-Animal Products Bags (All sizes)
-		-Farmer's Bas (All sizes)
+		-Farmer's Bags (All sizes)
 	-Krobus
 		-Recycling Bags (All sizes)
 		-Artifact Bags (All sizes)
@@ -146,11 +144,11 @@ This mod adds several new "Bag" items that are capable of holding other items in
 ========	Rucksacks	 =====================================================================================================	
 ======================================================================================================================================
 -Available in all 5 sizes
-	-Small - 6 slots - Holds 30 quantity per slot
-	-Small - 12 slots - Holds 99 quantity per slot
-	-Small - 24 slots - Holds 300 quantity per slot
-	-Small - 36 slots - Holds 999 quantity per slot
-	-Small - 72 slots - Holds 9999 quantity per slot
+	-Small	- 6 slots - Holds 30 quantity per slot
+	-Medium	- 12 slots - Holds 99 quantity per slot
+	-Large	- 24 slots - Holds 300 quantity per slot
+	-Giant	- 36 slots - Holds 999 quantity per slot
+	-Massive- 72 slots - Holds 9999 quantity per slot
 -Sold by Pierre
 -Can only store non-modded stackable items
 	-Can store things like:

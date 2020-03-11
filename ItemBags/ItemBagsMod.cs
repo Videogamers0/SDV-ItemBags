@@ -28,7 +28,7 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 3, 1); // Last updated 3/6/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 3, 2); // Last updated 3/11/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
 
         //Possible TODO 
@@ -144,6 +144,7 @@ namespace ItemBags
                 GlobalBagConfig = new BagConfig() { CreatedByVersion = CurrentVersion };
                 helper.Data.WriteGlobalData(BagConfigDataKey, GlobalBagConfig);
             }
+            GlobalBagConfig.AfterLoaded();
             BagConfig = GlobalBagConfig;
 
             helper.Events.Display.MenuChanged += Display_MenuChanged;
@@ -151,7 +152,6 @@ namespace ItemBags
 
             helper.Events.GameLoop.UpdateTicked += GameLoop_UpdateTicked;
             helper.Events.GameLoop.UpdateTicking += GameLoop_UpdateTicking;
-            helper.Events.Player.InventoryChanged += Player_InventoryChanged;
 
             helper.Events.Input.CursorMoved += Input_MouseMoved;
             helper.Events.Input.ButtonPressed += Input_ButtonPressed;
@@ -161,328 +161,10 @@ namespace ItemBags
             helper.Events.GameLoop.Saved += (sender, e) => { SaveLoadHelpers.OnSaved(); };
             helper.Events.GameLoop.SaveLoaded += (sender, e) => { SaveLoadHelpers.OnLoaded(); };
 
-            RegisterCommands();
-        }
-
-        #region Commands
-        private void RegisterCommands()
-        {
-            RegisterAddItemBagCommand();
-            RegisterAddBundleBagCommand();
-            RegisterAddRucksackCommand();
-            RegisterAddOmniBagCommand();
-        }
-
-        private void RegisterAddItemBagCommand()
-        {
-            List<string> ValidSizes = Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>().Select(x => x.ToString()).ToList();
-            List<string> ValidTypes = BagConfig.BagTypes.Select(x => x.Name).ToList();
-
-            //Possible TODO: Add translation support for this command
-            string CommandName = Constants.TargetPlatform == GamePlatform.Android ? "addbag" : "player_additembag";
-            string CommandHelp = string.Format("Adds an empty Bag of the desired size and type to your inventory.\n"
-                + "Arguments: <BagSize> <BagType>\n"
-                + "Example: {0} Massive River Fish Bag\n\n"
-                + "Valid values for <BagSize>: {1}\n\n"
-                + "Valid values for <BagType>: {2}",
-                CommandName, string.Join(", ", ValidSizes), string.Join(", ", ValidTypes));
-            Helper.ConsoleCommands.Add(CommandName, CommandHelp, (string Name, string[] Args) =>
-            {
-                if (Game1.player.isInventoryFull())
-                {
-                    Monitor.Log("Unable to execute command: Inventory is full!", LogLevel.Alert);
-                }
-                else if (Args.Length < 2)
-                {
-                    Monitor.Log("Unable to execute command: Required arguments missing!", LogLevel.Alert);
-                }
-                else
-                {
-                    string SizeName = Args[0];
-                    if (!Enum.TryParse(SizeName, out ContainerSize Size))
-                    {
-                        Monitor.Log(string.Format("Unable to execute command: <BagSize> \"{0}\" is not valid. Expected valid values: {1}", SizeName, string.Join(", ", ValidSizes)), LogLevel.Alert);
-                    }
-                    else
-                    {
-                        string TypeName = string.Join(" ", Args.Skip(1));
-                        //Possible TODO: If you add translation support to this command, then find the BagType where BagType.GetTranslatedName().Equals(TypeName, StringComparison.CurrentCultureIgnoreCase));
-                        BagType BagType = BagConfig.BagTypes.FirstOrDefault(x => x.Name.Equals(TypeName, StringComparison.CurrentCultureIgnoreCase));
-                        if (BagType == null)
-                        {
-                            Monitor.Log(string.Format("Unable to execute command: <BagType> \"{0}\" is not valid. Expected valid values: {1}", TypeName, string.Join(", ", ValidTypes)), LogLevel.Alert);
-                        }
-                        else
-                        {
-                            if (!BagType.SizeSettings.Any(x => x.Size == Size))
-                            {
-                                Monitor.Log(string.Format("Unable to execute command: Type='{0}' does not contain a configuration for Size='{1}'", TypeName, SizeName), LogLevel.Alert);
-                            }
-                            else
-                            {
-                                try
-                                {
-                                    BoundedBag NewBag = new BoundedBag(BagType, Size, false);
-                                    Game1.player.addItemToInventory(NewBag);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        private void RegisterAddBundleBagCommand()
-        {
-            List<string> ValidSizes = BundleBag.ValidSizes.Select(x => x.ToString()).ToList();
-
-            //Possible TODO: Add translation support for this command
-            string CommandName = Constants.TargetPlatform == GamePlatform.Android ? "addbundlebag" : "player_addbundlebag";
-            string CommandHelp = string.Format("Adds an empty Bundle Bag of the desired size to your inventory.\n"
-                + "Arguments: <BagSize>\n"
-                + "Example: {0} Large\n\n"
-                + "Valid values for <BagSize>: {1}\n\n",
-                CommandName, string.Join(", ", ValidSizes));
-            Helper.ConsoleCommands.Add(CommandName, CommandHelp, (string Name, string[] Args) =>
-            {
-                if (Game1.player.isInventoryFull())
-                {
-                    Monitor.Log("Unable to execute command: Inventory is full!", LogLevel.Alert);
-                }
-                else if (Args.Length < 1)
-                {
-                    Monitor.Log("Unable to execute command: Required arguments missing!", LogLevel.Alert);
-                }
-                else
-                {
-                    string SizeName = Args[0];
-                    if (!Enum.TryParse(SizeName, out ContainerSize Size) || !ValidSizes.Contains(SizeName))
-                    {
-                        Monitor.Log(string.Format("Unable to execute command: <BagSize> \"{0}\" is not valid. Expected valid values: {1}", SizeName, string.Join(", ", ValidSizes)), LogLevel.Alert);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            BundleBag NewBag = new BundleBag(Size, true);
-                            Game1.player.addItemToInventory(NewBag);
-                        }
-                        catch (Exception ex)
-                        {
-                            Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);
-                        }
-                    }
-                }
-            });
-        }
-
-        private void RegisterAddRucksackCommand()
-        {
-            List<string> ValidSizes = Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>().Select(x => x.ToString()).ToList();
-
-            //Possible TODO: Add translation support for this command
-            string CommandName = Constants.TargetPlatform == GamePlatform.Android ? "addrucksack" : "player_addrucksack";
-            string CommandHelp = string.Format("Adds an empty Rucksack of the desired size to your inventory.\n"
-                + "Arguments: <BagSize>\n"
-                + "Example: {0} Large\n\n"
-                + "Valid values for <BagSize>: {1}\n\n",
-                CommandName, string.Join(", ", ValidSizes));
-            Helper.ConsoleCommands.Add(CommandName, CommandHelp, (string Name, string[] Args) =>
-            {
-                if (Game1.player.isInventoryFull())
-                {
-                    Monitor.Log("Unable to execute command: Inventory is full!", LogLevel.Alert);
-                }
-                else if (Args.Length < 1)
-                {
-                    Monitor.Log("Unable to execute command: Required arguments missing!", LogLevel.Alert);
-                }
-                else
-                {
-                    string SizeName = Args[0];
-                    if (!Enum.TryParse(SizeName, out ContainerSize Size) || !ValidSizes.Contains(SizeName))
-                    {
-                        Monitor.Log(string.Format("Unable to execute command: <BagSize> \"{0}\" is not valid. Expected valid values: {1}", SizeName, string.Join(", ", ValidSizes)), LogLevel.Alert);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            Rucksack NewBag = new Rucksack(Size, true);
-                            Game1.player.addItemToInventory(NewBag);
-                        }
-                        catch (Exception ex)
-                        {
-                            Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);
-                        }
-                    }
-                }
-            });
-        }
-
-        private void RegisterAddOmniBagCommand()
-        {
-            List<string> ValidSizes = Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>().Select(x => x.ToString()).ToList();
-
-            //Possible TODO: Add translation support for this command
-            string CommandName = Constants.TargetPlatform == GamePlatform.Android ? "addomnibag" : "player_addomnibag";
-            string CommandHelp = string.Format("Adds an empty Omni Bag of the desired size to your inventory.\n"
-                + "Arguments: <BagSize>\n"
-                + "Example: {0} Large\n\n"
-                + "Valid values for <BagSize>: {1}\n\n",
-                CommandName, string.Join(", ", ValidSizes));
-            Helper.ConsoleCommands.Add(CommandName, CommandHelp, (string Name, string[] Args) =>
-            {
-                if (Game1.player.isInventoryFull())
-                {
-                    Monitor.Log("Unable to execute command: Inventory is full!", LogLevel.Alert);
-                }
-                else if (Args.Length < 1)
-                {
-                    Monitor.Log("Unable to execute command: Required arguments missing!", LogLevel.Alert);
-                }
-                else
-                {
-                    string SizeName = Args[0];
-                    if (!Enum.TryParse(SizeName, out ContainerSize Size) || !ValidSizes.Contains(SizeName))
-                    {
-                        Monitor.Log(string.Format("Unable to execute command: <BagSize> \"{0}\" is not valid. Expected valid values: {1}", SizeName, string.Join(", ", ValidSizes)), LogLevel.Alert);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            OmniBag NewBag = new OmniBag(Size);
-                            Game1.player.addItemToInventory(NewBag);
-                        }
-                        catch (Exception ex)
-                        {
-                            Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);
-                        }
-                    }
-                }
-            });
-        }
-        #endregion Commands
-
-        private bool IsHandlingInventoryChanged { get; set; } = false;
-
-        private void Player_InventoryChanged(object sender, InventoryChangedEventArgs e)
-        {
-            if (e.IsLocalPlayer && !IsHandlingInventoryChanged && Game1.activeClickableMenu == null) 
-                // && !(Game1.activeClickableMenu is ItemBagMenu) && !(Game1.activeClickableMenu is GameMenu) && !(Game1.activeClickableMenu is ShopMenu) && !(Game1.activeClickableMenu is ItemGrabMenu))
-            {
-                try
-                {
-                    IsHandlingInventoryChanged = true;
-
-                    HashSet<ItemBag> NestedBags = new HashSet<ItemBag>();
-
-                    //  Get all bags in the player's inventory that can be autofilled
-                    List<ItemBag> AutofillableBags = new List<ItemBag>();
-                    foreach (Item Item in e.Player.Items)
-                    {
-                        if (Item != null && Item is ItemBag)
-                        {
-                            if (Item is BoundedBag BB)
-                            {
-                                if (BB.Autofill)
-                                    AutofillableBags.Add(BB);
-                            }
-                            else if (Item is Rucksack RS)
-                            {
-                                if (RS.Autofill)
-                                    AutofillableBags.Add(RS);
-                            }
-                            else if (Item is OmniBag OB)
-                            {
-                                foreach (ItemBag NestedBag in OB.NestedBags)
-                                {
-                                    if (NestedBag is BoundedBag NestedBB)
-                                    {
-                                        if (NestedBB.Autofill)
-                                        {
-                                            AutofillableBags.Add(NestedBB);
-                                            NestedBags.Add(NestedBag);
-                                        }
-                                    }
-                                    else if (NestedBag is Rucksack NestedRS)
-                                    {
-                                        if (NestedRS.Autofill)
-                                        {
-                                            AutofillableBags.Add(NestedRS);
-                                            NestedBags.Add(NestedBag);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (AutofillableBags.Any())
-                    {
-                        foreach (Item NewItem in e.Added)
-                        {
-                            if (NewItem is Object NewObject && NewItem.Stack > 0)
-                            {
-                                List<ItemBag> ValidTargets = new List<ItemBag>();
-                                foreach (ItemBag Bag in AutofillableBags.Where(x => x.IsValidBagObject(NewObject) && !x.IsFull(NewObject)))
-                                {
-                                    //  Don't allow Rucksacks to be autofilled with the new item unless they already have an existing stack of it
-                                    if (!(Bag is Rucksack) || Bag.Contents.Any(x => x != null && ItemBag.AreItemsEquivalent(NewObject, x, true)))
-                                        ValidTargets.Add(Bag);
-                                }
-
-                                if (ValidTargets.Any())
-                                {
-                                    List<ItemBag> SortedTargets = ValidTargets.OrderBy(x =>
-                                    {
-                                        int NestedPenalty = NestedBags.Contains(x) ? 10 : 0; // Items nested inside of Omni Bags have lower priority than non-nested bags
-                                        if (x is BundleBag)
-                                            return 0 + NestedPenalty; // Prioritize filling Bundle Bags first
-                                        else if (x is Rucksack RS)
-                                        {
-                                            int Priority = RS.AutofillPriority == AutofillPriority.High ? 1 : 4;
-                                            return Priority + NestedPenalty; // Prioritize Rucksacks with HighPriority over BoundedBags
-                                        }
-                                        else if (x is BoundedBag BB)
-                                        {
-                                            //  Prioritize BoundedBags that already have an existing stack of the item over BoundedBags that don't
-                                            if (x.Contents.Any(BagItem => BagItem != null && ItemBag.AreItemsEquivalent(NewObject, BagItem, false)))
-                                                return 2 + NestedPenalty;
-                                            else
-                                                return 3 + NestedPenalty;
-                                        }
-                                        else
-                                            throw new NotImplementedException(string.Format("Unexpected Bag type in Autofill sorter: {0}", x.GetType().ToString()));
-                                    }).ToList();
-
-                                    for (int i = 0; i < SortedTargets.Count; i++)
-                                    {
-                                        ItemBag Target = SortedTargets[i];
-                                        Target.MoveToBag(NewObject, NewObject.Stack, out int MovedQty, false, Game1.player.Items);
-                                        if (MovedQty > 0)
-                                        {
-                                            Game1.addHUDMessage(new HUDMessage(string.Format("Moved {0} to {1}", NewItem.DisplayName, Target.DisplayName), MovedQty, true, Color.White, Target));
-                                        }
-
-                                        if (NewObject.Stack <= 0)
-                                            break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    IsHandlingInventoryChanged = false;
-                }
-            }
+            CraftingHandler.OnModEntry(helper);
+            CommandHandler.OnModEntry(helper);
+            AutofillHandler.OnModEntry(helper);
+            MultiplayerHandler.OnModEntry(helper);
         }
 
         private bool QueuePlaceCursorSlotItem { get; set; }
@@ -568,7 +250,7 @@ namespace ItemBags
             }
 
             //  Add Bag items to the shop's stock
-            if (e.NewMenu is ShopMenu SM && (!Game1.IsMultiplayer || Game1.player.IsMainPlayer))
+            if (e.NewMenu is ShopMenu SM)
             {
                 bool IsTravellingMerchant = SM.portraitPerson == null && SM.storeContext != null && SM.storeContext.Equals("Forest", StringComparison.CurrentCultureIgnoreCase);
                 string ShopOwnerName = IsTravellingMerchant ? "TravellingCart" : SM.portraitPerson?.Name;

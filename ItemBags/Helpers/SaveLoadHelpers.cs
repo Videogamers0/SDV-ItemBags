@@ -112,6 +112,9 @@ namespace ItemBags.Helpers
         {
             //ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnLoaded started.", LogLevel.Info);
 
+            //if (Context.IsMultiplayer && !Context.IsMainPlayer)
+            //    ItemBagsMod.ModInstance.Helper.Multiplayer.SendMessage("RequestBagResync", "RequestBagResync", new string[] { ItemBagsMod.ModUniqueId });
+
             try { LoadCustomItems(); }
             catch (Exception ex) { ItemBagsMod.ModInstance.Monitor.Log("ItemBags error during legacy LoadCustomItems: " + ex.Message, LogLevel.Info); }
 
@@ -145,22 +148,6 @@ namespace ItemBags.Helpers
             {
                 BagConfig GlobalConfig = ItemBagsMod.BagConfig;
 
-                //  Index the BagTypes by their guids
-                Dictionary<string, BagType> IndexedBagTypes = new Dictionary<string, BagType>();
-                foreach (BagType BagType in GlobalConfig.BagTypes)
-                {
-                    if (!IndexedBagTypes.ContainsKey(BagType.Id))
-                    {
-                        IndexedBagTypes.Add(BagType.Id, BagType);
-                    }
-                    else
-                    {
-                        string Warning = string.Format("Warning - multiple bag types were found with the same BagType.Id. Did you manually edit your {0} json file? Only the first type with Id = {1} will be used when loading your bag instances.", 
-                            ItemBagsMod.BagConfigDataKey, BagType.Id);
-                        ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
-                    }
-                }
-
                 //  Index the saved bags by their instance ids
                 Dictionary<int, BagInstance> IndexedBagInstances = new Dictionary<int, BagInstance>();
                 foreach (BagInstance BagInstance in OwnedBags.Bags)
@@ -183,7 +170,7 @@ namespace ItemBags.Helpers
                     int BagInstanceId = Encoded.ParentSheetIndex - EncodedItemStartIndex;
                     if (IndexedBagInstances.TryGetValue(BagInstanceId, out BagInstance BagInstance))
                     {
-                        if (BagInstance.TryDecode(IndexedBagTypes, out ItemBag Replacement))
+                        if (BagInstance.TryDecode(out ItemBag Replacement))
                             return Replacement;
                         else
                             return Encoded;

@@ -19,7 +19,7 @@ namespace ItemBags.Bags
 {
     /// <summary>A bag used for storing items required by incomplete Community Center Bundles</summary>
     [XmlRoot(ElementName = "BundleBag", Namespace = "")]
-    public class BundleBag : BoundedBag, ISyncableElement
+    public class BundleBag : BoundedBag, ISaveElement
     {
         public const string BundleBagTypeId = "c3f69b2c-6b21-477c-ad43-ee3b996a96bd";
 
@@ -40,8 +40,6 @@ namespace ItemBags.Bags
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         public BundleBag() : base()
         {
-            this.syncObject = new PySync(this);
-
             this.Size = ValidSizes.Min();
             this.Autofill = true;
         }
@@ -50,8 +48,6 @@ namespace ItemBags.Bags
         public BundleBag(ContainerSize Size, bool Autofill)
             : base(ItemBagsMod.Translate("BundleBagName"), ItemBagsMod.Translate("BundleBagDescription"), Size, true)
         {
-            this.syncObject = new PySync(this);
-
             if (!ValidSizes.Contains(Size))
                 throw new InvalidOperationException(string.Format("Size '{0}' is not valid for BundleBag types", Size.ToString()));
 

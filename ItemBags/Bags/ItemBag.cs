@@ -380,10 +380,15 @@ namespace ItemBags.Bags
         protected virtual int GetMaxStackSize(Object Item) { return this.MaxStackSize; }
 
         public abstract string GetTypeId();
+        protected abstract void LoadSettings(BagInstance Data);
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         private ItemBag() : base("", "", 0, Tool.wateringCanSpriteIndex, Tool.wateringCanMenuIndex)
         {
+            BagInstanceString = new NetString(null);
+            BagInstanceString.fieldChangeEvent += BagInstanceString_fieldChangeEvent;
+            NetFields.AddField(BagInstanceString);
+
             Stackable = false;
             DisplayName = BaseName;
             InstantUse = true;
@@ -404,6 +409,10 @@ namespace ItemBags.Bags
             Vector2? IconRenderOffset = null, float IconScale = 1.0f, float IconTransparency = 1.0f)
             : base(BaseName, Description, 0, Tool.wateringCanSpriteIndex, Tool.wateringCanMenuIndex)
         {
+            BagInstanceString = new NetString(null);
+            BagInstanceString.fieldChangeEvent += BagInstanceString_fieldChangeEvent;
+            NetFields.AddField(BagInstanceString);
+
             Stackable = false;
             DisplayName = BaseName;
             InstantUse = true;
@@ -421,6 +430,76 @@ namespace ItemBags.Bags
 
             LoadTextures();
         }
+
+        #region Multiplayer Support
+        public bool IsBagInUse { get { return IsContentsMenuOpen || CraftingHandler.IsUsingForCrafting(this); } }
+        //private bool IgnoreNextDeserialize { get; set; }
+
+        public NetString BagInstanceString { get; }
+        private void BagInstanceString_fieldChangeEvent(NetString field, string oldValue, string newValue)
+        {
+            try
+            {
+                //  No need to resync if this client was the source of the newest data
+                //if (IgnoreNextDeserialize)
+                //    return;
+
+                //  If the bag is currently in use, avoid syncing as the sync data is probably not the latest
+                //  (Another resync will happen once they're done using the bag)
+                if (IsBagInUse)
+                    return;
+
+                if (!string.IsNullOrEmpty(newValue))
+                {
+                    TryDeserializeFromString(newValue, out Exception Error);
+                }
+            }
+            finally
+            {
+                //IgnoreNextDeserialize = false;
+            }
+        }
+
+        /// <summary>Attempts to re-synchronize this bag's data across all players in multiplayer, by sending the current client's data to all other clients</summary>
+        public void Resync()
+        {
+            if (!Context.IsMultiplayer)
+                return;
+
+            if (!IsContentsMenuOpen) // No need to resync while the interface is open, because it already gets resynced when closed
+            {
+                //  Write this bag's data to an xml string, and store that xml string in a NetString field.
+                //  When the other clients detect a change to this NetString, they will deserialize the value to load the data.
+                if (TrySerializeToString(out string DataString, out Exception Error))
+                {
+                    //IgnoreNextDeserialize = true;
+                    BagInstanceString.Value = DataString;
+                }
+            }
+        }
+
+        public bool TrySerializeToString(out string Data, out Exception Error)
+        {
+            bool Result = XMLSerializer.TrySerializeToString(new BagInstance(-1, this), out Data, out Error);
+            if (!Result)
+                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Warning - Error while serializing ItemBag to a string: {0}", Error), LogLevel.Warn);
+            return Result;
+        }
+
+        public bool TryDeserializeFromString(string Data, out Exception Error)
+        {
+            if (XMLSerializer.TryDeserializeFromString(Data, out BagInstance BI, out Error))
+            {
+                LoadSettings(BI);
+                return true;
+            }
+            else
+            {
+                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Warning - Error while deserializing ItemBag from string: {0}\n\nData:\n{1}", Error, Data), LogLevel.Warn);
+                return false;
+            }
+        }
+        #endregion Multiplayer Support
 
         public bool IsValidBagItem(Item Item)
         {
@@ -445,6 +524,8 @@ namespace ItemBags.Bags
         #region Open/Close Menu
         [XmlIgnore]
         public ItemBagMenu ContentsMenu { get; private set; }
+        [XmlIgnore]
+        public bool IsContentsMenuOpen { get { return ContentsMenu != null; } }
         [XmlIgnore]
         public IClickableMenu PreviousMenu { get; private set; }
 
@@ -506,6 +587,7 @@ namespace ItemBags.Bags
             finally
             {
                 IsClosingContents = false;
+                Resync();
             }
         }
         #endregion Open/Close Menu
@@ -631,13 +713,14 @@ namespace ItemBags.Bags
                 Object Item = Items[i];
                 int Qty = Quantities[i];
 
-                MoveToBag(Item, Qty, out int MovedQty, false, Source, false);
+                MoveToBag(Item, Qty, out int MovedQty, false, Source, false, false);
                 TotalMovedQty += MovedQty;
             }
 
             if (TotalMovedQty > 0)
             {
                 OnContentsChanged?.Invoke(this, EventArgs.Empty);
+                Resync();
                 if (PlaySoundEffect)
                     Game1.playSound(MoveContentsSuccessSound);
                 return true;
@@ -654,7 +737,7 @@ namespace ItemBags.Bags
         /// <param name="MovedQty">The Qty that was successfully moved.</param>
         /// <returns>True if any changes were made</returns>
         /// <param name="Source">The source items that are being moved to the bag. Typically this is <see cref="Game1.player.Items"/> if moving to/from the inventory.</param>
-        public bool MoveToBag(Object Item, int Qty, out int MovedQty, bool PlaySoundEffect, IList<Item> Source, bool NotifyIfContentsChanged = true)
+        public bool MoveToBag(Object Item, int Qty, out int MovedQty, bool PlaySoundEffect, IList<Item> Source, bool NotifyIfContentsChanged = true, bool ResyncMultiplayerData = true)
         {
             MovedQty = 0;
             if (!IsValidBagItem(Item))
@@ -734,6 +817,8 @@ namespace ItemBags.Bags
 
                 if (NotifyIfContentsChanged)
                     OnContentsChanged?.Invoke(this, EventArgs.Empty);
+                if (ResyncMultiplayerData)
+                    Resync();
                 if (PlaySoundEffect)
                     Game1.playSound(MoveContentsSuccessSound);
                 return true;
@@ -757,13 +842,14 @@ namespace ItemBags.Bags
                 Object Item = Items[i];
                 int Qty = Quantities[i];
 
-                MoveFromBag(Item, Qty, out int MovedQty, false, Target, ActualTargetCapacity, false);
+                MoveFromBag(Item, Qty, out int MovedQty, false, Target, ActualTargetCapacity, false, false);
                 TotalMovedQty += MovedQty;
             }
 
             if (TotalMovedQty > 0)
             {
                 OnContentsChanged?.Invoke(this, EventArgs.Empty);
+                Resync();
                 if (PlaySoundEffect)
                     Game1.playSound(MoveContentsSuccessSound);
                 return true;
@@ -781,7 +867,7 @@ namespace ItemBags.Bags
         /// <returns>True if any changes were made</returns>
         /// <param name="Target">The target items that this bag's contents are being moved to. Typically this is <see cref="Game1.player.Items"/> if moving to/from the inventory.</param>
         /// <param name="ActualTargetCapacity">The maximum # of items that can be stored in the Target list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
-        public bool MoveFromBag(Object Item, int Qty, out int MovedQty, bool PlaySoundEffect, IList<Item> Target, int ActualTargetCapacity, bool NotifyIfContentsChanged = true)
+        public bool MoveFromBag(Object Item, int Qty, out int MovedQty, bool PlaySoundEffect, IList<Item> Target, int ActualTargetCapacity, bool NotifyIfContentsChanged = true, bool ResyncMultiplayerData = true)
         {
             MovedQty = 0;
             if (Qty <= 0)
@@ -885,6 +971,8 @@ namespace ItemBags.Bags
 
                 if (NotifyIfContentsChanged)
                     OnContentsChanged?.Invoke(this, EventArgs.Empty);
+                if (ResyncMultiplayerData)
+                    Resync();
                 if (PlaySoundEffect)
                     Game1.playSound(MoveContentsSuccessSound);
                 return true;
@@ -1097,7 +1185,7 @@ namespace ItemBags.Bags
         {
             //return base.canBeDropped();
 
-            if (Game1.IsMultiplayer)
+            if (Context.IsMultiplayer)
             {
                 return false;
             }
@@ -1112,9 +1200,10 @@ namespace ItemBags.Bags
         {
             //return base.canBeTrashed();
 
-            if (Game1.IsMultiplayer)
+            if (Context.IsMultiplayer)
             {
-                return false;
+                return IsEmpty();
+                //return false;
             }
             else
             {

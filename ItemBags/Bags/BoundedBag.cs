@@ -27,7 +27,7 @@ namespace ItemBags.Bags
     [XmlRoot(ElementName = "BoundedBag", Namespace = "")]
     [KnownType(typeof(BundleBag))]
     [XmlInclude(typeof(BundleBag))]
-    public class BoundedBag : ItemBag, ISyncableElement
+    public class BoundedBag : ItemBag, ISaveElement
     {
         public class AllowedObject
         {
@@ -98,8 +98,6 @@ namespace ItemBags.Bags
         public BoundedBag()
             : base(ItemBagsMod.Translate("DefaultBagName"), ItemBagsMod.Translate("DefaultBagDescription"), ContainerSize.Small, null, null, new Vector2(16, 16), 0.5f, 1f)
         {
-            this.syncObject = new PySync(this);
-
             this.TypeInfo = ItemBagsMod.BagConfig.BagTypes.First();
             this.SizeInfo = TypeInfo.SizeSettings.FirstOrDefault(x => x.Size == ContainerSize.Small);
             this.Autofill = false;
@@ -112,8 +110,6 @@ namespace ItemBags.Bags
         public BoundedBag(BagType TypeInfo, ContainerSize Size, bool Autofill)
             : base(BagType.GetTranslatedName(TypeInfo), "", Size, TypeInfo.GetIconTexture(), TypeInfo.IconSourceRect, new Vector2(16, 16), 0.5f, 1f)
         {
-            this.syncObject = new PySync(this);
-
             this.TypeInfo = TypeInfo;
             this.SizeInfo = TypeInfo.SizeSettings.FirstOrDefault(x => x.Size == Size);
             if (SizeInfo == null) // This should never happen but just in case...
@@ -171,20 +167,7 @@ namespace ItemBags.Bags
             LoadSettings(Data);
         }
 
-        public PySync syncObject { get; set; }
-
-        public Dictionary<string, string> getSyncData()
-        {
-            return new BagInstance(-1, this).ToPyTKAdditionalSaveData();
-        }
-
-        public void sync(Dictionary<string, string> syncData)
-        {
-            BagInstance Data = BagInstance.FromPyTKAdditionalSaveData(syncData);
-            LoadSettings(Data);
-        }
-
-        protected virtual void LoadSettings(BagInstance Data)
+        protected override void LoadSettings(BagInstance Data)
         {
             if (Data != null)
             {
@@ -219,6 +202,7 @@ namespace ItemBags.Bags
 
                 _MaxStackSize = ItemBagsMod.UserConfig.GetStandardBagCapacity(Size, TypeInfo);
 
+                this.BaseName = BagType.GetTranslatedName(TypeInfo);
                 DescriptionAlias = string.Format("{0}\n({1})",
                     BagType.GetTranslatedDescription(TypeInfo),
                     ItemBagsMod.Translate("CapacityDescription", new Dictionary<string, string>() { { "count", MaxStackSize.ToString() } }));

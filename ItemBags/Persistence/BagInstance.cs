@@ -106,7 +106,7 @@ namespace ItemBags.Persistence
             }
         }
 
-        internal bool TryDecode(Dictionary<string, BagType> IndexedBagTypes, out ItemBag Decoded)
+        internal bool TryDecode(out ItemBag Decoded)
         {
             //  Handle BundleBags
             if (this.TypeId == BundleBag.BundleBagTypeId)
@@ -123,11 +123,11 @@ namespace ItemBags.Persistence
             //  Handle OmniBags
             else if (this.TypeId == OmniBag.OmniBagTypeId)
             {
-                Decoded = new OmniBag(this, IndexedBagTypes);
+                Decoded = new OmniBag(this);
                 return true;
             }
             //  Handle all other types of Bags
-            else if (IndexedBagTypes.TryGetValue(this.TypeId, out BagType BagType))
+            else if (ItemBagsMod.BagConfig.IndexedBagTypes.TryGetValue(this.TypeId, out BagType BagType))
             {
                 BagSizeConfig SizeConfig = BagType.SizeSettings.FirstOrDefault(x => x.Size == this.Size);
                 if (SizeConfig != null)

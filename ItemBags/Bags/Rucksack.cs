@@ -76,7 +76,7 @@ namespace ItemBags.Bags
 
     /// <summary>A bag that can store most stackable objects.</summary>
     [XmlRoot(ElementName = "Rucksack", Namespace = "")]
-    public class Rucksack : ItemBag, ISyncableElement
+    public class Rucksack : ItemBag, ISaveElement
     {
         public const string RucksackTypeId = "a56bbc00-9d89-4216-8e06-5ea0cfa95525";
 
@@ -220,8 +220,6 @@ namespace ItemBags.Bags
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         public Rucksack() : base(ItemBagsMod.Translate("RucksackName"), ItemBagsMod.Translate("RucksackDescription"), ContainerSize.Small, null, null, new Vector2(16, 16), 0.5f, 1f)
         {
-            this.syncObject = new PySync(this);
-
             this.NumSlots = ItemBagsMod.UserConfig.GetRucksackSlotCount(Size);
             this.Autofill = false;
             this.AutofillPriority = AutofillPriority.Low;
@@ -240,8 +238,6 @@ namespace ItemBags.Bags
         public Rucksack(ContainerSize Size, bool Autofill, AutofillPriority AutofillPriority = AutofillPriority.High, SortingProperty SortProperty = SortingProperty.Time, SortingOrder SortOrder = SortingOrder.Ascending)
             : base(ItemBagsMod.Translate("RucksackName"), ItemBagsMod.Translate("RucksackDescription"), Size, null, null, new Vector2(16, 16), 0.5f, 1f)
         {
-            this.syncObject = new PySync(this);
-
             this.NumSlots = ItemBagsMod.UserConfig.GetRucksackSlotCount(Size);
             this.Autofill = Autofill;
             this.AutofillPriority = AutofillPriority;
@@ -289,20 +285,7 @@ namespace ItemBags.Bags
             LoadSettings(Data);
         }
 
-        public PySync syncObject { get; set; }
-
-        public Dictionary<string, string> getSyncData()
-        {
-            return new BagInstance(-1, this).ToPyTKAdditionalSaveData();
-        }
-
-        public void sync(Dictionary<string, string> syncData)
-        {
-            BagInstance Data = BagInstance.FromPyTKAdditionalSaveData(syncData);
-            LoadSettings(Data);
-        }
-
-        private void LoadSettings(BagInstance Data)
+        protected override void LoadSettings(BagInstance Data)
         {
             if (Data != null)
             {

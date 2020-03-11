@@ -3,6 +3,7 @@ using ItemBags.Helpers;
 using ItemBags.Menus;
 using Microsoft.Xna.Framework;
 using Newtonsoft.Json;
+using StardewModdingAPI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -34,9 +35,30 @@ namespace ItemBags.Persistence
             set { CreatedByVersionString = value == null ? null : value.ToString(); }
         }
 
+        public Dictionary<string, BagType> IndexedBagTypes { get; private set; }
+
         public BagConfig()
         {
             InitializeDefaults();
+        }
+
+        internal void AfterLoaded()
+        {
+            //  Index the BagTypes by their guids
+            this.IndexedBagTypes = new Dictionary<string, BagType>();
+            foreach (BagType BagType in this.BagTypes)
+            {
+                if (!IndexedBagTypes.ContainsKey(BagType.Id))
+                {
+                    IndexedBagTypes.Add(BagType.Id, BagType);
+                }
+                else
+                {
+                    string Warning = string.Format("Warning - multiple bag types were found with the same BagType.Id. Did you manually edit your {0} json file? Only the first type with Id = {1} will be used when loading your bag instances.",
+                        ItemBagsMod.BagConfigDataKey, BagType.Id);
+                    ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
+                }
+            }
         }
 
         internal BagType GetDefaultBoundedBagType()
@@ -71,6 +93,8 @@ namespace ItemBags.Persistence
             };
 
             //this.CreatedByVersion = ItemBagsMod.CurrentVersion;
+
+            AfterLoaded();
         }
 
         internal bool EnsureBagTypesExist(params BagType[] Types)

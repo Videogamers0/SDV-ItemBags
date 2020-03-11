@@ -46,7 +46,7 @@ namespace ItemBags.Persistence
 
         internal static PlayerBags DeserializeFromCurrentSaveFile()
         {
-            if (!Game1.IsMultiplayer || Game1.player.IsMainPlayer)
+            if (!Context.IsMultiplayer || Context.IsMainPlayer)
             {
                 return ItemBagsMod.ModInstance.Helper.Data.ReadSaveData<PlayerBags>(OwnedBagsDataKey);
             }
@@ -65,7 +65,7 @@ namespace ItemBags.Persistence
 
         internal void SerializeToCurrentSaveFile()
         {
-            if (!Game1.IsMultiplayer || Game1.player.IsMainPlayer)
+            if (!Context.IsMultiplayer || Context.IsMainPlayer)
             {
                 ItemBagsMod.ModInstance.Helper.Data.WriteSaveData(OwnedBagsDataKey, this);
             }
