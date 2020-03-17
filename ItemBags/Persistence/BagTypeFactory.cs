@@ -438,7 +438,7 @@ namespace ItemBags.Persistence
                     new BagSizeConfig()
                     {
                         Size = ContainerSize.Large,
-                        Sellers = DefaultSellers,
+                        Sellers = DefaultSellers.Take(1).ToArray(),
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
                         Items = new int[]
                         {
@@ -590,7 +590,7 @@ namespace ItemBags.Persistence
                     new BagSizeConfig()
                     {
                         Size = ContainerSize.Large,
-                        Sellers = DefaultSellers,
+                        Sellers = DefaultSellers.Take(1).ToArray(),
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
                         Items = new int[]
                         {
@@ -677,7 +677,7 @@ namespace ItemBags.Persistence
         public static BagType GetAnimalProductBagType()
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { 24, 16, 17, 19 }; // Mayonnaise Machine, Cheese Press, Loom, Oil Maker
-            BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Marnie, BagSizeConfig.BagShop.Pierre };
+            BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Marnie };
             double PriceMultiplier = 2.1;
 
             return new BagType()
@@ -742,7 +742,7 @@ namespace ItemBags.Persistence
                     new BagSizeConfig()
                     {
                         Size = ContainerSize.Large,
-                        Sellers = DefaultSellers.Take(1).ToArray(),
+                        Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
                         Items = CreateStoreableItemArray(
                             new int[] 
@@ -771,7 +771,7 @@ namespace ItemBags.Persistence
                     new BagSizeConfig()
                     {
                         Size = ContainerSize.Giant,
-                        Sellers = DefaultSellers.Take(1).ToArray(),
+                        Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
                         Items = CreateStoreableItemArray(
                             new int[]
@@ -808,7 +808,7 @@ namespace ItemBags.Persistence
                     new BagSizeConfig()
                     {
                         Size = ContainerSize.Massive,
-                        Sellers = DefaultSellers.Take(1).ToArray(),
+                        Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Massive] * PriceMultiplier), ItemBag.RoundingMode.Floor),
                         Items = CreateStoreableItemArray(
                             new int[]
@@ -2453,6 +2453,134 @@ namespace ItemBags.Persistence
                                 Columns = 16,
                                 LineBreakIndices = new int[] { 15, 31, 47, 63, Dishes.Count - 1, Dishes.Count - 1 + 15 }
                             }
+                        }
+                    }
+                }
+            };
+        }
+
+        public static BagType GetCropBagType()
+        {
+            HashSet<int> BigCraftableIds = new HashSet<int>() { };
+            BagSizeConfig.BagShop[] DefaultSellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Sandy, BagSizeConfig.BagShop.Pierre };
+            double PriceMultiplier = 2.00;
+
+            List<int> SpringCrops = new List<int>() {
+                433, 591, 271, 24, 188, 597, // Coffee Bean, Tulip, Unmilled Rice, Parsnip, Green Bean, Blue Jazz
+                248, 192, 90, 250, 190, 252  // Garlic, Potato, Cactus Fruit, Kale, Cauliflower, Rhubarb
+            };
+
+            List<int> SummerCrops = new List<int>() {
+                304, 262, 260, 258, 270, 256,   // Hops, Wheat, Hot Pepper, Blueberry, Corn, Tomato
+                421, 264, 593, 376, 254         // Sunflower, Radish, Summer Spangle, Poppy, Melon 
+            };
+
+            List<int> FallCrops = new List<int>() {
+                272, 278, 282, 398, 284, // Eggplant, Bok Choy, Cranberries, Grape, Beet
+                300, 274, 280, 595, 276  // Amaranth, Artichoke, Yam, Fairy Rose, Pumpkin
+            };
+
+            List<int> SpecialCrops = new List<int>() {
+                400, 266, 268, 454, 417 // Strawberry, Red Cabbage, Starfruit, Ancient Fruit, Sweet Gem Berry
+            };            
+
+            return new BagType()
+            {
+                Id = "f05f7a2a-1c68-4f87-9bc9-10a13856b9bc",
+                Name = "Crop Bag",
+                Description = "A bag for storing farmed fruits, vegetables, and flowers.",
+                IconSourceTexture = BagType.SourceTexture.Tools,
+                IconSourceRect = new Rectangle(80, 32, 16, 16),
+                SizeSettings = new BagSizeConfig[]
+                {
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Small,
+                        Sellers = DefaultSellers,
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Small] * PriceMultiplier * 0.6), ItemBag.RoundingMode.Floor),
+                        Items = CreateStoreableItemArray(
+                            SpringCrops.ToArray(),
+                            new int[] { },
+                            BigCraftableIds
+                        ),
+                        CapacityMultiplier = 20.0 / DefaultCapacities[ContainerSize.Small],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout(),
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout()
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Medium,
+                        Sellers = DefaultSellers,
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Medium] * PriceMultiplier * 0.75), ItemBag.RoundingMode.Floor),
+                        Items = CreateStoreableItemArray(
+                            SpringCrops.Union(SummerCrops).ToArray(),
+                            new int[] { },
+                            BigCraftableIds
+                        ),
+                        CapacityMultiplier = 60.0 / DefaultCapacities[ContainerSize.Medium],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout() { GroupsPerRow = 4 },
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout()
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Large,
+                        Sellers = DefaultSellers.Take(1).ToArray(),
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier * 0.75), ItemBag.RoundingMode.Floor),
+                        Items = CreateStoreableItemArray(
+                            SpringCrops.Union(SummerCrops).Union(FallCrops).ToArray(),
+                            new int[] { },
+                            BigCraftableIds
+                        ),
+                        CapacityMultiplier = 200.0 / DefaultCapacities[ContainerSize.Large],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout() { GroupsPerRow = 5 },
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout()
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Giant,
+                        Sellers = DefaultSellers.Take(1).ToArray(),
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        Items = CreateStoreableItemArray(
+                            SpringCrops.Union(SummerCrops).Union(FallCrops).Union(SpecialCrops).ToArray(),
+                            new int[] { },
+                            BigCraftableIds
+                        ),
+                        //CapacityMultiplier = 300.0 / DefaultCapacities[ContainerSize.Giant],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout() { GroupsPerRow = 5 },
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout()
+                        }
+                    },
+                    new BagSizeConfig()
+                    {
+                        Size = ContainerSize.Massive,
+                        Sellers = DefaultSellers.Take(1).ToArray(),
+                        Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Massive] * PriceMultiplier), ItemBag.RoundingMode.Floor),
+                        Items = CreateStoreableItemArray(
+                            SpringCrops.Union(SummerCrops).Union(FallCrops).Union(SpecialCrops).ToArray(),
+                            new int[] { },
+                            BigCraftableIds
+                        ),
+                        //CapacityMultiplier = 999.0 / DefaultCapacities[ContainerSize.Massive],
+                        MenuOptions = new BagMenuOptions()
+                        {
+                            GroupByQuality = true,
+                            GroupedLayoutOptions = new BagMenuOptions.GroupedLayout() { GroupsPerRow = 5 },
+                            UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout()
                         }
                     }
                 }

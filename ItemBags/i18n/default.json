@@ -41,6 +41,9 @@
   "FarmersBagDescription": "A bag for storing sprinklers, fertilizers, and scarecrows.",
   "FoodBagName": "Food Bag",
   "FoodBagDescription": "A bag for storing cooked dishes and ingredients.",
+  "CropBagName": "Crop Bag",
+  "CropBagDescription": "A bag for storing farmed fruits, vegetables, and flowers.",
+
   "BundleBagName": "Bundle Bag",
   "BundleBagDescription": "A bag for storing items required by\nbundles in the Community Center.",
   "RucksackName": "Rucksack",

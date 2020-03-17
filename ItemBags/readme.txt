@@ -29,6 +29,7 @@ This mod adds several new "Bag" items that are capable of holding other items in
 					-Miscellaneous Fish Bags
 			-Farmer's Bags
 			-Food Bags
+			-Crop Bags
 	-Bundle Bag
 		-Capable of storing items that are required by incomplete community center bundles
 	-Rucksack
@@ -86,11 +87,11 @@ This mod adds several new "Bag" items that are capable of holding other items in
 -All standard bags are available in all 5 sizes.
 -Sold by several different shops. Note that some of the larger sized bags may only be available at a certain shop.
 	-Pierre
-		-Resource Bags (Up to Large)
-		-Tree Bags (Up to Large)
-		-Animal Products Bags (Up to Medium)
+		-Resource Bags (Up to Medium)
+		-Tree Bags (Up to Medium)
 		-Foraging Bags (Up to Large)
 		-Seed Bags (Up to Large)
+		-Crop Bags (Up to Medium)
 	-Clint
 		-Gem Bags (Up to Giant)
 		-Smithing Bags (All sizes)
@@ -124,6 +125,7 @@ This mod adds several new "Bag" items that are capable of holding other items in
 	-Sandy
 		-Foraging Bags (All sizes)
 		-Seed Bags (All sizes)
+		-Crop Bags (All sizes)
 	-Gus
 		-Food Bags (All sizes)
 

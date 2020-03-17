@@ -80,8 +80,8 @@ namespace ItemBags.Persistence
 
             this.BundleBagSettings = new BundleBagSizeConfig[]
             {
-                new BundleBagSizeConfig(ContainerSize.Large, 1.0, 4000),
-                new BundleBagSizeConfig(ContainerSize.Massive, 1.0, 16000)
+                new BundleBagSizeConfig(ContainerSize.Large, 1.0, 2500),
+                new BundleBagSizeConfig(ContainerSize.Massive, 1.0, 10000)
             };
 
             this.RucksackSettings = new RucksackSizeConfig[]

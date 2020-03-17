@@ -38,6 +38,7 @@ namespace ItemBags
             CraftingPage CraftingMenu = GM.pages.First(x => x is CraftingPage) as CraftingPage;
 
             //  Allow the CraftingPage to search for and use items inside of bags
+            bool AllowUsingBundleBagItemsForCrafting = false;
             List<ItemBag> BagsInInventory = Game1.player.Items.Where(x => x != null && x is ItemBag).Cast<ItemBag>().ToList();
             if (BagsInInventory.Any())
             {
@@ -53,13 +54,13 @@ namespace ItemBags
                 }
 
                 //  Create a temporary chest from the items of each bag, and add the chest to _materialContainers
-                foreach (ItemBag IB in BagsInInventory)
+                foreach (ItemBag IB in BagsInInventory.Where(x => AllowUsingBundleBagItemsForCrafting || !(x is BundleBag)))
                 {
                     //  Note that if the item inside the bag has Stack > 999, it must be split up into chunks with Stacks <= 999
                     //  Because the Game truncates the actual stack down to 999 anytime it modifies a stack value
                     if (IB is OmniBag OB)
                     {
-                        foreach (ItemBag NestedBag in OB.NestedBags)
+                        foreach (ItemBag NestedBag in OB.NestedBags.Where(x => AllowUsingBundleBagItemsForCrafting || !(x is BundleBag)))
                         {
                             List<Item> TemporaryChestContents = new List<Item>();
 

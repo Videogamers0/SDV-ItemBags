@@ -20,10 +20,10 @@ namespace ItemBags.Community_Center
         /// <summary>Warning - The Vault room has been omitted since its Tasks require Gold instead of Items.</summary>
         public ReadOnlyCollection<BundleRoom> Rooms { get; }
 
-        /// <summary>Key = Item Id, Value = All distinct minimum qualities for the item.<para/>
+        /// <summary>Key = Size of BundleBag. Value = Dictionary where Key = Item Id, Value = All distinct minimum qualities for the item.<para/>
         /// For example, Parsnip Quality = 0 is required by Spring Crops Bundle, while Parsnip Quality = 2 is required by Quality Crops Bundle. 
         /// So the Value at Parsnip's Id would be a set containing <see cref="ObjectQuality.Regular"/> and <see cref="ObjectQuality.Gold"/></summary>
-        public Dictionary<int, HashSet<ObjectQuality>> IncompleteBundleItemIds { get; }
+        public Dictionary<ContainerSize, Dictionary<int, HashSet<ObjectQuality>>> IncompleteBundleItemIds { get; }
 
         public CommunityCenterBundles()
         {
@@ -93,22 +93,30 @@ namespace ItemBags.Community_Center
                 }
 
                 //  Index the required bundle items by their Id and accepted Qualities
-                this.IncompleteBundleItemIds = new Dictionary<int, HashSet<ObjectQuality>>();
+                this.IncompleteBundleItemIds = new Dictionary<ContainerSize, Dictionary<int, HashSet<ObjectQuality>>>();
+                foreach (ContainerSize Size in BundleBag.ValidSizes)
+                    IncompleteBundleItemIds.Add(Size, new Dictionary<int, HashSet<ObjectQuality>>());
                 IterateAllBundleItems(Item =>
                 {
                     if (!Item.IsCompleted)
                     {
                         int Id = Item.Id;
                         ObjectQuality Quality = Item.MinQuality;
+                        string RoomName = Item.Task.Room.Name;
 
-                        HashSet<ObjectQuality> Qualities;
-                        if (!IncompleteBundleItemIds.TryGetValue(Id, out Qualities))
+                        foreach (ContainerSize Size in BundleBag.ValidSizes)
                         {
-                            Qualities = new HashSet<ObjectQuality>();
-                            IncompleteBundleItemIds.Add(Id, Qualities);
+                            if (!BundleBag.InvalidRooms[Size].Contains(RoomName))
+                            {
+                                Dictionary<int, HashSet<ObjectQuality>> IndexedItems = IncompleteBundleItemIds[Size];
+                                if (!IndexedItems.TryGetValue(Id, out HashSet<ObjectQuality> Qualities))
+                                {
+                                    Qualities = new HashSet<ObjectQuality>();
+                                    IndexedItems.Add(Id, Qualities);
+                                }
+                                Qualities.Add(Quality);
+                            }
                         }
-
-                        Qualities.Add(Quality);
                     }
                 });
             }
@@ -116,7 +124,7 @@ namespace ItemBags.Community_Center
             {
                 this.IsJojaMember = false;
                 this.Rooms = new List<BundleRoom>().AsReadOnly();
-                this.IncompleteBundleItemIds = new Dictionary<int, HashSet<ObjectQuality>>();
+                this.IncompleteBundleItemIds = new Dictionary<ContainerSize, Dictionary<int, HashSet<ObjectQuality>>>();
 
                 ItemBagsMod.ModInstance.Monitor.Log(string.Format("Error while instantiating CommunityCenterBundles: {0}", ex.Message), StardewModdingAPI.LogLevel.Error);
                 ItemBagsMod.ModInstance.Monitor.Log(string.Format("Error while instantiating CommunityCenterBundles: {0}", ex.ToString()), StardewModdingAPI.LogLevel.Error);

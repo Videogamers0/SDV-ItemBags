@@ -132,7 +132,7 @@ namespace ItemBags.Bags
             else
             {
                 if (CommunityCenterBundles.Instance.IsJojaMember ||
-                    !CommunityCenterBundles.Instance.IncompleteBundleItemIds.TryGetValue(item.ParentSheetIndex, out HashSet<ObjectQuality> AcceptedQualities))
+                    !CommunityCenterBundles.Instance.IncompleteBundleItemIds[this.Size].TryGetValue(item.ParentSheetIndex, out HashSet<ObjectQuality> AcceptedQualities))
                 {
                     return false;
                 }
@@ -156,7 +156,9 @@ namespace ItemBags.Bags
             Dictionary<ObjectQuality, int> RequiredAmounts = new Dictionary<ObjectQuality, int>();
             CommunityCenterBundles.Instance.IterateAllBundleItems(x =>
             {
-                if (!x.IsCompleted && x.Id == Item.ParentSheetIndex)
+                string RoomName = x.Task.Room.Name;
+                bool IsValidRoomForCurrentSize = !InvalidRooms[this.Size].Contains(RoomName);
+                if (IsValidRoomForCurrentSize && !x.IsCompleted && x.Id == Item.ParentSheetIndex)
                 {
                     if (!RequiredAmounts.ContainsKey(x.MinQuality))
                     {
