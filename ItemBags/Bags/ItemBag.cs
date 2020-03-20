@@ -166,7 +166,10 @@ namespace ItemBags.Bags
             if (Item == null)
                 return 0;
             else if (Item is Object Obj)
-                return Obj.sellToStorePrice(-1);
+            {
+                try { return Obj.sellToStorePrice(-1); }
+                catch (NullReferenceException) { return 0; } // Not sure why but some modded items are throwing exceptions in sellToStorePrice. EX: "Drying Rack" from PPJA Artisan Valley mod.
+            }
             else
                 return Item.salePrice() / 2;
         }
@@ -195,7 +198,10 @@ namespace ItemBags.Bags
         public static Object CreateCopy(Object Item)
         {
             int PreviousStack = Item.Stack;
-            Object Copy = Item.getOne() as Object;
+            Object Copy;
+            try { Copy = Item.getOne() as Object; }
+            catch (NullReferenceException) { Copy = null; } // Not sure why but some modded items are throwing exceptions in getOne(). EX: "Drying Rack" from PPJA Artisan Valley mod.
+
             if (Copy != null && Copy.GetType() == Item.GetType() && Copy != Item)
             {
                 Copy.Stack = 0;
@@ -209,7 +215,7 @@ namespace ItemBags.Bags
                 ItemBagsMod.ModInstance.Monitor.Log(string.Format("ItemBags: Warning - Item.getOne() did not return a valid copy for {0}. A copy of this item might not be properly created.", Item.DisplayName), LogLevel.Warn);
                 if (Item.bigCraftable.Value)
                 {
-                    return new Object(Item.TileLocation, Item.ParentSheetIndex, Item.IsRecipe) { Stack = 0 };
+                    return new Object(Item.TileLocation, Item.ParentSheetIndex, Item.IsRecipe) { Stack = 0, Price = Item.Price };
                 }
                 else
                 {
