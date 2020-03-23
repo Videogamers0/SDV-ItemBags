@@ -293,7 +293,7 @@ namespace ItemBags.Menus
 
                     if (LineBreaks.Contains(CurrentIndex))
                     {
-                        if (LineBreakHeights.Any())
+                        if (CurrentLine < LineBreakHeights.Count)
                             TotalLineBreakHeight += LineBreakHeights[CurrentLine % LineBreakHeights.Count];
                         CurrentLine++;
                         CurrentRow++;

@@ -28,7 +28,7 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 3, 3); // Last updated 3/17/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 3, 4); // Last updated 3/22/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
 
         //Possible TODO 
@@ -54,6 +54,8 @@ namespace ItemBags
         public static BagConfig BagConfig { get; private set; }
         private const string UserConfigFilename = "config.json";
         public static UserConfig UserConfig { get; private set; }
+        private const string ModdedItemsFilename = "modded_items.json";
+        public static ModdedItems ModdedItems { get; private set; }
 
         internal static ISemanticVersion MegaStorageInstalledVersion { get; private set; } = null;
 
@@ -151,6 +153,56 @@ namespace ItemBags
             GlobalBagConfig.AfterLoaded();
             BagConfig = GlobalBagConfig;
 
+            //  Load data about modded items
+            ModdedItems GlobalModdedItems = helper.Data.ReadJsonFile<ModdedItems>(ModdedItemsFilename);
+#if DEBUG
+            GlobalModdedItems = null; // force full re-creation for testing
+#endif
+            if (GlobalModdedItems != null)
+            {
+                bool RewriteConfig = false;
+
+                //  Placeholder - keep the json file up-to-date if you make changes to it
+
+                if (RewriteConfig)
+                {
+                    GlobalModdedItems.CreatedByVersion = CurrentVersion;
+                    helper.Data.WriteJsonFile(ModdedItemsFilename, GlobalModdedItems);
+                }
+            }
+            else
+            {
+                GlobalModdedItems = new ModdedItems { CreatedByVersion = CurrentVersion };
+#if NEVER // DEBUG // Testing
+                GlobalModdedItems.ModAddons = new List<ModAddon>()
+                {
+                    new ModAddon()
+                    {
+                        UniqueId = "ppja.artisanvalleyPFM",
+                        BagAddons = new List<BagAddon>()
+                        {
+                            new BagAddon()
+                            {
+                                Name = "Crop Bag",
+                                Items = new List<ModdedItem>()
+                                {
+                                    new ModdedItem()
+                                    {
+                                        Name = "Drying Rack",
+                                        IsBigCraftable = true,
+                                        HasQualities = false,
+                                        SizeString = "Large"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+#endif
+                helper.Data.WriteJsonFile(ModdedItemsFilename, GlobalModdedItems);
+            }
+            ModdedItems = GlobalModdedItems;
+
             helper.Events.Display.MenuChanged += Display_MenuChanged;
             helper.Events.Display.WindowResized += Display_WindowResized;
 
@@ -164,6 +216,33 @@ namespace ItemBags
             helper.Events.GameLoop.Saving += (sender, e) => { SaveLoadHelpers.OnSaving(); };
             helper.Events.GameLoop.Saved += (sender, e) => { SaveLoadHelpers.OnSaved(); };
             helper.Events.GameLoop.SaveLoaded += (sender, e) => { SaveLoadHelpers.OnLoaded(); };
+
+            helper.Events.GameLoop.GameLaunched += (sender, e) =>
+            {
+                //  Add compatibility with the Save Anywhere mod
+                string SaveAnywhereUniqueId = "Omegasis.SaveAnywhere";
+                bool IsSaveAnywhereInstalled = Helper.ModRegistry.IsLoaded(SaveAnywhereUniqueId) ||
+                    Helper.ModRegistry.GetAll().Any(x => x.Manifest.Name.Equals("Save Anywhere", StringComparison.CurrentCultureIgnoreCase));
+                if (IsSaveAnywhereInstalled)
+                {
+                    try
+                    {
+                        ISaveAnywhereAPI API = Helper.ModRegistry.GetApi<ISaveAnywhereAPI>(SaveAnywhereUniqueId);
+                        if (API != null)
+                        {
+                            API.addBeforeSaveEvent(ModUniqueId, () => { SaveLoadHelpers.OnSaving(); });
+                            API.addAfterSaveEvent(ModUniqueId, () => { SaveLoadHelpers.OnSaved(); });
+                            API.addAfterLoadEvent(ModUniqueId, () => { SaveLoadHelpers.OnLoaded(); });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Monitor.Log(string.Format("Failed to bind to Save Anywhere's Mod API. Your game may crash while saving with Save Anywhere! Error: {0}", ex.Message), LogLevel.Warn);
+                    }
+                }
+
+                ModdedItems.OnGameLaunched();
+            };
 
             CraftingHandler.OnModEntry(helper);
             CommandHandler.OnModEntry(helper);
@@ -210,37 +289,8 @@ namespace ItemBags
                 IBM.OnMouseButtonReleased(e);
         }
 
-        private bool HasTriedSubscribingToSaveAnywhereAPI = false;
-
         private void GameLoop_UpdateTicked(object sender, UpdateTickedEventArgs e)
         {
-            //  Add compatibility with the Save Anywhere mod
-            if (!HasTriedSubscribingToSaveAnywhereAPI)
-            {
-                HasTriedSubscribingToSaveAnywhereAPI = true;
-
-                string SaveAnywhereUniqueId = "Omegasis.SaveAnywhere";
-                bool IsSaveAnywhereInstalled = Helper.ModRegistry.IsLoaded(SaveAnywhereUniqueId) ||
-                    Helper.ModRegistry.GetAll().Any(x => x.Manifest.Name.Equals("Save Anywhere", StringComparison.CurrentCultureIgnoreCase));
-                if (IsSaveAnywhereInstalled)
-                {
-                    try
-                    {
-                        ISaveAnywhereAPI API = Helper.ModRegistry.GetApi<ISaveAnywhereAPI>(SaveAnywhereUniqueId);
-                        if (API != null)
-                        {
-                            API.addBeforeSaveEvent(ModUniqueId, () => { SaveLoadHelpers.OnSaving(); });
-                            API.addAfterSaveEvent(ModUniqueId, () => { SaveLoadHelpers.OnSaved(); });
-                            API.addAfterLoadEvent(ModUniqueId, () => { SaveLoadHelpers.OnLoaded(); });
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Monitor.Log(string.Format("Failed to bind to Save Anywhere's Mod API. Your game may crash while saving with Save Anywhere! Error: {0}", ex.Message), LogLevel.Warn);
-                    }
-                }
-            }
-
             if (Game1.activeClickableMenu != null && Game1.activeClickableMenu is ItemBagMenu IBM)
                 IBM.Update(e);
         }

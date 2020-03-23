@@ -71,7 +71,7 @@ namespace ItemBags.Persistence
 
         [XmlArray("Items")]
         [XmlArrayItem("Item")]
-        public StoreableBagItem[] Items { get; set; }
+        public List<StoreableBagItem> Items { get; set; }
 
         public BagSizeConfig()
         {
@@ -85,7 +85,7 @@ namespace ItemBags.Persistence
             this.Sellers = new BagShop[] { BagShop.Pierre };
             this.MenuOptions = new BagMenuOptions();
             this.CapacityMultiplier = 1.0;
-            this.Items = new StoreableBagItem[] { };
+            this.Items = new List<StoreableBagItem> { };
         }
 
         [OnSerializing]

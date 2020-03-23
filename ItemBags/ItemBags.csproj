@@ -72,6 +72,7 @@
     <Compile Include="Helpers\DrawHelpers.cs" />
     <Compile Include="Helpers\Extensions.cs" />
     <Compile Include="Helpers\XMLSerializer.cs" />
+    <Compile Include="JsonAssetsAPI.cs" />
     <Compile Include="Menus\BagInfo.cs" />
     <Compile Include="Menus\BagInventoryMenu.cs" />
     <Compile Include="Menus\BoundedBagMenu.cs" />
@@ -85,6 +86,7 @@
     <Compile Include="Menus\UngroupedLayoutOptions.cs" />
     <Compile Include="ItemBagsMod.cs" />
     <Compile Include="MultiplayerHandler.cs" />
+    <Compile Include="Persistence\ModdedItems.cs" />
     <Compile Include="Persistence\BagConfig.cs" />
     <Compile Include="Persistence\BagInstance.cs" />
     <Compile Include="Persistence\BagItem.cs" />

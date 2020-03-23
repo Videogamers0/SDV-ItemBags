@@ -104,6 +104,11 @@ namespace ItemBags.Bags
         }
         #endregion PyTK CustomElementHandler
 
+        internal override void OnModdedItemsImported()
+        {
+
+        }
+
         public override void ResetIcon()
         {
             this.Icon = TextureHelpers.JunimoNoteTexture;

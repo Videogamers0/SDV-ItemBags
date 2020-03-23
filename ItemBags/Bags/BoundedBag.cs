@@ -231,6 +231,11 @@ namespace ItemBags.Bags
         }
         #endregion PyTK CustomElementHandler
 
+        internal override void OnModdedItemsImported()
+        {
+            this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(SizeInfo.Items.Select(x => new AllowedObject(x)).ToList());
+        }
+
         public override void ResetIcon()
         {
             this.Icon = TypeInfo.GetIconTexture();
@@ -270,7 +275,7 @@ namespace ItemBags.Bags
             if (Game1.activeClickableMenu is ShopMenu)
             {
                 int SlotSize = 32; // May want to try 48. 64 is probably too big especially for bags that can store a large # of different items
-                int NumItems = SizeInfo.Items.Length;
+                int NumItems = SizeInfo.Items.Count;
                 int Columns = Math.Min(12, NumItems);
                 int Rows = (NumItems - 1) / Columns + 1;
 

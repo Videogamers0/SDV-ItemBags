@@ -131,6 +131,12 @@ namespace ItemBags.Bags
         }
         #endregion PyTK CustomElementHandler
 
+        internal override void OnModdedItemsImported()
+        {
+            foreach (ItemBag Bag in NestedBags)
+                Bag.OnModdedItemsImported();
+        }
+
         /// <summary>The 16x16 portion of <see cref="CursorsTexture"/> that contains the omnibag icon</summary>
         private static Texture2D OriginalTexture { get; set; }
         /// <summary><see cref="OriginalTexture"/>, converted to Grayscale</summary>

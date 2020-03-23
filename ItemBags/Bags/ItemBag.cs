@@ -387,6 +387,7 @@ namespace ItemBags.Bags
 
         public abstract string GetTypeId();
         protected abstract void LoadSettings(BagInstance Data);
+        internal abstract void OnModdedItemsImported();
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         private ItemBag() : base("", "", 0, Tool.wateringCanSpriteIndex, Tool.wateringCanMenuIndex)
@@ -472,7 +473,7 @@ namespace ItemBags.Bags
             if (!Context.IsMultiplayer)
                 return;
 
-            if (!IsContentsMenuOpen) // No need to resync while the interface is open, because it already gets resynced when closed
+            if (!IsBagInUse) // No need to resync while the bag is in use, since it will ge resynced the moment they stop using it
             {
                 //  Write this bag's data to an xml string, and store that xml string in a NetString field.
                 //  When the other clients detect a change to this NetString, they will deserialize the value to load the data.
