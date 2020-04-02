@@ -277,7 +277,7 @@ namespace ItemBags.Bags
                 int SlotSize = 32; // May want to try 48. 64 is probably too big especially for bags that can store a large # of different items
                 int NumItems = SizeInfo.Items.Count;
                 int Columns = Math.Min(12, NumItems);
-                int Rows = (NumItems - 1) / Columns + 1;
+                int Rows = NumItems == 0 ? 0 : (NumItems - 1) / Columns + 1;
 
                 int TitleWidth = (int)(font.MeasureString(this.DisplayName).X * 1.5) + 24; // Not sure if this is the correct scale and margin that the game's default rendering of the title bar uses
                 int TextWidth = (int)font.MeasureString(overrideText).X + 32; // Do not change this 32, it's the additional margin that the game uses around the description text

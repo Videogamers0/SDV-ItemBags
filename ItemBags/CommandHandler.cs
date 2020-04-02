@@ -259,14 +259,14 @@ namespace ItemBags
                             IJsonAssetsAPI API = Helper.ModRegistry.GetApi<IJsonAssetsAPI>(ItemBagsMod.JAUniqueId);
                             if (API != null)
                             {
-#if DEBUG
+#if NEVER //DEBUG
                                 //  Trying to figure out how to get seed ids belonging to a particular mod.
                                 //  It seems like GetAllObjectsFromContentPack doesn't include the seeds, even though they are in GetAllObjectIds
                                 string TestSeedName = "Adzuki Bean Seeds";
                                 IDictionary<string, int> AllObjectIds = API.GetAllObjectIds();
                                 List<string> AllObjectsInMod = API.GetAllObjectsFromContentPack(ModUniqueId);
-                                bool IsSeedFoundAnywhere = AllObjectIds.ContainsKey(TestSeedName);
-                                bool IsSeedFoundInMod = AllObjectsInMod.Contains(TestSeedName);
+                                bool IsSeedFoundAnywhere = AllObjectIds != null && AllObjectIds.ContainsKey(TestSeedName);
+                                bool IsSeedFoundInMod =  AllObjectsInMod != null && AllObjectsInMod.Contains(TestSeedName);
                                 int SeedId = API.GetObjectId(TestSeedName);
 #endif
 

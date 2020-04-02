@@ -2,6 +2,7 @@
 using ItemBags.Helpers;
 using Newtonsoft.Json;
 using StardewModdingAPI;
+using StardewValley;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -121,15 +122,23 @@ namespace ItemBags.Persistence
 
                 IModHelper Helper = ItemBagsMod.ModInstance.Helper;
 
-                IDictionary<string, int> BigCraftableIds = API.GetAllBigCraftableIds();
-                IDictionary<string, int> ObjectIds = API.GetAllObjectIds();
+                Dictionary<string, int> AllObjectIds = new Dictionary<string, int>();
+                foreach (System.Collections.Generic.KeyValuePair<int, string> KVP in Game1.objectInformation)
+                {
+                    string ObjectName = KVP.Value.Split('/').First();
+                    if (!AllObjectIds.ContainsKey(ObjectName))
+                        AllObjectIds.Add(ObjectName, KVP.Key);
+                }
+
+                IDictionary<string, int> JABigCraftableIds = API.GetAllBigCraftableIds();
+                IDictionary<string, int> JAObjectIds = API.GetAllObjectIds();
 
                 bool ChangesMade = false;
 
                 //  Now that JsonAssets has finished loading the modded items, go through each one, and convert the items into StoreableBagItems (which requires an Id instead of just a Name)
                 foreach (System.Collections.Generic.KeyValuePair<ModdedBag, BagType> KVP in ItemBagsMod.TemporaryModdedBagTypes)
                 {
-                    List<StoreableBagItem> Items = KVP.Key.Items.Select(x => x.ToStoreableBagItem(BigCraftableIds, ObjectIds)).Where(x => x != null).ToList();
+                    List<StoreableBagItem> Items = KVP.Key.Items.Select(x => x.ToStoreableBagItem(JABigCraftableIds, JAObjectIds, AllObjectIds)).Where(x => x != null).ToList();
                     if (Items.Any())
                     {
                         foreach (BagSizeConfig SizeCfg in KVP.Value.SizeSettings)
@@ -383,18 +392,26 @@ namespace ItemBags.Persistence
         [JsonIgnore]
         public ContainerSize Size { get { return string.IsNullOrEmpty(SizeString) ? ContainerSize.Small : (ContainerSize)Enum.Parse(typeof(ContainerSize), SizeString); } }
 
-        public StoreableBagItem ToStoreableBagItem(IDictionary<string, int> BigcraftableIds, IDictionary<string, int> ObjectIds)
+        /// <param name="JABigCraftableIds">Ids of BigCraftable items added through JsonAssets. See also: <see cref="IJsonAssetsAPI.GetAllBigCraftableIds"/></param>
+        /// <param name="JAObjectIds">Ids of Objects added through JsonAssets. See also: <see cref="IJsonAssetsAPI.GetAllObjectIds"/></param>
+        /// <param name="AllObjectIds"></param>
+        /// <returns></returns>
+        public StoreableBagItem ToStoreableBagItem(IDictionary<string, int> JABigCraftableIds, IDictionary<string, int> JAObjectIds, IDictionary<string, int> AllObjectIds)
         {
             if (IsBigCraftable)
             {
-                if (BigcraftableIds.TryGetValue(Name, out int Id))
+                if (JABigCraftableIds.TryGetValue(Name, out int JAId))
+                    return new StoreableBagItem(JAId, HasQualities, null, IsBigCraftable);
+                else if (AllObjectIds.TryGetValue(Name, out int Id))
                     return new StoreableBagItem(Id, HasQualities, null, IsBigCraftable);
                 else
                     return null;
             }
             else
             {
-                if (ObjectIds.TryGetValue(Name, out int Id))
+                if (JAObjectIds.TryGetValue(Name, out int JAId))
+                    return new StoreableBagItem(JAId, HasQualities, null, IsBigCraftable);
+                else if (AllObjectIds.TryGetValue(Name, out int Id))
                     return new StoreableBagItem(Id, HasQualities, null, IsBigCraftable);
                 else
                     return null;
