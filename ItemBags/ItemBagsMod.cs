@@ -29,7 +29,7 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 4, 0); // Last updated 4/1/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 4, 1); // Last updated 4/2/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
 
@@ -160,7 +160,6 @@ namespace ItemBags
                 GlobalBagConfig = new BagConfig() { CreatedByVersion = CurrentVersion };
                 helper.Data.WriteGlobalData(BagConfigDataKey, GlobalBagConfig);
             }
-            GlobalBagConfig.AfterLoaded();
             BagConfig = GlobalBagConfig;
 
             //  Load data about modded items
@@ -242,6 +241,7 @@ namespace ItemBags
             {
                 Monitor.Log(string.Format("Error while loading modded bag json files: {0}\n\n{1}", ex.Message, ex.ToString()), LogLevel.Warn);
             }
+            GlobalBagConfig.AfterLoaded();
 
             helper.Events.Display.MenuChanged += Display_MenuChanged;
             helper.Events.Display.WindowResized += Display_WindowResized;

@@ -29,6 +29,7 @@ namespace ItemBags.Persistence
         public string ModUniqueId { get; set; } = "";
         [JsonIgnore]
         public string Guid { get { return StringToGUID(ModUniqueId).ToString(); } }
+        //public string Guid { get { return StringToGUID(ModUniqueId + BagName).ToString(); } } // Could use this instead to allow multiple modded bags for the same mod. But this change wouldn't be backwards compatible with save files using the other Guids
 
         [JsonProperty("BagName")]
         public string BagName { get; set; } = "Unnamed";
@@ -82,6 +83,9 @@ namespace ItemBags.Persistence
                     List<string> Objects = API.GetAllObjectsFromContentPack(ModUniqueId);
                     if (Objects != null)
                         Items.AddRange(Objects.Select(x => new ModdedItem(x, false, true, RequiredSize)));
+                    //List<string> Crops = API.GetAllCropsFromContentPack(ModUniqueId);
+                    //if (Crops != null)
+                    //    Items.AddRange(Crops.Select(x => new ModdedItem(x, false, false, RequiredSize)));
                     List<string> BigCraftables = API.GetAllBigCraftablesFromContentPack(ModUniqueId);
                     if (BigCraftables != null)
                         Items.AddRange(BigCraftables.Select(x => new ModdedItem(x, true, false, RequiredSize)));
