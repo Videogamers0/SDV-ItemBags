@@ -48,7 +48,7 @@ namespace ItemBags.Persistence
         {
             if (IsBigCraftable)
             {
-                Object Item = new Object(Vector2.Zero, Id, false);
+                Object Item = new Object(Vector2.Zero, Id, false) { Price = this.Price }; // It seems like some modded items don't have their price set properly if not explicitly specified
                 ItemBag.ForceSetQuantity(Item, this.Quantity);
                 return Item;
             }
