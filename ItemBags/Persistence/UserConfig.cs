@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using static ItemBags.Bags.ItemBag;
+using static ItemBags.Persistence.BagSizeConfig;
 
 namespace ItemBags.Persistence
 {
@@ -296,6 +297,10 @@ namespace ItemBags.Persistence
         [XmlElement("BasePrice")]
         public int BasePrice { get; set; }
 
+        [XmlArray("Shops")]
+        [XmlArrayItem("Shop")]
+        public BagShop[] Sellers { get; set; }
+
         public BundleBagSizeConfig()
         {
             InitializeDefaults();
@@ -312,6 +317,7 @@ namespace ItemBags.Persistence
         private void InitializeDefaults()
         {
             this.Size = BundleBag.ValidSizes.First();
+            this.Sellers = new BagShop[] { BagShop.TravellingCart };
             this.PriceModifier = 1.0;
             this.BasePrice = 0;
         }
@@ -351,6 +357,10 @@ namespace ItemBags.Persistence
         [XmlElement("MenuSlotSize")]
         public int MenuSlotSize { get; set; }
 
+        [XmlArray("Shops")]
+        [XmlArrayItem("Shop")]
+        public BagShop[] Sellers { get; set; }
+
         public RucksackSizeConfig()
         {
             InitializeDefaults();
@@ -379,6 +389,7 @@ namespace ItemBags.Persistence
             this.Slots = 1;
             this.MenuColumns = 12;
             this.MenuSlotSize = BagInventoryMenu.DefaultInventoryIconSize;
+            this.Sellers = new BagShop[] { BagShop.Pierre };
         }
 
         [OnSerializing]
@@ -410,6 +421,10 @@ namespace ItemBags.Persistence
         [XmlElement("MenuSlotSize")]
         public int MenuSlotSize { get; set; }
 
+        [XmlArray("Shops")]
+        [XmlArrayItem("Shop")]
+        public BagShop[] Sellers { get; set; }
+
         public OmniBagSizeConfig()
         {
             InitializeDefaults();
@@ -432,6 +447,7 @@ namespace ItemBags.Persistence
             this.BasePrice = 0;
             this.MenuColumns = 12;
             this.MenuSlotSize = BagInventoryMenu.DefaultInventoryIconSize;
+            this.Sellers = new BagShop[] { BagShop.Pierre };
         }
 
         [OnSerializing]

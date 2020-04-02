@@ -1,0 +1,413 @@
+{
+  "IsEnabled": true,
+  "ModUniqueId": "paradigmnomad.morefood",
+  "BagName": "More Food Bag",
+  "BagDescription": "A bag for storing items belonging to More Food mod",
+  "Price": 100000,
+  "Capacity": 9999,
+  "Sellers": [
+    "Pierre"
+  ],
+  "MenuOptions": {
+    "GroupByQuality": true,
+    "InventoryColumns": 12,
+    "InventorySlotSize": 64,
+    "GroupedLayoutOptions": {
+      "GroupsPerRow": 5,
+      "ShowValueColumn": true,
+      "SlotSize": 64
+    },
+    "UngroupedLayoutOptions": {
+      "Columns": 12,
+      "LineBreakIndices": [],
+      "LineBreakHeights": [],
+      "SlotSize": 64
+    }
+  },
+  "Items": [
+    {
+      "Name": "Avocado Eel Roll",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Avocado Toast",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Baked Sweet Potato",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Banana Bread",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Banana Pudding",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Barley Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Berry Fusion Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Black Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Blue Mist Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Boba Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Breakfast Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Broccoli and Cheese",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Brown Sugar",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Carrot Cake",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cassava Cake",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Celery and Peanut Butter",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chai Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chamomile Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chef Salad",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chili Powder",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chocolate",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chocolate Covered Strawberry",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chocolate Pudding",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Crab Roll",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cranberry Pomegranate Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Crocus White Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cucumber Roll",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cucumber Sandwich",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cumin Spice",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Curry Powder",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Dandelion Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Earl Grey Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Farofa",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Fig Tart",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Fruit Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Gooseberry Pie",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Island Salad",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Jasmine Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Lavender Milk Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Lemon Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Marshmallow Fluff",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Melon Salad",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Mint Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Nutmeg",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Oolong Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Paprika",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "PB&J Sandwich",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Peanut Butter",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Pepper",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Poached Pear",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Raspberry Tart",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Rice Pilaf",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Rose Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Salt",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Sauteed Onions",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Southern Sweet Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Spice Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Strawberry Grapefruit Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Stuffed Bell Peppers",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Sun Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Sweet Potato Fries",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Tropical Fruit Salad",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Vegetable Stirfry",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "White Tea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    }
+  ]
+}

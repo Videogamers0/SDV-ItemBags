@@ -1,0 +1,215 @@
+{
+  "IsEnabled": true,
+  "ModUniqueId": "paradigmnomad.freshmeat",
+  "BagName": "Fresh Meat Bag",
+  "BagDescription": "A bag for storing items belonging to Fresh Meat mod",
+  "Price": 100000,
+  "Capacity": 9999,
+  "Sellers": [
+    "Pierre"
+  ],
+  "MenuOptions": {
+    "GroupByQuality": true,
+    "InventoryColumns": 12,
+    "InventorySlotSize": 64,
+    "GroupedLayoutOptions": {
+      "GroupsPerRow": 5,
+      "ShowValueColumn": true,
+      "SlotSize": 64
+    },
+    "UngroupedLayoutOptions": {
+      "Columns": 12,
+      "LineBreakIndices": [],
+      "LineBreakHeights": [],
+      "SlotSize": 64
+    }
+  },
+  "Items": [
+    {
+      "Name": "Bacon",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Bacon Hamburger",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Bacon n Eggs",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "BBQ Sauce",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Beef",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Beef Burrito",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Beef Ribs",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cheese Board",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cheeseburger",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chevon",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chicken",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cooked Beef",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cooked Chevon",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cooked Chicken",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cooked Duck",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cooked Pork",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cooked Rabbit",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Corndog",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Duck",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Grilled Skewer",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Ham",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Hot Dog",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Jerky",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Ketchup",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Mustard",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Mutton",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Pork",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Rabbit",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Salami",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Sausage",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Steak",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    }
+  ]
+}

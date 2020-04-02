@@ -22,7 +22,7 @@ namespace ItemBags.Persistence
     {
         [XmlArray("BagTypes")]
         [XmlArrayItem("BagType")]
-        public BagType[] BagTypes { get; set; }
+        public List<BagType> BagTypes { get; set; }
 
         /// <summary>This property is only public for serialization purposes. Use <see cref="CreatedByVersion"/> instead.</summary>
         [XmlElement("CreatedByVersion")]
@@ -68,7 +68,7 @@ namespace ItemBags.Persistence
 
         private void InitializeDefaults()
         {
-            this.BagTypes = new BagType[]
+            this.BagTypes = new List<BagType>()
             {
                 BagTypeFactory.GetGemBagType(),
                 BagTypeFactory.GetSmithingBagType(),
@@ -104,7 +104,7 @@ namespace ItemBags.Persistence
             List<BagType> MissingTypes = DistinctTypes.Where(x => !this.BagTypes.Any(y => x.Id == y.Id)).ToList();
             if (MissingTypes.Any())
             {
-                this.BagTypes = new List<BagType>(BagTypes).Union(MissingTypes).ToArray();
+                this.BagTypes = new List<BagType>(BagTypes).Union(MissingTypes).ToList();
                 return true;
             }
             else

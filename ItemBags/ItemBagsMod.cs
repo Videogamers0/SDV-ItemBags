@@ -23,13 +23,15 @@ using System.Reflection;
 using StardewValley.Locations;
 using ItemBags.Community_Center;
 using static ItemBags.Persistence.BagSizeConfig;
+using System.IO;
 
 namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 3, 4); // Last updated 3/22/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 3, 5); // Last updated 4/1/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
+        public const string JAUniqueId = "spacechase0.JsonAssets";
 
         //Possible TODO 
         //  "Equipment Bag" : subclass of BoundedBag - has a List<Weapon>, List<Hat> etc. List<AllowedHat> AllowedHats List<AllowedWeapon> AllowedWeapons etc
@@ -44,10 +46,16 @@ namespace ItemBags
         internal static ItemBagsMod ModInstance { get; private set; }
         internal static string Translate(string Key, Dictionary<string, string> Parameters = null)
         {
+            Translation Result;
             if (Parameters != null)
-                return ModInstance.Helper.Translation.Get(Key, Parameters);
+                Result = ModInstance.Helper.Translation.Get(Key, Parameters);
             else
-                return ModInstance.Helper.Translation.Get(Key);
+                Result = ModInstance.Helper.Translation.Get(Key);
+
+            if (!Result.HasValue())
+                return null;
+            else
+                return Result;
         }
 
         public const string BagConfigDataKey = "bagconfig"; //  Note that SMAPI saves the global data to AppData\Roaming\StardewValley\.smapi\mod-data\SlayerDharok.Item_Bags
@@ -56,6 +64,8 @@ namespace ItemBags
         public static UserConfig UserConfig { get; private set; }
         private const string ModdedItemsFilename = "modded_items.json";
         public static ModdedItems ModdedItems { get; private set; }
+
+        internal static Dictionary<ModdedBag, BagType> TemporaryModdedBagTypes { get; private set; }
 
         internal static ISemanticVersion MegaStorageInstalledVersion { get; private set; } = null;
 
@@ -203,6 +213,36 @@ namespace ItemBags
             }
             ModdedItems = GlobalModdedItems;
 
+            //  Load data about modded bags
+            try
+            {
+                List<ModdedBag> ModdedBags = new List<ModdedBag>();
+                string ModdedBagsDirectory = Path.Combine(helper.DirectoryPath, "assets", "Modded Bags");
+                string[] ModdedBagFiles = Directory.GetFiles(ModdedBagsDirectory, "*.json", SearchOption.TopDirectoryOnly);
+                if (ModdedBagFiles.Length > 0)
+                {
+                    foreach (string File in ModdedBagFiles)
+                    {
+                        string RelativePath = File.Replace(helper.DirectoryPath + Path.DirectorySeparatorChar, "");
+                        ModdedBag ModdedBag = helper.Data.ReadJsonFile<ModdedBag>(RelativePath);
+                        if (helper.ModRegistry.IsLoaded(ModdedBag.ModUniqueId) && ModdedBag.IsEnabled && !ModdedBags.Any(x => x.Guid == ModdedBag.Guid))
+                            ModdedBags.Add(ModdedBag);
+                    }
+                }
+
+                TemporaryModdedBagTypes = new Dictionary<ModdedBag, BagType>();
+                foreach (ModdedBag Bag in ModdedBags)
+                {
+                    BagType Placeholder = Bag.GetBagTypePlaceholder();
+                    TemporaryModdedBagTypes.Add(Bag, Placeholder);
+                    BagConfig.BagTypes.Add(Placeholder);
+                }
+            }
+            catch (Exception ex)
+            {
+                Monitor.Log(string.Format("Error while loading modded bag json files: {0}\n\n{1}", ex.Message, ex.ToString()), LogLevel.Warn);
+            }
+
             helper.Events.Display.MenuChanged += Display_MenuChanged;
             helper.Events.Display.WindowResized += Display_WindowResized;
 
@@ -241,6 +281,7 @@ namespace ItemBags
                     }
                 }
 
+                ModdedBag.OnGameLaunched();
                 ModdedItems.OnGameLaunched();
             };
 
@@ -306,7 +347,8 @@ namespace ItemBags
             //  Add Bag items to the shop's stock
             if (e.NewMenu is ShopMenu SM)
             {
-                bool IsTravellingMerchant = SM.portraitPerson == null && SM.storeContext != null && SM.storeContext.Equals("Forest", StringComparison.CurrentCultureIgnoreCase);
+                bool IsTravellingMerchant = SM.portraitPerson == null && SM.storeContext != null && SM.storeContext.Equals("Forest", StringComparison.CurrentCultureIgnoreCase)
+                    && SM.onPurchase?.GetMethodInfo().Name == "onTravelingMerchantShopPurchase";
                 string ShopOwnerName = IsTravellingMerchant ? "TravellingCart" : SM.portraitPerson?.Name;
 
                 if (!string.IsNullOrEmpty(ShopOwnerName))
@@ -326,43 +368,66 @@ namespace ItemBags
                     {
                         bool HasChangedStock = false;
 
-                        //  Add Bounded Bags to stock
-                        foreach (BagType Type in BagConfig.BagTypes)
+                        if (Enum.TryParse(ShopOwnerName, out BagShop BagShop))
                         {
-                            foreach (BagSizeConfig SizeCfg in Type.SizeSettings)
+                            //  Add Bounded Bags to stock
+                            foreach (BagType Type in BagConfig.BagTypes)
                             {
-                                bool IsSoldByShop = UserConfig.IsSizeVisibleInShops(SizeCfg.Size) && SizeCfg.Sellers.Any(x => x.ToString() == ShopOwnerName);
+                                foreach (BagSizeConfig SizeCfg in Type.SizeSettings)
+                                {
+                                    bool IsSoldByShop = UserConfig.IsSizeVisibleInShops(SizeCfg.Size) && SizeCfg.Sellers.Contains(BagShop);
 #if DEBUG
-                                //IsSoldByShop = true;
+                                    //IsSoldByShop = true;
 #endif
-                                if (IsSoldByShop)
+                                    if (IsSoldByShop)
+                                    {
+                                        bool IsObsolete = false;
+                                        if (UserConfig.HideObsoleteBagsFromShops)
+                                        {
+                                            IsObsolete = OwnedBags.Any(x => x is BoundedBag BB && BB.TypeInfo == Type && (int)BB.Size > (int)SizeCfg.Size);
+                                        }
+
+                                        if (!IsObsolete)
+                                        {
+                                            BoundedBag SellableInstance = new BoundedBag(Type, SizeCfg.Size, false);
+                                            int Price = SellableInstance.GetPurchasePrice();
+#if DEBUG
+                                            //Price = 1 + (int)SizeCfg.Size;
+#endif
+                                            Stock.Add(SellableInstance, new int[] { Price, ShopMenu.infiniteStock });
+                                            HasChangedStock = true;
+                                        }
+                                    }
+                                }
+                            }
+
+                            //  Add Bundle Bags to stock
+                            foreach (BundleBagSizeConfig SizeCfg in UserConfig.BundleBagSettings)
+                            {
+                                ContainerSize Size = SizeCfg.Size;
+                                if (BundleBag.ValidSizes.Contains(Size) && SizeCfg.Sellers.Contains(BagShop) && UserConfig.IsSizeVisibleInShops(Size))
                                 {
                                     bool IsObsolete = false;
                                     if (UserConfig.HideObsoleteBagsFromShops)
                                     {
-                                        IsObsolete = OwnedBags.Any(x => x is BoundedBag BB && BB.TypeInfo == Type && (int)BB.Size > (int)SizeCfg.Size);
+                                        IsObsolete = OwnedBags.Any(x => x is BundleBag BB && (int)BB.Size > (int)Size);
                                     }
 
                                     if (!IsObsolete)
                                     {
-                                        BoundedBag SellableInstance = new BoundedBag(Type, SizeCfg.Size, false);
-                                        int Price = SellableInstance.GetPurchasePrice();
-#if DEBUG
-                                        //Price = 1 + (int)SizeCfg.Size;
-#endif
-                                        Stock.Add(SellableInstance, new int[] { Price, ShopMenu.infiniteStock });
+                                        BundleBag BundleBag = new BundleBag(Size, true);
+                                        int Price = BundleBag.GetPurchasePrice();
+                                        Stock.Add(BundleBag, new int[] { Price, ShopMenu.infiniteStock });
                                         HasChangedStock = true;
                                     }
                                 }
                             }
-                        }
 
-                        if (ShopOwnerName.Equals("Pierre"))
-                        {
                             //  Add Rucksacks to stock
-                            foreach (ContainerSize Size in Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>())
+                            foreach (RucksackSizeConfig SizeCfg in UserConfig.RucksackSettings)
                             {
-                                if (UserConfig.IsSizeVisibleInShops(Size))
+                                ContainerSize Size = SizeCfg.Size;
+                                if (SizeCfg.Sellers.Contains(BagShop) && UserConfig.IsSizeVisibleInShops(Size))
                                 {
                                     bool IsObsolete = false;
                                     if (UserConfig.HideObsoleteBagsFromShops)
@@ -381,9 +446,10 @@ namespace ItemBags
                             }
 
                             //  Add Omni Bags to stock
-                            foreach (ContainerSize Size in Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>())
+                            foreach(OmniBagSizeConfig SizeCfg in UserConfig.OmniBagSettings)
                             {
-                                if (UserConfig.IsSizeVisibleInShops(Size))
+                                ContainerSize Size = SizeCfg.Size;
+                                if (SizeCfg.Sellers.Contains(BagShop) && UserConfig.IsSizeVisibleInShops(Size))
                                 {
                                     bool IsObsolete = false;
                                     if (UserConfig.HideObsoleteBagsFromShops)
@@ -396,30 +462,6 @@ namespace ItemBags
                                         OmniBag OmniBag = new OmniBag(Size);
                                         int Price = OmniBag.GetPurchasePrice();
                                         Stock.Add(OmniBag, new int[] { Price, ShopMenu.infiniteStock });
-                                        HasChangedStock = true;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (ShopOwnerName.Equals("TravellingCart"))
-                        {
-                            //  Add Bundle Bags to stock
-                            foreach (ContainerSize Size in BundleBag.ValidSizes)
-                            {
-                                if (UserConfig.IsSizeVisibleInShops(Size))
-                                {
-                                    bool IsObsolete = false;
-                                    if (UserConfig.HideObsoleteBagsFromShops)
-                                    {
-                                        IsObsolete = OwnedBags.Any(x => x is BundleBag BB && (int)BB.Size > (int)Size);
-                                    }
-
-                                    if (!IsObsolete)
-                                    {
-                                        BundleBag BundleBag = new BundleBag(Size, true);
-                                        int Price = BundleBag.GetPurchasePrice();
-                                        Stock.Add(BundleBag, new int[] { Price, ShopMenu.infiniteStock });
                                         HasChangedStock = true;
                                     }
                                 }

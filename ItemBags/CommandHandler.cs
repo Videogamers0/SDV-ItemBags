@@ -4,9 +4,11 @@ using StardewModdingAPI;
 using StardewValley;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static ItemBags.Persistence.BagSizeConfig;
 
 namespace ItemBags
 {
@@ -25,6 +27,7 @@ namespace ItemBags
             RegisterAddBundleBagCommand();
             RegisterAddRucksackCommand();
             RegisterAddOmniBagCommand();
+            RegisterGenerateModdedBagCommand();
         }
 
         private static void RegisterAddItemBagCommand()
@@ -218,6 +221,84 @@ namespace ItemBags
                             Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);
                         }
                     }
+                }
+            });
+        }
+
+        private static void RegisterGenerateModdedBagCommand()
+        {
+            string CommandName = "generate_modded_bag";
+            string CommandHelp = string.Format("Creates a json file that defines a modded Item Bag for a particular mod.\n"
+                + "Arguments: <ModUniqueID> (This is the 'ModUniqueID' value of the mod's manifest.json that you want to generate the file for)\n"
+                + "Example: {0} ppja.artisanvalleymachinegoods\n\n",
+                CommandName);
+            Helper.ConsoleCommands.Add(CommandName, CommandHelp, (string Name, string[] Args) =>
+            {
+                try
+                {
+                    if (!Helper.ModRegistry.IsLoaded(ItemBagsMod.JAUniqueId))
+                    {
+                        Monitor.Log("Unable to execute command: JsonAssets mod is not installed. Modded bags only support modded objects added through JsonAssets.", LogLevel.Alert);
+                    }
+                    else if (!ModdedBag.HasImportedItems)
+                    {
+                        Monitor.Log("Unable to execute command: JsonAssets has not finished loading modded items. You must load a save file before using this command.", LogLevel.Alert);
+                    }
+                    else
+                    {
+                        string ModUniqueId = string.Join(" ", Args);
+                        if (!Helper.ModRegistry.IsLoaded(ModUniqueId))
+                        {
+                            string Message = string.Format("Unable to execute command: ModUniqueID = '{0}' is not installed. "
+                                + "Either install this mod first, or double check that you used the correct value for ModUniqueID. "
+                                + "The ModUniqueID can be found in the mod's manifest.json file.", ModUniqueId);
+                            Monitor.Log(Message, LogLevel.Alert);
+                        }
+                        else
+                        {
+                            IJsonAssetsAPI API = Helper.ModRegistry.GetApi<IJsonAssetsAPI>(ItemBagsMod.JAUniqueId);
+                            if (API != null)
+                            {
+                                ModdedBag ModdedBag = new ModdedBag()
+                                {
+                                    IsEnabled = true,
+                                    ModUniqueId = ModUniqueId,
+                                    BagName = string.Format("{0} Bag", ModUniqueId),
+                                    BagDescription = string.Format("A bag for storing items belonging to {0} mod", ModUniqueId),
+                                    Price = 100000,
+                                    Capacity = 9999,
+                                    Sellers = new List<BagShop>() { BagShop.Pierre },
+                                    MenuOptions = new BagMenuOptions()
+                                    {
+                                        GroupedLayoutOptions = new BagMenuOptions.GroupedLayout()
+                                        {
+                                            GroupsPerRow = 5
+                                        }
+                                    },
+                                    Items = ModdedBag.GetModdedItems(ModUniqueId)
+                                };
+
+                                string OutputDirectory = Path.Combine(Helper.DirectoryPath, "assets", "Modded Bags");
+                                string DesiredFilename = ModdedBag.ModUniqueId;
+                                string CurrentFilename = DesiredFilename;
+                                int CurrentIndex = 0;
+                                while (File.Exists(Path.Combine(OutputDirectory, CurrentFilename + ".json")))
+                                {
+                                    CurrentIndex++;
+                                    CurrentFilename = string.Format("{0} ({1})", DesiredFilename, CurrentIndex);
+                                }
+
+                                string RelativePath = Path.Combine("assets", "Modded Bags", CurrentFilename + ".json");
+                                Helper.Data.WriteJsonFile(RelativePath, ModdedBag);
+
+                                Monitor.Log(string.Format("File exported to: {0}\nYou will need to re-launch the game for this file to be loaded.", Path.Combine(Helper.DirectoryPath, RelativePath)), LogLevel.Alert);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);
                 }
             });
         }

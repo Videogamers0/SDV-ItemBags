@@ -1,0 +1,101 @@
+{
+  "IsEnabled": true,
+  "ModUniqueId": "ppja.MoreRecipesMeat",
+  "BagName": "Even More Recipes - Meat Bag",
+  "BagDescription": "A bag for storing items belonging to Even More Recipes - Meat mod",
+  "Price": 100000,
+  "Capacity": 9999,
+  "Sellers": [
+    "Pierre"
+  ],
+  "MenuOptions": {
+    "GroupByQuality": true,
+    "InventoryColumns": 12,
+    "InventorySlotSize": 64,
+    "GroupedLayoutOptions": {
+      "GroupsPerRow": 5,
+      "ShowValueColumn": true,
+      "SlotSize": 64
+    },
+    "UngroupedLayoutOptions": {
+      "Columns": 12,
+      "LineBreakIndices": [],
+      "LineBreakHeights": [],
+      "SlotSize": 64
+    }
+  },
+  "Items": [
+    {
+      "Name": "Bangers Beans and Mash",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Beef Stock",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Breakfast Sandwich",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Brown Gravy",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Bulgogi",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chicken and Spinach Crepe",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chicken Stock",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Dumplings",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Mild Curry",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Paella",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Poutine",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "White Gravy",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    }
+  ]
+}

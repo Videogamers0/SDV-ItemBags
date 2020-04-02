@@ -15,9 +15,6 @@ namespace ItemBags.Persistence
     [XmlRoot(ElementName = "BagItem", Namespace = "")]
     public class BagItem
     {
-        //Possible TODO: should maybe just serialize the entire Object XML string?
-        //Then modify BagItem.ToObject to just return that saved Object.
-
         [XmlElement("Id")]
         public int Id { get; set; }
         [XmlElement("Quality")]
@@ -28,6 +25,8 @@ namespace ItemBags.Persistence
         public bool IsBigCraftable { get; set; }
         [XmlElement("Price")]
         public int Price { get; set; }
+        [XmlElement("Name")]
+        public string Name { get; set; }
 
         public BagItem()
         {
@@ -42,6 +41,7 @@ namespace ItemBags.Persistence
             this.Quantity = Item.Stack;
             this.Price = Item.Price;
             this.IsBigCraftable = Item.bigCraftable.Value;
+            this.Name = Item.Name;
         }
 
         public Object ToObject()
@@ -72,6 +72,7 @@ namespace ItemBags.Persistence
             this.Quantity = 0;
             this.IsBigCraftable = false;
             this.Price = -1;
+            this.Name = "";
         }
 
         [OnSerializing]

@@ -65,7 +65,6 @@ namespace ItemBags.Persistence
         [XmlArrayItem("Shop")]
         public BagShop[] Sellers { get; set; }
 
-
         [XmlElement("CapacityMultiplier")]
         public double CapacityMultiplier { get; set; }
 

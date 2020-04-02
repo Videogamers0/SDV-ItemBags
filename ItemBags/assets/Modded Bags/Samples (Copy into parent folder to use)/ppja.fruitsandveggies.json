@@ -1,0 +1,419 @@
+{
+  "IsEnabled": true,
+  "ModUniqueId": "ppja.fruitsandveggies",
+  "BagName": "Fruits and Veggies Bag",
+  "BagDescription": "A bag for storing items belonging to Fruits and Veggies mod",
+  "Price": 100000,
+  "Capacity": 9999,
+  "Sellers": [
+    "Pierre"
+  ],
+  "MenuOptions": {
+    "GroupByQuality": true,
+    "InventoryColumns": 12,
+    "InventorySlotSize": 64,
+    "GroupedLayoutOptions": {
+      "GroupsPerRow": 5,
+      "ShowValueColumn": true,
+      "SlotSize": 64
+    },
+    "UngroupedLayoutOptions": {
+      "Columns": 12,
+      "LineBreakIndices": [],
+      "LineBreakHeights": [],
+      "SlotSize": 64
+    }
+  },
+  "Items": [
+    {
+      "Name": "Adzuki Bean",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Aloe",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Asparagus",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Bamboo",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Barley",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Basil",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Bell Pepper",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Blue Agave",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Broccoli",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Butternut Squash",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cabbage",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cactus Flower",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Carrot",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cassava",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Celery",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chickpea",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Chives",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cotton Boll",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Cucumber",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Durum",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Elderberry",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Fennel",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Ginger",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Gooseberry",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Green Peas",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Habanero",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Jalapeno",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Juniper Berry",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Kidney Bean",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Kiwi",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Lettuce",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Licorice Root",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Maguey",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Mint",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Muskmelon",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Navy Bean",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Oat",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Okra",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Onion",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Oregano",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Paddy Taro Root",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Parsley",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Passion Fruit",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Peanut",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Pineapple",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Quinoa",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Rapeseed Flower",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Raspberry",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Red Onion",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Rosemary",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Sage",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Shallot",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Shiitake Mushroom",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Soybean",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Spinach",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Sugar Beet",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Sugar Cane",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Sulfur Shelf Mushroom",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Sweet Canary Melon",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Sweet Potato",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Tabasco Pepper",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Thyme",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Wasabi Root",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Watermelon",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    },
+    {
+      "Name": "Zucchini",
+      "IsBigCraftable": false,
+      "HasQualities": true,
+      "RequiredSize": "Small"
+    }
+  ]
+}
