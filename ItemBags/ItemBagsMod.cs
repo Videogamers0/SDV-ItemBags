@@ -53,7 +53,7 @@ namespace ItemBags
                 Result = ModInstance.Helper.Translation.Get(Key);
 
             if (!Result.HasValue())
-                return null;
+                return "";
             else
                 return Result;
         }
