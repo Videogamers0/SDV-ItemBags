@@ -29,7 +29,7 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 3, 5); // Last updated 4/1/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 4, 0); // Last updated 4/1/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
 
