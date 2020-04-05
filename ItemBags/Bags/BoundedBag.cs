@@ -178,7 +178,7 @@ namespace ItemBags.Bags
                 this.TypeInfo = ItemBagsMod.BagConfig.BagTypes.FirstOrDefault(x => x.Id == Data.TypeId);
                 if (TypeInfo == null)
                 {
-                    string Warning = string.Format("Warning - no BagType with Id = {0} was found. Did you manually edit your {1} json file? The saved bag cannot be properly loaded without a corresponding type!"
+                    string Warning = string.Format("Warning - no BagType with Id = {0} was found. Did you manually edit your {1} json file or delete a .json file from 'Modded Bags' folder? The saved bag cannot be properly loaded without a corresponding type!"
                         + " To prevent crashes, this bag will be automatically converted to a default BagType.", Data.TypeId, ItemBagsMod.BagConfigDataKey);
                     ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
 

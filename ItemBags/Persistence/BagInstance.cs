@@ -146,7 +146,7 @@ namespace ItemBags.Persistence
             }
             else
             {
-                string Warning = string.Format("Warning - no BagType with Id = {0} was found. Did you manually edit your {1} json file? The saved bag cannot be loaded without a corresponding type!",
+                string Warning = string.Format("Warning - no BagType with Id = {0} was found. Did you manually edit your {1} json file or delete a .json file from 'Modded Bags' folder? The saved bag cannot be loaded without a corresponding type!",
                     this.TypeId, ItemBagsMod.BagConfigDataKey);
                 ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
                 Decoded = null;

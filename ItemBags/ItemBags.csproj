@@ -72,6 +72,7 @@
     <Compile Include="Helpers\DrawHelpers.cs" />
     <Compile Include="Helpers\Extensions.cs" />
     <Compile Include="Helpers\XMLSerializer.cs" />
+    <Compile Include="ItemBagsAPI.cs" />
     <Compile Include="JsonAssetsAPI.cs" />
     <Compile Include="Menus\BagInfo.cs" />
     <Compile Include="Menus\BagInventoryMenu.cs" />

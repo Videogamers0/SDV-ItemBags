@@ -276,6 +276,15 @@ namespace ItemBags.Menus
             if (HoveredSlot.HasValue)
             {
                 ItemBag HoveredBag = GetHoveredBag();
+                if (HoveredBag == null)
+                {
+                    int Index = SlotBounds.IndexOf(HoveredSlot.Value);
+                    if (Index >= 0 && Index < Placeholders.Count)
+                    {
+                        HoveredBag = Placeholders[Index];
+                    }
+                }
+
                 if (HoveredBag != null)
                 {
                     //Rectangle Location = HoveredSlot.Value;

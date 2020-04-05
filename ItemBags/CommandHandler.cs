@@ -270,11 +270,13 @@ namespace ItemBags
                                 int SeedId = API.GetObjectId(TestSeedName);
 #endif
 
+                                string BagName = string.Format("{0} Bag", ModUniqueId);
                                 ModdedBag ModdedBag = new ModdedBag()
                                 {
                                     IsEnabled = true,
                                     ModUniqueId = ModUniqueId,
-                                    BagName = string.Format("{0} Bag", ModUniqueId),
+                                    Guid = ModdedBag.StringToGUID(ModUniqueId + BagName).ToString(),
+                                    BagName = BagName,
                                     BagDescription = string.Format("A bag for storing items belonging to {0} mod", ModUniqueId),
                                     Price = 100000,
                                     Capacity = 9999,

@@ -158,7 +158,7 @@ namespace ItemBags.Helpers
                     }
                     else
                     {
-                        string Warning = string.Format("Warning - multiple bag instances were found with the same InstanceId. Did you manually edit your {0} json file? Only the first bag with InstanceId = {1} will be loaded.",
+                        string Warning = string.Format("Warning - multiple bag instances were found with the same InstanceId. Did you manually edit your {0} json file or add multiple .json files to the 'Modded Bags' folder with the same ModUniqueId values? Only the first bag with InstanceId = {1} will be loaded.",
                             PlayerBags.OwnedBagsDataKey, BagInstance.InstanceId);
                         ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
                     }
@@ -177,7 +177,7 @@ namespace ItemBags.Helpers
                     }
                     else
                     {
-                        string Warning = string.Format("Warning - no saved Bag was found with InstanceId = {0}. Did you manually edit your {1} json file?",
+                        string Warning = string.Format("Warning - no saved Bag was found with InstanceId = {0}. Did you manually edit your {1} json file or delete a .json file from 'Modded Bags' folder?",
                             BagInstanceId, PlayerBags.OwnedBagsDataKey);
                         ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
                         return Encoded;

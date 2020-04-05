@@ -37,11 +37,6 @@ namespace ItemBags
         //  "Equipment Bag" : subclass of BoundedBag - has a List<Weapon>, List<Hat> etc. List<AllowedHat> AllowedHats List<AllowedWeapon> AllowedWeapons etc
         //      would need to override IsValidBagItem, and the MoveToBag/MoveFromBag needs a new implementation to handle non-Objects. Allow the items to stack even if item.maximumStackSize == 1
         //  Allow Bundle Bags to hold items that have a higher quality than what the BundleTask requires.
-        //  Dynamically load json files in the mod directory that can be deserialized into BagTypes, giving users an easier way to use custom bags without needing the edit the behemoth that is bagconfig.json.
-        //  An additional sidebar button in topleft of bag contents interface. hovering over it displays a tooltip with total bag content's summed values
-        //  Rucksack filtering. if Rucksack has >=36 slots, add some category filter buttons to the left sidebar. Also make OnBagContentsChanged have a Removed, Added, Modified list
-        //      so in RucksackMenu, when detecting a BagContentsChanged, only need to refresh the view if not filtering by category, or at least 1 changed item belongs to current category filter.
-        //      this performance improvement is probably needed if using like 500+ slots on rucksack since I coded it so terribly.
 
         internal static ItemBagsMod ModInstance { get; private set; }
         internal static string Translate(string Key, Dictionary<string, string> Parameters = null)
@@ -224,9 +219,20 @@ namespace ItemBags
                     {
                         string RelativePath = File.Replace(helper.DirectoryPath + Path.DirectorySeparatorChar, "");
                         ModdedBag ModdedBag = helper.Data.ReadJsonFile<ModdedBag>(RelativePath);
-                        if (helper.ModRegistry.IsLoaded(ModdedBag.ModUniqueId) && ModdedBag.IsEnabled && !ModdedBags.Any(x => x.Guid == ModdedBag.Guid))
-                            ModdedBags.Add(ModdedBag);
+                        if (helper.ModRegistry.IsLoaded(ModdedBag.ModUniqueId) && ModdedBag.IsEnabled)
+                        {
+                            if (!ModdedBags.Any(x => x.Guid == ModdedBag.Guid))
+                            {
+                                ModdedBags.Add(ModdedBag);
+                            }
+                            else
+                            {
+                                Monitor.Log(string.Format("Failed to load modded bag '{0}' because there is already another modded bag with the same Id", ModdedBag.BagName), LogLevel.Warn);
+                            }
+                        }
                     }
+
+                    Monitor.Log(string.Format("Loaded {0} modded bag(s): {1}", ModdedBags.Count, string.Join(", ", ModdedBags.Select(x => x.BagName))), LogLevel.Info);
                 }
 
                 TemporaryModdedBagTypes = new Dictionary<ModdedBag, BagType>();
@@ -239,7 +245,7 @@ namespace ItemBags
             }
             catch (Exception ex)
             {
-                Monitor.Log(string.Format("Error while loading modded bag json files: {0}\n\n{1}", ex.Message, ex.ToString()), LogLevel.Warn);
+                Monitor.Log(string.Format("Error while loading modded bag json files: {0}\n\n{1}", ex.Message, ex.ToString()), LogLevel.Error);
             }
             GlobalBagConfig.AfterLoaded();
 

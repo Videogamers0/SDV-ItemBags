@@ -54,7 +54,7 @@ namespace ItemBags.Persistence
                 }
                 else
                 {
-                    string Warning = string.Format("Warning - multiple bag types were found with the same BagType.Id. Did you manually edit your {0} json file? Only the first type with Id = {1} will be used when loading your bag instances.",
+                    string Warning = string.Format("Warning - multiple bag types were found with the same BagType.Id. Did you manually edit your {0} json file or add multiple .json files to the 'Modded Bags' folder with the same ModUniqueId values? Only the first type with Id = {1} will be used when loading your bag instances.",
                         ItemBagsMod.BagConfigDataKey, BagType.Id);
                     ItemBagsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
                 }

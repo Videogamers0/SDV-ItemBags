@@ -16,7 +16,7 @@ using static ItemBags.Persistence.BagSizeConfig;
 
 namespace ItemBags.Persistence
 {
-    /// <summary>Represents a <see cref="BoundedBag"/> that only stores items belonging to a particular mod.</summary>
+    /// <summary>Represents a <see cref="BoundedBag"/> that can store custom items belonging to other mods.</summary>
     [JsonObject(Title = "ModdedBag")]
     [DataContract(Name = "ModdedBag", Namespace = "")]
     public class ModdedBag
@@ -28,9 +28,10 @@ namespace ItemBags.Persistence
         /// <summary>The UniqueID property of the mod manifest that this modded bag holds items for</summary>
         [JsonProperty("ModUniqueId")]
         public string ModUniqueId { get; set; } = "";
-        [JsonIgnore]
-        public string Guid { get { return StringToGUID(ModUniqueId).ToString(); } }
-        //public string Guid { get { return StringToGUID(ModUniqueId + BagName).ToString(); } } // Could use this instead to allow multiple modded bags for the same mod. But this change wouldn't be backwards compatible with save files using the other Guids
+
+        /// <summary>A unique identifier for this modded bag. Typically this Guid is computed using <see cref="StringToGUID(string)"/> with parameter = "<see cref="ModUniqueId"/>+<see cref="BagName"/>"</summary>
+        [JsonProperty("BagId")]
+        public string Guid { get; set; } = "";
 
         [JsonProperty("BagName")]
         public string BagName { get; set; } = "Unnamed";
@@ -59,7 +60,7 @@ namespace ItemBags.Persistence
         public List<ModdedItem> Items { get; set; } = new List<ModdedItem>();
 
         //Taken from: https://weblogs.asp.net/haithamkhedre/generate-guid-from-any-string-using-c
-        private static Guid StringToGUID(string value)
+        public static Guid StringToGUID(string value)
         {
             // Create a new instance of the MD5CryptoServiceProvider object.
             MD5 md5Hasher = MD5.Create();
@@ -221,6 +222,15 @@ namespace ItemBags.Persistence
                   }
             };
         }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext sc)
+        {
+            if (string.IsNullOrEmpty(Guid))
+                Guid = GetLegacyGuid(ModUniqueId);
+        }
+
+        public static string GetLegacyGuid(string ModUniqueId) { return StringToGUID(ModUniqueId).ToString(); }
     }
 
     /// <summary>Represents modded items that should be merged into non-modded bags, such as storing a modded seed item in the built-in "Seed Bag"</summary>
@@ -277,7 +287,7 @@ namespace ItemBags.Persistence
                     }
                     else
                     {
-                        ItemBagsMod.ModInstance.Monitor.Log(string.Format("Warning - multiple BagTypes were found with the name: '{0}'\nDid you manually edit your bagconfig.json file?", Type.Name), LogLevel.Warn);
+                        ItemBagsMod.ModInstance.Monitor.Log(string.Format("Warning - multiple BagTypes were found with the name: '{0}'\nDid you manually edit your bagconfig.json file or do you have multiple Modded Bags with the same name?", Type.Name), LogLevel.Warn);
                     }
                 }
 
