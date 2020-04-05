@@ -63,7 +63,7 @@ namespace ItemBags.Persistence
 
         [XmlArray("Shops")]
         [XmlArrayItem("Shop")]
-        public BagShop[] Sellers { get; set; }
+        public List<BagShop> Sellers { get; set; }
 
         [XmlElement("CapacityMultiplier")]
         public double CapacityMultiplier { get; set; }
@@ -81,7 +81,7 @@ namespace ItemBags.Persistence
         {
             this.Size = ContainerSize.Small;
             this.Price = BagTypeFactory.DefaultPrices[this.Size];
-            this.Sellers = new BagShop[] { BagShop.Pierre };
+            this.Sellers = new List<BagShop>() { BagShop.Pierre };
             this.MenuOptions = new BagMenuOptions();
             this.CapacityMultiplier = 1.0;
             this.Items = new List<StoreableBagItem> { };

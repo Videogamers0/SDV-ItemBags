@@ -29,7 +29,7 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 4, 1); // Last updated 4/2/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 4, 2); // Last updated 4/4/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
 
@@ -219,7 +219,8 @@ namespace ItemBags
                     {
                         string RelativePath = File.Replace(helper.DirectoryPath + Path.DirectorySeparatorChar, "");
                         ModdedBag ModdedBag = helper.Data.ReadJsonFile<ModdedBag>(RelativePath);
-                        if (helper.ModRegistry.IsLoaded(ModdedBag.ModUniqueId) && ModdedBag.IsEnabled)
+
+                        if (ModdedBag.IsEnabled && (string.IsNullOrEmpty(ModdedBag.ModUniqueId) || helper.ModRegistry.IsLoaded(ModdedBag.ModUniqueId)))
                         {
                             if (!ModdedBags.Any(x => x.Guid == ModdedBag.Guid))
                             {

@@ -1,5 +1,6 @@
 ﻿using ItemBags.Bags;
 using ItemBags.Persistence;
+using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewValley;
 using System;
@@ -229,8 +230,9 @@ namespace ItemBags
         {
             string CommandName = "generate_modded_bag";
             string CommandHelp = string.Format("Creates a json file that defines a modded Item Bag for a particular mod.\n"
-                + "Arguments: <ModUniqueID> (This is the 'ModUniqueID' value of the mod's manifest.json that you want to generate the file for)\n"
-                + "Example: {0} ppja.artisanvalleymachinegoods\n\n",
+                + "Arguments: <BagName> <ModUniqueID> (This is the 'ModUniqueID' value of the mod's manifest.json that you want to generate the file for. All modded items belonging to this mod will be included in the generated modded bag)\n"
+                + "If the BagName is multiple words, wrap it in double quotes."
+                + "Example: {0} \"Artisan Valley Bag\" ppja.artisanvalleymachinegoods\n\n",
                 CommandName);
             Helper.ConsoleCommands.Add(CommandName, CommandHelp, (string Name, string[] Args) =>
             {
@@ -244,9 +246,14 @@ namespace ItemBags
                     {
                         Monitor.Log("Unable to execute command: JsonAssets has not finished loading modded items. You must load a save file before using this command.", LogLevel.Alert);
                     }
+                    else if (Args.Length < 2)
+                    {
+                        Monitor.Log("Unable to execute command: Required arguments missing. You must specify a Bag Name and a ModUniqueID. All modded items from the given ModUniqueID will be included in the generated bag.", LogLevel.Alert);
+                    }
                     else
                     {
-                        string ModUniqueId = string.Join(" ", Args);
+                        string BagName = Args[0];
+                        string ModUniqueId = string.Join(" ", Args.Skip(1));
                         if (!Helper.ModRegistry.IsLoaded(ModUniqueId))
                         {
                             string Message = string.Format("Unable to execute command: ModUniqueID = '{0}' is not installed. "
@@ -269,8 +276,8 @@ namespace ItemBags
                                 bool IsSeedFoundInMod =  AllObjectsInMod != null && AllObjectsInMod.Contains(TestSeedName);
                                 int SeedId = API.GetObjectId(TestSeedName);
 #endif
+                                List<ContainerSize> AllSizes = Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>().ToList();
 
-                                string BagName = string.Format("{0} Bag", ModUniqueId);
                                 ModdedBag ModdedBag = new ModdedBag()
                                 {
                                     IsEnabled = true,
@@ -278,16 +285,16 @@ namespace ItemBags
                                     Guid = ModdedBag.StringToGUID(ModUniqueId + BagName).ToString(),
                                     BagName = BagName,
                                     BagDescription = string.Format("A bag for storing items belonging to {0} mod", ModUniqueId),
-                                    Price = 100000,
-                                    Capacity = 9999,
-                                    Sellers = new List<BagShop>() { BagShop.Pierre },
-                                    MenuOptions = new BagMenuOptions()
-                                    {
-                                        GroupedLayoutOptions = new BagMenuOptions.GroupedLayout()
-                                        {
+                                    IconTexture = BagType.SourceTexture.SpringObjects,
+                                    IconPosition = new Rectangle(),
+                                    Prices = AllSizes.ToDictionary(x => x, x => BagTypeFactory.DefaultPrices[x]),
+                                    Capacities = AllSizes.ToDictionary(x => x, x => BagTypeFactory.DefaultCapacities[x]),
+                                    Sellers = AllSizes.ToDictionary(x => x, x => new List<BagShop>() { BagShop.Pierre }),
+                                    MenuOptions = AllSizes.ToDictionary(x => x, x => new BagMenuOptions() {
+                                        GroupedLayoutOptions = new BagMenuOptions.GroupedLayout() {
                                             GroupsPerRow = 5
                                         }
-                                    },
+                                    }),
                                     Items = ModdedBag.GetModdedItems(ModUniqueId)
                                 };
 

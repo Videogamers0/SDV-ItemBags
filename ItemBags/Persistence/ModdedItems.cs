@@ -1,10 +1,12 @@
 ﻿using ItemBags.Bags;
 using ItemBags.Helpers;
+using Microsoft.Xna.Framework;
 using Newtonsoft.Json;
 using StardewModdingAPI;
 using StardewValley;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -21,6 +23,8 @@ namespace ItemBags.Persistence
     [DataContract(Name = "ModdedBag", Namespace = "")]
     public class ModdedBag
     {
+        public static readonly ReadOnlyCollection<ContainerSize> AllSizes = Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>().ToList().AsReadOnly();
+
         /// <summary>If false, this data file will not be loaded on startup</summary>
         [JsonProperty("IsEnabled")]
         public bool IsEnabled { get; set; } = true;
@@ -38,22 +42,25 @@ namespace ItemBags.Persistence
         [JsonProperty("BagDescription")]
         public string BagDescription { get; set; } = "";
 
-        [JsonProperty("Price")]
-        public int Price { get; set; } = 10000;
-        /// <summary>The maximum quantity of each item that this bag is capable of storing.</summary>
-        [JsonProperty("Capacity")]
-        public int Capacity { get; set; } = 9999;
+        [JsonProperty("IconTexture")]
+        public BagType.SourceTexture IconTexture { get; set; } = BagType.SourceTexture.SpringObjects;
+        [JsonProperty("IconPosition")]
+        public Rectangle IconPosition { get; set; } = new Rectangle();
 
-        /// <summary>The shops that will sell this bag</summary>
-        [JsonProperty("Sellers")]
-        public List<BagShop> Sellers { get; set; } = new List<BagShop>() { BagShop.Pierre };
+        [JsonProperty("Prices")]
+        public Dictionary<ContainerSize, int> Prices { get; set; } = AllSizes.ToDictionary(x => x, x => BagTypeFactory.DefaultPrices[x]);
+        [JsonProperty("Capacities")]
+        public Dictionary<ContainerSize, int> Capacities { get; set; } = AllSizes.ToDictionary(x => x, x => BagTypeFactory.DefaultCapacities[x]);
+        [JsonProperty("SizeSellers")]
+        public Dictionary<ContainerSize, List<BagShop>> Sellers { get; set; } = AllSizes.ToDictionary(x => x, x => new List<BagShop>() { BagShop.Pierre });
 
-        [JsonProperty("MenuOptions")]
-        public BagMenuOptions MenuOptions { get; set; } = new BagMenuOptions() {
+        private static readonly BagMenuOptions DefaultMenuOptions = new BagMenuOptions() {
             GroupedLayoutOptions = new BagMenuOptions.GroupedLayout() {
                 GroupsPerRow = 5
             }
         };
+        [JsonProperty("SizeMenuOptions")]
+        public Dictionary<ContainerSize, BagMenuOptions> MenuOptions { get; set; } = AllSizes.ToDictionary(x => x, x => DefaultMenuOptions.GetCopy());
 
         /// <summary>Metadata about each modded item that should be storeable inside this bag.</summary>
         [JsonProperty("Items")]
@@ -123,6 +130,14 @@ namespace ItemBags.Persistence
 
                 IModHelper Helper = ItemBagsMod.ModInstance.Helper;
 
+                Dictionary<string, int> AllBigCraftableIds = new Dictionary<string, int>();
+                foreach (System.Collections.Generic.KeyValuePair<int, string> KVP in Game1.bigCraftablesInformation)
+                {
+                    string ObjectName = KVP.Value.Split('/').First();
+                    if (!AllBigCraftableIds.ContainsKey(ObjectName))
+                        AllBigCraftableIds.Add(ObjectName, KVP.Key);
+                }
+
                 Dictionary<string, int> AllObjectIds = new Dictionary<string, int>();
                 foreach (System.Collections.Generic.KeyValuePair<int, string> KVP in Game1.objectInformation)
                 {
@@ -135,25 +150,26 @@ namespace ItemBags.Persistence
                 IDictionary<string, int> JAObjectIds = API.GetAllObjectIds();
 
                 bool ChangesMade = false;
+                HashSet<string> ModifiedBagTypeIds = new HashSet<string>();
 
                 //  Now that JsonAssets has finished loading the modded items, go through each one, and convert the items into StoreableBagItems (which requires an Id instead of just a Name)
                 foreach (System.Collections.Generic.KeyValuePair<ModdedBag, BagType> KVP in ItemBagsMod.TemporaryModdedBagTypes)
                 {
-                    List<StoreableBagItem> Items = KVP.Key.Items.Select(x => x.ToStoreableBagItem(JABigCraftableIds, JAObjectIds, AllObjectIds)).Where(x => x != null).ToList();
-                    if (Items.Any())
+                    foreach (BagSizeConfig SizeCfg in KVP.Value.SizeSettings)
                     {
-                        foreach (BagSizeConfig SizeCfg in KVP.Value.SizeSettings)
+                        List<StoreableBagItem> Items = KVP.Key.Items.Where(x => x.Size <= SizeCfg.Size).Select(x => x.ToStoreableBagItem(JABigCraftableIds, JAObjectIds, AllBigCraftableIds, AllObjectIds)).Where(x => x != null).ToList();
+                        if (Items.Any())
                         {
                             SizeCfg.Items.AddRange(Items);
+                            ChangesMade = true;
+                            ModifiedBagTypeIds.Add(KVP.Value.Id);
                         }
-
-                        ChangesMade = true;
                     }
                 }
 
                 if (ChangesMade)
                 {
-                    ItemBag.GetAllBags(true).ForEach(x => x.OnModdedItemsImported());
+                    ItemBag.GetAllBags(true).Where(x => ModifiedBagTypeIds.Contains(x.GetTypeId())).ToList().ForEach(x => x.OnModdedItemsImported());
                 }
             }
             catch (Exception ex)
@@ -170,58 +186,33 @@ namespace ItemBags.Persistence
                   Id = Guid,
                   Name = BagName,
                   Description = BagDescription,
-                  IconSourceTexture = BagType.SourceTexture.SpringObjects,
-                  IconSourceRect = new Microsoft.Xna.Framework.Rectangle(),
-                  SizeSettings = new BagSizeConfig[]
+                  IconSourceTexture = IconTexture,
+                  IconSourceRect = IconPosition,
+                  SizeSettings = AllSizes.Select(x => new BagSizeConfig()
                   {
-                      new BagSizeConfig()
-                      {
-                          Size = ContainerSize.Small,
-                          MenuOptions = MenuOptions,
-                          Price = Price,
-                          Sellers = new BagShop[] { },
-                          CapacityMultiplier = 1.0,
-                          Items = new List<StoreableBagItem>()
-                      },
-                      new BagSizeConfig()
-                      {
-                          Size = ContainerSize.Medium,
-                          MenuOptions = MenuOptions,
-                          Price = Price,
-                          Sellers = new BagShop[] { },
-                          CapacityMultiplier = 1.0,
-                          Items = new List<StoreableBagItem>()
-                      },
-                      new BagSizeConfig()
-                      {
-                          Size = ContainerSize.Large,
-                          MenuOptions = MenuOptions,
-                          Price = Price,
-                          Sellers = new BagShop[] { },
-                          CapacityMultiplier = 1.0,
-                          Items = new List<StoreableBagItem>()
-                      },
-                      new BagSizeConfig()
-                      {
-                          Size = ContainerSize.Giant,
-                          MenuOptions = MenuOptions,
-                          Price = Price,
-                          Sellers = new BagShop[] { },
-                          CapacityMultiplier = 1.0,
-                          Items = new List<StoreableBagItem>()
-                      },
-                      new BagSizeConfig()
-                      {
-                          Size = ContainerSize.Massive,
-                          MenuOptions = MenuOptions,
-                          Price = Price,
-                          Sellers = Sellers.ToArray(),
-                          CapacityMultiplier = 1.0,
-                          Items = new List<StoreableBagItem>()
-                      }
-                  }
+                      Size = x,
+                      MenuOptions = MenuOptions[x],
+                      Price = Prices[x],
+                      Sellers = Sellers[x],
+                      CapacityMultiplier = BagTypeFactory.GetCapacityMultiplier(x, Capacities[x]),
+                      Items = new List<StoreableBagItem>()
+                  }).ToArray()
             };
         }
+
+        #region Backwards Compatibility
+        /// <summary>Deprecated. Use <see cref="Prices"/> instead.</summary>
+        [JsonProperty("Price")]
+        private int DeprecatedPrice { set { Prices = AllSizes.ToDictionary(x => x, x => value); } }
+        /// <summary>Deprecated. Use <see cref="Capacities"/> instead. The maximum quantity of each item that this bag is capable of storing.</summary>
+        [JsonProperty("Capacity")]
+        private int DeprecatedCapacity { set { Capacities = AllSizes.ToDictionary(x => x, x => value); } }
+        /// <summary>Deprecated. Use <see cref="Sellers"/> instead. The shops that will sell this bag</summary>
+        [JsonProperty("Sellers")]
+        private List<BagShop> DeprecatedSellers { set { Sellers = AllSizes.ToDictionary(x => x, x => new List<BagShop>(value)); } }
+        /// <summary>Deprecated. Use <see cref="MenuOptions"/> instead.</summary>
+        [JsonProperty("MenuOptions")]
+        private BagMenuOptions DeprecatedMenuOptions { set { MenuOptions = AllSizes.ToDictionary(x => x, x => value.GetCopy()); } }
 
         [OnDeserialized]
         private void OnDeserialized(StreamingContext sc)
@@ -231,6 +222,7 @@ namespace ItemBags.Persistence
         }
 
         public static string GetLegacyGuid(string ModUniqueId) { return StringToGUID(ModUniqueId).ToString(); }
+        #endregion Backwards Compatibility
     }
 
     /// <summary>Represents modded items that should be merged into non-modded bags, such as storing a modded seed item in the built-in "Seed Bag"</summary>
@@ -404,15 +396,13 @@ namespace ItemBags.Persistence
 
         /// <param name="JABigCraftableIds">Ids of BigCraftable items added through JsonAssets. See also: <see cref="IJsonAssetsAPI.GetAllBigCraftableIds"/></param>
         /// <param name="JAObjectIds">Ids of Objects added through JsonAssets. See also: <see cref="IJsonAssetsAPI.GetAllObjectIds"/></param>
-        /// <param name="AllObjectIds"></param>
-        /// <returns></returns>
-        public StoreableBagItem ToStoreableBagItem(IDictionary<string, int> JABigCraftableIds, IDictionary<string, int> JAObjectIds, IDictionary<string, int> AllObjectIds)
+        public StoreableBagItem ToStoreableBagItem(IDictionary<string, int> JABigCraftableIds, IDictionary<string, int> JAObjectIds, IDictionary<string, int> AllBigCraftableIds, IDictionary<string, int> AllObjectIds)
         {
             if (IsBigCraftable)
             {
                 if (JABigCraftableIds.TryGetValue(Name, out int JAId))
                     return new StoreableBagItem(JAId, HasQualities, null, IsBigCraftable);
-                else if (AllObjectIds.TryGetValue(Name, out int Id))
+                else if (AllBigCraftableIds.TryGetValue(Name, out int Id))
                     return new StoreableBagItem(Id, HasQualities, null, IsBigCraftable);
                 else
                     return null;

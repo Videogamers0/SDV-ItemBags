@@ -111,35 +111,35 @@ namespace ItemBags.Persistence
                 {
                     Size = ContainerSize.Small,
                     Price = BagTypeFactory.DefaultPrices[ContainerSize.Small],
-                    Sellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Pierre },
+                    Sellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Pierre },
                     Items = new List<StoreableBagItem>()
                 },
                 new BagSizeConfig()
                 {
                     Size = ContainerSize.Medium,
                     Price = BagTypeFactory.DefaultPrices[ContainerSize.Medium],
-                    Sellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Pierre },
+                    Sellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Pierre },
                     Items = new List<StoreableBagItem>()
                 },
                 new BagSizeConfig()
                 {
                     Size = ContainerSize.Large,
                     Price = BagTypeFactory.DefaultPrices[ContainerSize.Large],
-                    Sellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Pierre },
+                    Sellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Pierre },
                     Items = new List<StoreableBagItem>()
                 },
                 new BagSizeConfig()
                 {
                     Size = ContainerSize.Giant,
                     Price = BagTypeFactory.DefaultPrices[ContainerSize.Giant],
-                    Sellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Pierre },
+                    Sellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Pierre },
                     Items = new List<StoreableBagItem>()
                 },
                 new BagSizeConfig()
                 {
                     Size = ContainerSize.Massive,
                     Price = BagTypeFactory.DefaultPrices[ContainerSize.Massive],
-                    Sellers = new BagSizeConfig.BagShop[] { BagSizeConfig.BagShop.Pierre },
+                    Sellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Pierre },
                     Items = new List<StoreableBagItem>()
                 }
             };
