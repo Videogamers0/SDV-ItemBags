@@ -18,7 +18,7 @@ namespace ItemBags
     {
         private static IModHelper Helper { get; set; }
 
-        /// <summary>Adds functionality that allows you to use items within your bags as input materials for crafting from the main GameMenu's CraftingPage.</summary>
+        /// <summary>Adds functionality that allows you to use items within your bags as input materials for crafting from the main GameMenu's CraftingPage, or from a cooking CraftingPage.</summary>
         internal static void OnModEntry(IModHelper Helper)
         {
             CraftingHandler.Helper = Helper;
@@ -32,11 +32,8 @@ namespace ItemBags
         private static Dictionary<Object, List<Object>> SplitStacks = null;
 
         /// <summary>Initializes extra data for the Crafting Page so it can search for and use materials within bags in your inventory.</summary>
-        private static void OnCraftingTabActivated()
+        private static void OnCraftingPageActivated(CraftingPage CraftingMenu)
         {
-            GameMenu GM = Game1.activeClickableMenu as GameMenu;
-            CraftingPage CraftingMenu = GM.pages.First(x => x is CraftingPage) as CraftingPage;
-
             //  Allow the CraftingPage to search for and use items inside of bags
             bool AllowUsingBundleBagItemsForCrafting = false;
             List<ItemBag> BagsInInventory = Game1.player.Items.Where(x => x != null && x is ItemBag).Cast<ItemBag>().ToList();
@@ -137,7 +134,7 @@ namespace ItemBags
             }
         }
 
-        private static void OnCraftingTabDeactivated()
+        private static void OnCraftingPageDeactivated()
         {
             try
             {
@@ -196,13 +193,14 @@ namespace ItemBags
         {
             try
             {
+                GameMenu GM = Game1.activeClickableMenu as GameMenu;
                 if (CurrentTab.HasValue && CurrentTab.Value == GameMenu.craftingTab)
                 {
-                    OnCraftingTabActivated();
+                    OnCraftingPageActivated(GM.pages.First(x => x is CraftingPage) as CraftingPage);
                 }
                 else if (PreviousTab.HasValue && PreviousTab.Value == GameMenu.craftingTab)
                 {
-                    OnCraftingTabDeactivated();
+                    OnCraftingPageDeactivated();
                 }
 
             }
@@ -233,6 +231,15 @@ namespace ItemBags
             else if (e.OldMenu is GameMenu)
             {
                 OnGameMenuClosed();
+            }
+
+            if (e.NewMenu is CraftingPage CP)
+            {
+                OnCraftingPageActivated(CP);
+            }
+            else if (e.OldMenu is CraftingPage)
+            {
+                OnCraftingPageDeactivated();
             }
         }
     }
