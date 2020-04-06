@@ -351,20 +351,43 @@ namespace ItemBags
                 CommunityCenterBundles.Instance = new CommunityCenterBundles();
             }
 
-            //  Add Bag items to the shop's stock
             if (e.NewMenu is ShopMenu SM)
             {
-                bool IsTravellingMerchant = SM.portraitPerson == null && SM.storeContext != null && SM.storeContext.Equals("Forest", StringComparison.CurrentCultureIgnoreCase)
-                    && SM.onPurchase?.GetMethodInfo().Name == "onTravelingMerchantShopPurchase";
-                string ShopOwnerName = IsTravellingMerchant ? "TravellingCart" : SM.portraitPerson?.Name;
-
-                if (!string.IsNullOrEmpty(ShopOwnerName))
+                //  Determine if the shop menu belongs to one of our managed shops
+                bool IsModifiableShop = false;
+                BagShop BagShop = BagShop.Pierre;
+                if (SM.portraitPerson?.Name != null)
                 {
-                    List<ItemBag> OwnedBags = UserConfig.HideObsoleteBagsFromShops ? ItemBag.GetAllBags(true) : new List<ItemBag>();
+                    //TODO test if the Stardew Valley Expanded shops like Isaac/Sophia/Alesia have non-null values for ShopMenu.portraitPerson.Name
+                    if (Enum.TryParse(SM.portraitPerson.Name, out BagShop))
+                    {
+                        IsModifiableShop = true;
+                    }
+                }
+                else if (SM.storeContext != null)
+                {
+                    if (SM.storeContext.Equals("Forest", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        if (SM.onPurchase?.GetMethodInfo().Name == "onTravelingMerchantShopPurchase")
+                            BagShop = BagShop.TravellingCart;
+                        else
+                            BagShop = BagShop.HatMouse;
+                        IsModifiableShop = true;
+                    }
+                    else if (SM.storeContext.Equals("Town", StringComparison.CurrentCultureIgnoreCase) && SM.potraitPersonDialogue.Contains("Khadija"))
+                    {
+                        BagShop = BagShop.Khadija;
+                        IsModifiableShop = true;
+                    }
+                }
+
+                //  Add Bag items to the shop's stock
+                if (IsModifiableShop)
+                {
                     Dictionary<ISalable, int[]> Stock = SM.itemPriceAndStock;
 
                     bool ShouldModifyStock = true;
-                    if (ShopOwnerName.Equals("Clint", StringComparison.CurrentCultureIgnoreCase))
+                    if (BagShop == BagShop.Clint)
                     {
                         //  Assume user is viewing Clint tool upgrades if the stock doesn't contain Coal
                         if (!Stock.Any(x => x.Key is Object Obj && Obj.Name.Equals("Coal", StringComparison.CurrentCultureIgnoreCase)))
@@ -375,102 +398,101 @@ namespace ItemBags
                     {
                         bool HasChangedStock = false;
 
-                        if (Enum.TryParse(ShopOwnerName, out BagShop BagShop))
+                        List<ItemBag> OwnedBags = UserConfig.HideObsoleteBagsFromShops ? ItemBag.GetAllBags(true) : new List<ItemBag>();
+
+                        //  Add Bounded Bags to stock
+                        foreach (BagType Type in BagConfig.BagTypes)
                         {
-                            //  Add Bounded Bags to stock
-                            foreach (BagType Type in BagConfig.BagTypes)
+                            foreach (BagSizeConfig SizeCfg in Type.SizeSettings)
                             {
-                                foreach (BagSizeConfig SizeCfg in Type.SizeSettings)
-                                {
-                                    bool IsSoldByShop = UserConfig.IsSizeVisibleInShops(SizeCfg.Size) && SizeCfg.Sellers.Contains(BagShop);
+                                bool IsSoldByShop = UserConfig.IsSizeVisibleInShops(SizeCfg.Size) && SizeCfg.Sellers.Contains(BagShop);
 #if DEBUG
-                                    //IsSoldByShop = true;
+                                //IsSoldByShop = true;
 #endif
-                                    if (IsSoldByShop)
+                                if (IsSoldByShop)
+                                {
+                                    bool IsObsolete = false;
+                                    if (UserConfig.HideObsoleteBagsFromShops)
                                     {
-                                        bool IsObsolete = false;
-                                        if (UserConfig.HideObsoleteBagsFromShops)
-                                        {
-                                            IsObsolete = OwnedBags.Any(x => x is BoundedBag BB && BB.TypeInfo == Type && (int)BB.Size > (int)SizeCfg.Size);
-                                        }
+                                        IsObsolete = OwnedBags.Any(x => x is BoundedBag BB && BB.TypeInfo == Type && (int)BB.Size > (int)SizeCfg.Size);
+                                    }
 
-                                        if (!IsObsolete)
-                                        {
-                                            BoundedBag SellableInstance = new BoundedBag(Type, SizeCfg.Size, false);
-                                            int Price = SellableInstance.GetPurchasePrice();
+                                    if (!IsObsolete)
+                                    {
+                                        BoundedBag SellableInstance = new BoundedBag(Type, SizeCfg.Size, false);
+                                        int Price = SellableInstance.GetPurchasePrice();
 #if DEBUG
-                                            //Price = 1 + (int)SizeCfg.Size;
+                                        //Price = 1 + (int)SizeCfg.Size;
 #endif
-                                            Stock.Add(SellableInstance, new int[] { Price, ShopMenu.infiniteStock });
-                                            HasChangedStock = true;
-                                        }
-                                    }
-                                }
-                            }
-
-                            //  Add Bundle Bags to stock
-                            foreach (BundleBagSizeConfig SizeCfg in UserConfig.BundleBagSettings)
-                            {
-                                ContainerSize Size = SizeCfg.Size;
-                                if (BundleBag.ValidSizes.Contains(Size) && SizeCfg.Sellers.Contains(BagShop) && UserConfig.IsSizeVisibleInShops(Size))
-                                {
-                                    bool IsObsolete = false;
-                                    if (UserConfig.HideObsoleteBagsFromShops)
-                                    {
-                                        IsObsolete = OwnedBags.Any(x => x is BundleBag BB && (int)BB.Size > (int)Size);
-                                    }
-
-                                    if (!IsObsolete)
-                                    {
-                                        BundleBag BundleBag = new BundleBag(Size, true);
-                                        int Price = BundleBag.GetPurchasePrice();
-                                        Stock.Add(BundleBag, new int[] { Price, ShopMenu.infiniteStock });
+                                        Stock.Add(SellableInstance, new int[] { Price, ShopMenu.infiniteStock });
                                         HasChangedStock = true;
                                     }
                                 }
                             }
+                        }
 
-                            //  Add Rucksacks to stock
-                            foreach (RucksackSizeConfig SizeCfg in UserConfig.RucksackSettings)
+                        //  Add Bundle Bags to stock
+                        foreach (BundleBagSizeConfig SizeCfg in UserConfig.BundleBagSettings)
+                        {
+                            ContainerSize Size = SizeCfg.Size;
+                            if (BundleBag.ValidSizes.Contains(Size) && SizeCfg.Sellers.Contains(BagShop) && UserConfig.IsSizeVisibleInShops(Size))
                             {
-                                ContainerSize Size = SizeCfg.Size;
-                                if (SizeCfg.Sellers.Contains(BagShop) && UserConfig.IsSizeVisibleInShops(Size))
+                                bool IsObsolete = false;
+                                if (UserConfig.HideObsoleteBagsFromShops)
                                 {
-                                    bool IsObsolete = false;
-                                    if (UserConfig.HideObsoleteBagsFromShops)
-                                    {
-                                        IsObsolete = OwnedBags.Any(x => x is Rucksack RS && (int)RS.Size > (int)Size);
-                                    }
+                                    IsObsolete = OwnedBags.Any(x => x is BundleBag BB && (int)BB.Size > (int)Size);
+                                }
 
-                                    if (!IsObsolete)
-                                    {
-                                        Rucksack Rucksack = new Rucksack(Size, false, AutofillPriority.Low);
-                                        int Price = Rucksack.GetPurchasePrice();
-                                        Stock.Add(Rucksack, new int[] { Price, ShopMenu.infiniteStock });
-                                        HasChangedStock = true;
-                                    }
+                                if (!IsObsolete)
+                                {
+                                    BundleBag BundleBag = new BundleBag(Size, true);
+                                    int Price = BundleBag.GetPurchasePrice();
+                                    Stock.Add(BundleBag, new int[] { Price, ShopMenu.infiniteStock });
+                                    HasChangedStock = true;
                                 }
                             }
+                        }
 
-                            //  Add Omni Bags to stock
-                            foreach(OmniBagSizeConfig SizeCfg in UserConfig.OmniBagSettings)
+                        //  Add Rucksacks to stock
+                        foreach (RucksackSizeConfig SizeCfg in UserConfig.RucksackSettings)
+                        {
+                            ContainerSize Size = SizeCfg.Size;
+                            if (SizeCfg.Sellers.Contains(BagShop) && UserConfig.IsSizeVisibleInShops(Size))
                             {
-                                ContainerSize Size = SizeCfg.Size;
-                                if (SizeCfg.Sellers.Contains(BagShop) && UserConfig.IsSizeVisibleInShops(Size))
+                                bool IsObsolete = false;
+                                if (UserConfig.HideObsoleteBagsFromShops)
                                 {
-                                    bool IsObsolete = false;
-                                    if (UserConfig.HideObsoleteBagsFromShops)
-                                    {
-                                        IsObsolete = OwnedBags.Any(x => x is OmniBag OB && (int)OB.Size > (int)Size);
-                                    }
+                                    IsObsolete = OwnedBags.Any(x => x is Rucksack RS && (int)RS.Size > (int)Size);
+                                }
 
-                                    if (!IsObsolete)
-                                    {
-                                        OmniBag OmniBag = new OmniBag(Size);
-                                        int Price = OmniBag.GetPurchasePrice();
-                                        Stock.Add(OmniBag, new int[] { Price, ShopMenu.infiniteStock });
-                                        HasChangedStock = true;
-                                    }
+                                if (!IsObsolete)
+                                {
+                                    Rucksack Rucksack = new Rucksack(Size, false, AutofillPriority.Low);
+                                    int Price = Rucksack.GetPurchasePrice();
+                                    Stock.Add(Rucksack, new int[] { Price, ShopMenu.infiniteStock });
+                                    HasChangedStock = true;
+                                }
+                            }
+                        }
+
+                        //  Add Omni Bags to stock
+                        foreach(OmniBagSizeConfig SizeCfg in UserConfig.OmniBagSettings)
+                        {
+                            ContainerSize Size = SizeCfg.Size;
+                            if (SizeCfg.Sellers.Contains(BagShop) && UserConfig.IsSizeVisibleInShops(Size))
+                            {
+                                bool IsObsolete = false;
+                                if (UserConfig.HideObsoleteBagsFromShops)
+                                {
+                                    IsObsolete = OwnedBags.Any(x => x is OmniBag OB && (int)OB.Size > (int)Size);
+                                }
+
+                                if (!IsObsolete)
+                                {
+                                    OmniBag OmniBag = new OmniBag(Size);
+                                    int Price = OmniBag.GetPurchasePrice();
+                                    Stock.Add(OmniBag, new int[] { Price, ShopMenu.infiniteStock });
+                                    HasChangedStock = true;
                                 }
                             }
                         }

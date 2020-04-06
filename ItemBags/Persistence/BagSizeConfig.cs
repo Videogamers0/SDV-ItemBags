@@ -58,7 +58,30 @@ namespace ItemBags.Persistence
             Sandy,
             [XmlEnum("TravellingCart")]
             [Description("TravellingCart")]
-            TravellingCart
+            TravellingCart,
+            [XmlEnum("Employee")]
+            [Description("Employee")]
+            Employee,
+            [XmlEnum("HatMouse")]
+            [Description("HatMouse")]
+            HatMouse,
+            [XmlEnum("Khadija")]
+            [Description("Khadija")]
+            Khadija,
+            #region SVE
+            [XmlEnum("Sophia")]
+            [Description("Sophia")]
+            Sophia,
+            [XmlEnum("Bear")]
+            [Description("Bear")]
+            Bear,
+            [XmlEnum("Alesia")]
+            [Description("Alesia")]
+            Alesia,
+            [XmlEnum("Isaac")]
+            [Description("Isaac")]
+            Isaac,
+            #endregion SVE
         }
 
         [XmlArray("Shops")]
