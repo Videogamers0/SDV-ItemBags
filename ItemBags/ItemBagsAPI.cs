@@ -10,6 +10,10 @@ using SObject = StardewValley.Object;
 
 namespace ItemBags
 {
+    /// <summary>
+    /// If you are not referencing the ItemBags dll, then just delete the API calls that require "ItemBag" instances 
+    /// and use the alternative API calls that take in the more general "Item" parameters instead.
+    /// </summary>
     public interface IItemBagsAPI
     {
         /// <summary>Added in v1.4.3.</summary>

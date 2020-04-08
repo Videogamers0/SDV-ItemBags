@@ -105,15 +105,23 @@
     <Compile Include="SaveAnywhereAPI.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\Modded Bags\Samples %28Copy into parent folder to use%29\Hadi.JASoda.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into parent folder to use%29\mizu.flowers.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into parent folder to use%29\paradigmnomad.freshmeat.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into parent folder to use%29\paradigmnomad.morefood.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into parent folder to use%29\ppja.artisanvalleymachinegoods.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into parent folder to use%29\ppja.evenmorerecipes.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into parent folder to use%29\ppja.fruitsandveggies.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into parent folder to use%29\ppja.MoreRecipesMeat.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into parent folder to use%29\ppja.moretrees.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\Aquilegia.SweetTooth.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\Hadi.JASoda.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\Hesper.JA.Succulents.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\HisameCraftables.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\HisameNewRecipes.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\kildarien.farmertoflorist.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\minervamaga.JA.EemieCrops.fruit.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\minervamaga.JA.EemieCrops.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\mizu.flowers.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\mizu.flowers.seeds.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\ParadigmNomad.FantasyCrops.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\paradigmnomad.freshmeat.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\paradigmnomad.freshmeat.seeds.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\paradigmnomad.morefood.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\ppja.ancientcrops.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\ppja.ancientcrops.seeds.json" />
+    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\ppja.artisanvalleymachinegoods.json" />
     <None Include="i18n\de.json" />
     <None Include="i18n\default.json" />
     <None Include="i18n\es.json" />
@@ -129,8 +137,9 @@
   <ItemGroup>
     <None Include="readme.txt" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Content Include="assets\Modded Bags\Samples %28Copy into parent folder to use%29\help.txt" />
+    <Content Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\help.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Pathoschild.Stardew.ModBuildConfig.3.0.0\build\Pathoschild.Stardew.ModBuildConfig.targets" Condition="Exists('..\packages\Pathoschild.Stardew.ModBuildConfig.3.0.0\build\Pathoschild.Stardew.ModBuildConfig.targets')" />
