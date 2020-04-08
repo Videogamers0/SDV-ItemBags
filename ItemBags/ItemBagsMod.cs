@@ -29,7 +29,7 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 4, 2); // Last updated 4/4/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 4, 3); // Last updated 4/7/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
 
@@ -296,6 +296,11 @@ namespace ItemBags
             CommandHandler.OnModEntry(helper);
             AutofillHandler.OnModEntry(helper);
             MultiplayerHandler.OnModEntry(helper);
+        }
+
+        public override object GetApi()
+        {
+            return new ItemBagsAPI();
         }
 
         private bool QueuePlaceCursorSlotItem { get; set; }
