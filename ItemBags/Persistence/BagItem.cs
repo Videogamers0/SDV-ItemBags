@@ -56,6 +56,15 @@ namespace ItemBags.Persistence
             {
                 Object Item = new Object(Id, Quantity, false, Price <= 0 ? -1 : Price, Quality);
 
+#if DEBUG
+                if (Item.Price <= 0 && Item.Price != this.Price)
+                {
+                    string WarningMsg = string.Format("Warning - Item '{0}' did not have its price set to a non-zero value after being created. Expected Price = {1}, Actual Price = {2}",
+                        Item.DisplayName, this.Price, Item.Price);
+                    ItemBagsMod.ModInstance.Monitor.Log(WarningMsg, StardewModdingAPI.LogLevel.Warn);
+                }
+#endif
+
                 //  Sanity check in case Stack > 999 and StardewValley is updated to set the Object.Stack in its constructor instead of Object.stack 
                 //  (Object.Stack has a setter that restricts maximum value to the range 0-999, while Object.stack (the backing Net field) does not)
                 if (Item.Stack != Quantity)

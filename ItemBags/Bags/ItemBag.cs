@@ -181,16 +181,31 @@ namespace ItemBags.Bags
         public static bool AreItemsEquivalent(Object object1, Object object2, bool ComparePrice)
         {
             //Possible TODO this method was originally intended to find existing stacks of the same item so that that I could combine the stacks.
-            //I've recently realized there is an Item.canStackWith(Item) instance method.  The calls to this function should be refactored to use that.
+            //I've recently realized there is an Item.canStackWith(Item) instance method.  The calls to this function should be refactored to use that. 
+            //(But should also account for stacking between different Colors of ColoredObject instances that have the same Id/Quality/Price)
             if (object1 == null && object2 == null) // both null
                 return true;
             else if (object1 == null || object2 == null) // 1 is null but the other isn't
                 return false;
             else // both are non-null
             {
-                return object1.ParentSheetIndex == object2.ParentSheetIndex  && object1.GetType() == object2.GetType()
-                    && object1.Quality == object2.Quality && object1.bigCraftable == object2.bigCraftable
-                    && object1.IsRecipe == object2.IsRecipe && (!ComparePrice || object1.Price == object2.Price);
+                //  Compare common properties
+                if (object1.ParentSheetIndex != object2.ParentSheetIndex ||
+                    object1.Quality != object2.Quality ||
+                    object1.IsRecipe != object2.IsRecipe ||
+                    object1.bigCraftable.Value != object2.bigCraftable.Value ||
+                    (ComparePrice && (object1.Price != object2.Price)))
+                {
+                    return false;
+                }
+                else
+                {
+                    //  Allow different colors of the same ColoredObject flowers to stack together
+                    Type type1 = object1.GetType();
+                    Type type2 = object2.GetType();
+                    bool AreTypesCompatible = type1 == type2 || (type1 == typeof(Object) && type2 == typeof(ColoredObject)) || (type2 == typeof(Object) && type1 == typeof(ColoredObject));
+                    return AreTypesCompatible;
+                }
             }
         }
 

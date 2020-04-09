@@ -15,6 +15,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using static ItemBags.Persistence.BagSizeConfig;
+using Object = StardewValley.Object;
 
 namespace ItemBags.Persistence
 {
@@ -76,6 +77,14 @@ namespace ItemBags.Persistence
             return new Guid(data);
         }
 
+        //  Categories can be found here: https://stardewvalleywiki.com/Modding:Object_data#Categories
+        /// <summary>Object instances belonging to these categories can have different values in <see cref="Object.Quality"/>. This list might not be accurate.</summary>
+        private static readonly ReadOnlyCollection<int> CategoriesWithQualities = new List<int>() {
+            Object.FishCategory, Object.EggCategory, Object.MilkCategory, Object.meatCategory,
+            Object.sellAtPierresAndMarnies, Object.artisanGoodsCategory, /*Object.syrupCategory,*/
+            Object.VegetableCategory, Object.FruitsCategory, Object.flowersCategory, Object.GreensCategory
+        }.AsReadOnly();
+
         /// <summary>Must be executed after <see cref="IJsonAssetsAPI.IdsFixed"/> event has fired.<para/>
         /// Returns all BigCraftable and all Objects that belong to the given mod manifest UniqueID. 
         /// Does not include other types of items such as Hats or Weapons.</summary>
@@ -91,7 +100,30 @@ namespace ItemBags.Persistence
                 {
                     List<string> Objects = API.GetAllObjectsFromContentPack(ModUniqueId);
                     if (Objects != null)
-                        Items.AddRange(Objects.Select(x => new ModdedItem(x, false, true, RequiredSize)));
+                    {
+                        //  Index all regular Objects by their names
+                        Dictionary<string, int> AllObjectIds = new Dictionary<string, int>();
+                        foreach (System.Collections.Generic.KeyValuePair<int, string> KVP in Game1.objectInformation)
+                        {
+                            string ObjectName = KVP.Value.Split('/').First();
+                            if (!AllObjectIds.ContainsKey(ObjectName))
+                                AllObjectIds.Add(ObjectName, KVP.Key);
+                        }
+
+                        foreach (string ModdedItemName in Objects)
+                        {
+                            //  Try to guess if the item has multiple different valid qualities, based on the it's category
+                            bool HasQualities = true;
+                            if (AllObjectIds.TryGetValue(ModdedItemName, out int ItemId))
+                            {
+                                Object SampleItem = new Object(ItemId, 1, false, -1, 0);
+                                if (SampleItem != null)
+                                    HasQualities = CategoriesWithQualities.Contains(SampleItem.Category);
+                            }
+
+                            Items.AddRange(Objects.Select(x => new ModdedItem(x, false, HasQualities, RequiredSize)));
+                        }
+                    }
                     //List<string> Crops = API.GetAllCropsFromContentPack(ModUniqueId);
                     //if (Crops != null)
                     //    Items.AddRange(Crops.Select(x => new ModdedItem(x, false, false, RequiredSize)));
@@ -100,6 +132,21 @@ namespace ItemBags.Persistence
                         Items.AddRange(BigCraftables.Select(x => new ModdedItem(x, true, false, RequiredSize)));
                 }
             }
+
+            //Possible TODO
+            //If ContentPatcher mod is loaded, try to parse the mod's content.json file and read the modded item's added by "Action"="EditData" and "Target"="Data/ObjectInformation"
+            //For example, the content.json file might have data like this (this is a brief sample from the 'New Fish' mod https://www.nexusmods.com/stardewvalley/mods/3578):
+            //{
+            //      "Action": "EditData",
+            //      "Target": "Data/ObjectInformation",
+            //      "Entries": {
+            //          "1120": "Ladyfish/80/8/Fish -4/Ladyfish/This saltwater fish prefers temperate waters and feeds in large schools.",
+            //          "1121": "Tancho Koi/150/5/Fish -4/Tancho Koi/A white carp with a red spot on its head. People appreciate their beauty and usually keep them in aquariums. It would be such a waste to eat or turn into fertilizer./Day Night^Fall",
+            //          ...
+            //          ...
+            //          ...
+            //      }
+            //}
 
             return Items;
         }

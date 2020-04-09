@@ -322,6 +322,16 @@ namespace ItemBags.Menus
                     if (Group.TryGetValue(Quality, out Object Placeholder))
                     {
                         ItemBag.ForceSetQuantity(Placeholder, Item.Stack);
+
+                        if (Placeholder.Price != Item.Price)
+                        {
+#if DEBUG
+                            string WarningMsg = string.Format("Warning - GroupedLayout placeholder item '{0}' does not have a matching price to the corresponding item in the bag."
+                                + " Placeholder.Price={1}, BagItem.Price={2}", Placeholder.DisplayName, Placeholder.Price, Item.Price);
+                            ItemBagsMod.ModInstance.Monitor.Log(WarningMsg, LogLevel.Warn);
+#endif
+                            Placeholder.Price = Item.Price;
+                        }
                     }
                 }
             }
