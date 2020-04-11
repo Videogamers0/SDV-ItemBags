@@ -23,6 +23,7 @@ namespace ItemBags.Bags
         public const string OmniBagTypeId = "6eb4c15d-3ad3-4b47-aab5-eb2f5daa8b3f";
 
         public List<ItemBag> NestedBags { get; }
+        public override bool IsEmpty() { return base.IsEmpty() && (NestedBags == null || NestedBags.All(x => x.IsEmpty())); }
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         public OmniBag() : base(ItemBagsMod.Translate("OmniBagName"), ItemBagsMod.Translate("OmniBagDescription"), ContainerSize.Small, null, null, new Vector2(16, 16), 0.5f, 1f)
@@ -131,10 +132,21 @@ namespace ItemBags.Bags
         }
         #endregion PyTK CustomElementHandler
 
-        internal override void OnModdedItemsImported()
+        internal override bool OnJsonAssetsItemIdsFixed(IJsonAssetsAPI API, bool AllowResyncing)
         {
+            bool ChangesMade = false;
             foreach (ItemBag Bag in NestedBags)
-                Bag.OnModdedItemsImported();
+            {
+                if (Bag.OnJsonAssetsItemIdsFixed(API, false))
+                    ChangesMade = true;
+            }
+
+            if (AllowResyncing && ChangesMade && Context.IsMainPlayer)
+            {
+                Resync();
+            }
+
+            return ChangesMade;
         }
 
         /// <summary>The 16x16 portion of <see cref="CursorsTexture"/> that contains the omnibag icon</summary>

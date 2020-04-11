@@ -242,7 +242,7 @@ namespace ItemBags
                     {
                         Monitor.Log("Unable to execute command: JsonAssets mod is not installed. Modded bags only support modded objects added through JsonAssets.", LogLevel.Alert);
                     }
-                    else if (!ModdedBag.HasImportedItems)
+                    else if (!Context.IsWorldReady)
                     {
                         Monitor.Log("Unable to execute command: JsonAssets has not finished loading modded items. You must load a save file before using this command.", LogLevel.Alert);
                     }

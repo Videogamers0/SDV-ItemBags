@@ -161,69 +161,76 @@ namespace ItemBags.Persistence
                 IJsonAssetsAPI API = Helper.ModRegistry.GetApi<IJsonAssetsAPI>(ItemBagsMod.JAUniqueId);
                 if (API != null)
                 {
-                    API.IdsFixed += (sender, e) => { ImportModdedBags(API, ItemBagsMod.BagConfig); };
+                    API.IdsFixed += (sender, e) => { OnJsonAssetsIdsFixed(API, ItemBagsMod.BagConfig); };
                 }
             }
         }
 
-        internal static bool HasImportedItems { get; set; } = false;
-
-        private static void ImportModdedBags(IJsonAssetsAPI API, BagConfig Target)
+        private static void OnJsonAssetsIdsFixed(IJsonAssetsAPI API, BagConfig Target)
         {
             try
             {
-                if (HasImportedItems)
-                    return;
+                ItemBagsMod.ModdedItems.ImportModdedItems(API, ItemBagsMod.BagConfig);
 
-                IModHelper Helper = ItemBagsMod.ModInstance.Helper;
-
-                Dictionary<string, int> AllBigCraftableIds = new Dictionary<string, int>();
-                foreach (System.Collections.Generic.KeyValuePair<int, string> KVP in Game1.bigCraftablesInformation)
+                if (ItemBagsMod.TemporaryModdedBagTypes.Any())
                 {
-                    string ObjectName = KVP.Value.Split('/').First();
-                    if (!AllBigCraftableIds.ContainsKey(ObjectName))
-                        AllBigCraftableIds.Add(ObjectName, KVP.Key);
-                }
-
-                Dictionary<string, int> AllObjectIds = new Dictionary<string, int>();
-                foreach (System.Collections.Generic.KeyValuePair<int, string> KVP in Game1.objectInformation)
-                {
-                    string ObjectName = KVP.Value.Split('/').First();
-                    if (!AllObjectIds.ContainsKey(ObjectName))
-                        AllObjectIds.Add(ObjectName, KVP.Key);
-                }
-
-                IDictionary<string, int> JABigCraftableIds = API.GetAllBigCraftableIds();
-                IDictionary<string, int> JAObjectIds = API.GetAllObjectIds();
-
-                bool ChangesMade = false;
-                HashSet<string> ModifiedBagTypeIds = new HashSet<string>();
-
-                //  Now that JsonAssets has finished loading the modded items, go through each one, and convert the items into StoreableBagItems (which requires an Id instead of just a Name)
-                foreach (System.Collections.Generic.KeyValuePair<ModdedBag, BagType> KVP in ItemBagsMod.TemporaryModdedBagTypes)
-                {
-                    foreach (BagSizeConfig SizeCfg in KVP.Value.SizeSettings)
+                    Dictionary<string, int> AllBigCraftableIds = new Dictionary<string, int>();
+                    foreach (System.Collections.Generic.KeyValuePair<int, string> KVP in Game1.bigCraftablesInformation)
                     {
-                        List<StoreableBagItem> Items = KVP.Key.Items.Where(x => x.Size <= SizeCfg.Size).Select(x => x.ToStoreableBagItem(JABigCraftableIds, JAObjectIds, AllBigCraftableIds, AllObjectIds)).Where(x => x != null).ToList();
-                        if (Items.Any())
+                        string ObjectName = KVP.Value.Split('/').First();
+                        if (!AllBigCraftableIds.ContainsKey(ObjectName))
+                            AllBigCraftableIds.Add(ObjectName, KVP.Key);
+                    }
+
+                    Dictionary<string, int> AllObjectIds = new Dictionary<string, int>();
+                    foreach (System.Collections.Generic.KeyValuePair<int, string> KVP in Game1.objectInformation)
+                    {
+                        string ObjectName = KVP.Value.Split('/').First();
+                        if (!AllObjectIds.ContainsKey(ObjectName))
+                            AllObjectIds.Add(ObjectName, KVP.Key);
+                    }
+
+                    IDictionary<string, int> JABigCraftableIds = API.GetAllBigCraftableIds();
+                    IDictionary<string, int> JAObjectIds = API.GetAllObjectIds();
+
+                    //  Now that JsonAssets has finished loading the modded items, go through each one, and convert the items into StoreableBagItems (which requires an Id instead of just a Name)
+                    foreach (System.Collections.Generic.KeyValuePair<ModdedBag, BagType> KVP in ItemBagsMod.TemporaryModdedBagTypes)
+                    {
+                        foreach (BagSizeConfig SizeCfg in KVP.Value.SizeSettings)
                         {
-                            SizeCfg.Items.AddRange(Items);
-                            ChangesMade = true;
-                            ModifiedBagTypeIds.Add(KVP.Value.Id);
+                            HashSet<string> FailedItemNames = new HashSet<string>();
+                            List<StoreableBagItem> Items = new List<StoreableBagItem>();
+
+                            foreach (ModdedItem DesiredItem in KVP.Key.Items.Where(x => x.Size <= SizeCfg.Size))
+                            {
+                                StoreableBagItem Item = DesiredItem.ToStoreableBagItem(JABigCraftableIds, JAObjectIds, AllBigCraftableIds, AllObjectIds);
+                                if (Item == null)
+                                    FailedItemNames.Add(DesiredItem.Name);
+                                else
+                                    Items.Add(Item);
+                            }
+
+                            SizeCfg.Items = Items;
+
+                            if (FailedItemNames.Any())
+                            {
+                                int MaxNamesShown = 5;
+                                string MissingItems = string.Format("{0}{1}", string.Join(", ", FailedItemNames.Take(MaxNamesShown)),
+                                    FailedItemNames.Count <= MaxNamesShown ? "" : string.Format(" + {0} more", (FailedItemNames.Count - MaxNamesShown)));
+                                string WarningMsg = string.Format("Warning - {0} items could not be found for modded bag '{1} {2}'. Missing Items: {3}",
+                                    FailedItemNames.Count, SizeCfg.Size.ToString(), KVP.Key.BagName, MissingItems);
+                                ItemBagsMod.ModInstance.Monitor.Log(WarningMsg, LogLevel.Warn);
+                            }
                         }
                     }
-                }
 
-                if (ChangesMade)
-                {
-                    ItemBag.GetAllBags(true).Where(x => ModifiedBagTypeIds.Contains(x.GetTypeId())).ToList().ForEach(x => x.OnModdedItemsImported());
+                    ItemBag.GetAllBags(true).ForEach(x => x.OnJsonAssetsItemIdsFixed(API, true));
                 }
             }
             catch (Exception ex)
             {
                 ItemBagsMod.ModInstance.Monitor.Log(string.Format("Failed to import modded bags. Error: {0}", ex.Message), LogLevel.Error);
             }
-            finally { HasImportedItems = true; }
         }
 
         internal BagType GetBagTypePlaceholder()
@@ -290,24 +297,8 @@ namespace ItemBags.Persistence
         [JsonProperty("Mods")]
         public List<ModAddon> ModAddons { get; set; } = new List<ModAddon>();
 
-        internal void OnGameLaunched()
-        {
-            IModHelper Helper = ItemBagsMod.ModInstance.Helper;
-
-            //  Load modded items from JsonAssets the moment it finishes registering items
-            if (Helper.ModRegistry.IsLoaded(ItemBagsMod.JAUniqueId))
-            {
-                IJsonAssetsAPI API = Helper.ModRegistry.GetApi<IJsonAssetsAPI>(ItemBagsMod.JAUniqueId);
-                if (API != null)
-                {
-                    API.IdsFixed += (sender, e) => { ImportModdedItems(API, ItemBagsMod.BagConfig); };
-                }
-            }
-        }
-
         private bool HasImportedItems { get; set; } = false;
-
-        private void ImportModdedItems(IJsonAssetsAPI API, BagConfig Target)
+        internal void ImportModdedItems(IJsonAssetsAPI API, BagConfig Target)
         {
             try
             {
@@ -334,7 +325,6 @@ namespace ItemBags.Persistence
                 IDictionary<string, int> ModdedObjects = API.GetAllObjectIds();
 
                 //  Import items from each ModAddon
-                bool ChangesMade = false;
                 foreach (ModAddon ModAddon in ModAddons)
                 {
                     if (Helper.ModRegistry.IsLoaded(ModAddon.UniqueId))
@@ -361,18 +351,12 @@ namespace ItemBags.Persistence
                                         foreach (BagSizeConfig SizeConfig in TargetType.SizeSettings.Where(x => x.Size >= Item.Size))
                                         {
                                             SizeConfig.Items.Add(new StoreableBagItem(Id, Item.HasQualities, null, Item.IsBigCraftable));
-                                            ChangesMade = true;
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                }
-
-                if (ChangesMade)
-                {
-                    ItemBag.GetAllBags(true).ForEach(x => x.OnModdedItemsImported());
                 }
             }
             catch (Exception ex)
@@ -462,6 +446,27 @@ namespace ItemBags.Persistence
                     return new StoreableBagItem(Id, HasQualities, null, IsBigCraftable);
                 else
                     return null;
+            }
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext sc)
+        {
+            //  Attempt to fix issues with the SizeString value
+            if (string.IsNullOrEmpty(SizeString))
+                SizeString = ContainerSize.Small.ToString();
+            else
+            {
+                //  Fix character casing
+                if (char.IsLower(SizeString[0]) || SizeString.Skip(1).Any(x => char.IsUpper(x)))
+                {
+                    SizeString = char.ToUpper(SizeString[0]) + string.Join("", SizeString.Skip(1).Select(x => char.ToLower(x)));
+                }
+
+                if (!Enum.TryParse(SizeString, out ContainerSize Result))
+                {
+                    SizeString = ContainerSize.Small.ToString();
+                }
             }
         }
     }

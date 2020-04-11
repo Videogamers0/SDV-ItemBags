@@ -29,7 +29,7 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 4, 3); // Last updated 4/7/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 4, 4); // Last updated 4/10/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
 
@@ -160,7 +160,7 @@ namespace ItemBags
             //  Load data about modded items
             ModdedItems GlobalModdedItems = helper.Data.ReadJsonFile<ModdedItems>(ModdedItemsFilename);
 #if DEBUG
-            GlobalModdedItems = null; // force full re-creation for testing
+            //GlobalModdedItems = null; // force full re-creation for testing
 #endif
             if (GlobalModdedItems != null)
             {
@@ -215,25 +215,32 @@ namespace ItemBags
                 string[] ModdedBagFiles = Directory.GetFiles(ModdedBagsDirectory, "*.json", SearchOption.TopDirectoryOnly);
                 if (ModdedBagFiles.Length > 0)
                 {
-                    foreach (string File in ModdedBagFiles)
+                    if (!Helper.ModRegistry.IsLoaded(JAUniqueId))
                     {
-                        string RelativePath = File.Replace(helper.DirectoryPath + Path.DirectorySeparatorChar, "");
-                        ModdedBag ModdedBag = helper.Data.ReadJsonFile<ModdedBag>(RelativePath);
-
-                        if (ModdedBag.IsEnabled && (string.IsNullOrEmpty(ModdedBag.ModUniqueId) || helper.ModRegistry.IsLoaded(ModdedBag.ModUniqueId)))
+                        Monitor.Log("Modded bags could not be loaded because you do not have Json Assets mod installed.", LogLevel.Warn);
+                    }
+                    else
+                    {
+                        foreach (string File in ModdedBagFiles)
                         {
-                            if (!ModdedBags.Any(x => x.Guid == ModdedBag.Guid))
+                            string RelativePath = File.Replace(helper.DirectoryPath + Path.DirectorySeparatorChar, "");
+                            ModdedBag ModdedBag = helper.Data.ReadJsonFile<ModdedBag>(RelativePath);
+
+                            if (ModdedBag.IsEnabled && (string.IsNullOrEmpty(ModdedBag.ModUniqueId) || helper.ModRegistry.IsLoaded(ModdedBag.ModUniqueId)))
                             {
-                                ModdedBags.Add(ModdedBag);
-                            }
-                            else
-                            {
-                                Monitor.Log(string.Format("Failed to load modded bag '{0}' because there is already another modded bag with the same Id", ModdedBag.BagName), LogLevel.Warn);
+                                if (!ModdedBags.Any(x => x.Guid == ModdedBag.Guid))
+                                {
+                                    ModdedBags.Add(ModdedBag);
+                                }
+                                else
+                                {
+                                    Monitor.Log(string.Format("Failed to load modded bag '{0}' because there is already another modded bag with the same Id", ModdedBag.BagName), LogLevel.Warn);
+                                }
                             }
                         }
-                    }
 
-                    Monitor.Log(string.Format("Loaded {0} modded bag(s): {1}", ModdedBags.Count, string.Join(", ", ModdedBags.Select(x => x.BagName))), LogLevel.Info);
+                        Monitor.Log(string.Format("Loaded {0} modded bag(s): {1}", ModdedBags.Count, string.Join(", ", ModdedBags.Select(x => x.BagName))), LogLevel.Info);
+                    }
                 }
 
                 TemporaryModdedBagTypes = new Dictionary<ModdedBag, BagType>();
@@ -289,7 +296,6 @@ namespace ItemBags
                 }
 
                 ModdedBag.OnGameLaunched();
-                ModdedItems.OnGameLaunched();
             };
 
             CraftingHandler.OnModEntry(helper);

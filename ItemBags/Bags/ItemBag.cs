@@ -379,7 +379,7 @@ namespace ItemBags.Bags
         /// <summary>The sum of the value of all items stored in this bag</summary>
         [XmlIgnore]
         public int ContentsValue { get { return Contents == null ? 0 : Contents.Sum(x => GetSingleItemPrice(x) * x.Stack); } }
-        public bool IsEmpty() { return Contents == null || !Contents.Any(x => x != null); }
+        public virtual bool IsEmpty() { return Contents == null || !Contents.Any(x => x != null); }
 
         [XmlIgnore]
         public Texture2D Icon { get; set; }
@@ -402,7 +402,69 @@ namespace ItemBags.Bags
 
         public abstract string GetTypeId();
         protected abstract void LoadSettings(BagInstance Data);
-        internal abstract void OnModdedItemsImported();
+
+        internal virtual bool OnJsonAssetsItemIdsFixed(IJsonAssetsAPI API, bool AllowResyncing)
+        {
+            return ValidateContentsIds(API, AllowResyncing);
+        }
+
+        private bool HasValidatedContentsIds { get; set; } = false;
+
+        /// <summary>Intended to be invoked exactly one time per bag instance when a save file is loaded. Checks if an Item Id of a modded item added through Json Assets has changed since the last game session ended.<para/>
+        /// This typically happens when mods that add items through Json Assets have been installed/uninstalled between game sessions. When an item's Id changes, it must be re-created with the correct Id or else the item would be transformed into a different Object.</summary>
+        /// <param name="AllowResyncing">True to allow the bag data to be resynced across all multiplayer clients if a change was made.</param>
+        protected bool ValidateContentsIds(IJsonAssetsAPI API, bool AllowResyncing)
+        {
+            if (HasValidatedContentsIds)
+                return false;
+
+            try
+            {
+                bool ChangesMade = false;
+                for (int i = Contents.Count - 1; i >= 0; i--)
+                {
+                    Object Item = Contents[i];
+                    if (Item != null)
+                    {
+                        int IdBeforeFixing = Item.ParentSheetIndex;
+
+                        bool IsItemStillValid = !API.FixIdsInItem(Item);
+                        if (!IsItemStillValid)
+                        {
+                            //  The mod that this item belongs to is no longer installed
+                            this.Contents.RemoveAt(i);
+                            ChangesMade = true;
+                        }
+                        else
+                        {
+                            int IdAfterFixing = Item.ParentSheetIndex;
+                            if (IdBeforeFixing != IdAfterFixing)
+                            {
+                                //  Re-create the item with the new Id
+                                Object Actual = new BagItem(Item).ToObject();
+                                Contents[i] = Actual;
+                                ChangesMade = true;
+
+                                string Message = string.Format("Detected a change in a managed item's Id within Bag: {0}. Item Name = {1}, Previous Id = {2}, New Id = {3}", DisplayName, Actual.DisplayName, IdBeforeFixing, IdAfterFixing);
+#if DEBUG
+                                ItemBagsMod.ModInstance.Monitor.Log(Message, LogLevel.Debug);
+#else
+                            ItemBagsMod.ModInstance.Monitor.Log(Message, LogLevel.Trace);
+#endif
+                            }
+                        }
+                    }
+                }
+
+                if (AllowResyncing && ChangesMade && Context.IsMainPlayer)
+                {
+                    Resync();
+                }
+
+                return ChangesMade;
+            }
+            finally { HasValidatedContentsIds = true; }
+        }
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         private ItemBag() : base("", "", 0, Tool.wateringCanSpriteIndex, Tool.wateringCanMenuIndex)
@@ -453,7 +515,7 @@ namespace ItemBags.Bags
             LoadTextures();
         }
 
-        #region Multiplayer Support
+#region Multiplayer Support
         public bool IsBagInUse { get { return IsContentsMenuOpen || CraftingHandler.IsUsingForCrafting(this); } }
         //private bool IgnoreNextDeserialize { get; set; }
 
@@ -521,7 +583,7 @@ namespace ItemBags.Bags
                 return false;
             }
         }
-        #endregion Multiplayer Support
+#endregion Multiplayer Support
 
         public bool IsValidBagItem(Item Item)
         {
@@ -543,7 +605,7 @@ namespace ItemBags.Bags
                 !Item.isLostItem && (!Item.GetType().IsSubclassOf(typeof(Object)) || Item is ColoredObject);
         }
 
-        #region Open/Close Menu
+#region Open/Close Menu
         [XmlIgnore]
         public ItemBagMenu ContentsMenu { get; private set; }
         [XmlIgnore]
@@ -612,7 +674,7 @@ namespace ItemBags.Bags
                 Resync();
             }
         }
-        #endregion Open/Close Menu
+#endregion Open/Close Menu
 
         /// <summary>Removes anyitems that should no longer be storeable in this bag.<para/>
         /// (Could be useful if, for instance, the BagType is modified and certain items can no longer be placed inside the bag. 
@@ -1068,7 +1130,7 @@ namespace ItemBags.Bags
             return this; //(Item)new ItemBag();
         }
 
-        #region Stack
+#region Stack
         public override int Stack
         {
             get { return 1; }
@@ -1092,7 +1154,7 @@ namespace ItemBags.Bags
             //return base.maximumStackSize();
             return 1;
         }
-        #endregion Stack
+#endregion Stack
 
         public override Color getCategoryColor()
         {
@@ -1117,7 +1179,7 @@ namespace ItemBags.Bags
             return this.DescriptionAlias;
         }
 
-        #region Draw Overrides
+#region Draw Overrides
         public override void draw(SpriteBatch b)
         {
             //base.draw(b);
@@ -1176,9 +1238,9 @@ namespace ItemBags.Bags
         {
             base.drawTooltip(spriteBatch, ref x, ref y, font, alpha, overrideText);
         }
-        #endregion Draw Overrides
+#endregion Draw Overrides
 
-        #region Basic Overrides
+#region Basic Overrides
         public override int attachmentSlots()
         {
             //return base.attachmentSlots();
@@ -1268,6 +1330,6 @@ namespace ItemBags.Bags
             //return base.isPlaceable();
             return false;
         }
-        #endregion Basic Overrides
+#endregion Basic Overrides
     }
 }

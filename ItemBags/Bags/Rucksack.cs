@@ -322,11 +322,6 @@ namespace ItemBags.Bags
         }
         #endregion PyTK CustomElementHandler
 
-        internal override void OnModdedItemsImported()
-        {
-
-        }
-
         /// <summary>The 13x16 portion of <see cref="CursorsTexture"/> that contains the rucksack icon</summary>
         private static Texture2D OriginalTexture { get; set; }
         /// <summary><see cref="OriginalTexture"/>, converted to Grayscale</summary>

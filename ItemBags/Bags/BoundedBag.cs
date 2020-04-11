@@ -231,9 +231,10 @@ namespace ItemBags.Bags
         }
         #endregion PyTK CustomElementHandler
 
-        internal override void OnModdedItemsImported()
+        internal override bool OnJsonAssetsItemIdsFixed(IJsonAssetsAPI API, bool AllowResyncing)
         {
             this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(SizeInfo.Items.Select(x => new AllowedObject(x)).ToList());
+            return ValidateContentsIds(API, AllowResyncing);
         }
 
         public override void ResetIcon()

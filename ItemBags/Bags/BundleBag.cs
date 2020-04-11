@@ -104,9 +104,9 @@ namespace ItemBags.Bags
         }
         #endregion PyTK CustomElementHandler
 
-        internal override void OnModdedItemsImported()
+        internal override bool OnJsonAssetsItemIdsFixed(IJsonAssetsAPI API, bool AllowResyncing)
         {
-
+            return ValidateContentsIds(API, AllowResyncing);
         }
 
         public override void ResetIcon()
