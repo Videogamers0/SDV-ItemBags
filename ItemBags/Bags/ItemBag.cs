@@ -1094,10 +1094,14 @@ namespace ItemBags.Bags
 
         public override bool beginUsing(GameLocation location, int x, int y, Farmer who)
         {
-            OpenContents(Game1.player.Items, Game1.player.MaxItems);
-            this.Update(who.FacingDirection, 0, who);
-            who.EndUsingTool();
-            who.completelyStopAnimatingOrDoingAction();
+            if (!Context.IsMultiplayer || who.UniqueMultiplayerID == Game1.player.UniqueMultiplayerID)
+            {
+                OpenContents(who.Items, who.MaxItems);
+                this.Update(who.FacingDirection, 0, who);
+                who.EndUsingTool();
+                who.completelyStopAnimatingOrDoingAction();
+            }
+
             return true;
 
             //return base.beginUsing(location, x, y, who);

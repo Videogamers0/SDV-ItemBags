@@ -74,22 +74,7 @@ namespace ItemBags
                 MegaStorageInstalledVersion = Helper.ModRegistry.Get(MegaStorageId).Manifest.Version;
             }
 
-            //  Load global user settings into memory
-            UserConfig GlobalUserConfig = helper.Data.ReadJsonFile<UserConfig>(UserConfigFilename);
-            if (GlobalUserConfig != null)
-            {
-                //  Update config file with new the settings for managing which bags are sold at shops (Added in v1.2.3)
-                if (GlobalUserConfig.CreatedByVersion == null || GlobalUserConfig.CreatedByVersion < new Version(1, 2, 3))
-                {
-                    helper.Data.WriteJsonFile(UserConfigFilename, GlobalUserConfig);
-                }
-            }
-            else
-            {
-                GlobalUserConfig = new UserConfig() { CreatedByVersion = CurrentVersion };
-                helper.Data.WriteJsonFile<UserConfig>(UserConfigFilename, GlobalUserConfig);
-            }
-            UserConfig = GlobalUserConfig;
+            LoadUserConfig();
 
             //  Load global bag data into memory
             BagConfig GlobalBagConfig = helper.Data.ReadGlobalData<BagConfig>(BagConfigDataKey);
@@ -302,6 +287,26 @@ namespace ItemBags
             CommandHandler.OnModEntry(helper);
             AutofillHandler.OnModEntry(helper);
             MultiplayerHandler.OnModEntry(helper);
+        }
+
+        internal static void LoadUserConfig()
+        {
+            //  Load global user settings into memory
+            UserConfig GlobalUserConfig = ModInstance.Helper.Data.ReadJsonFile<UserConfig>(UserConfigFilename);
+            if (GlobalUserConfig != null)
+            {
+                //  Update config file with new the settings for managing which bags are sold at shops (Added in v1.2.3)
+                if (GlobalUserConfig.CreatedByVersion == null || GlobalUserConfig.CreatedByVersion < new Version(1, 2, 3))
+                {
+                    ModInstance.Helper.Data.WriteJsonFile(UserConfigFilename, GlobalUserConfig);
+                }
+            }
+            else
+            {
+                GlobalUserConfig = new UserConfig() { CreatedByVersion = CurrentVersion };
+                ModInstance.Helper.Data.WriteJsonFile<UserConfig>(UserConfigFilename, GlobalUserConfig);
+            }
+            UserConfig = GlobalUserConfig;
         }
 
         public override object GetApi()

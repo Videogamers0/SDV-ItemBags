@@ -29,6 +29,7 @@ namespace ItemBags
             RegisterAddRucksackCommand();
             RegisterAddOmniBagCommand();
             RegisterGenerateModdedBagCommand();
+            RegisterReloadConfigCommand();
         }
 
         private static void RegisterAddItemBagCommand()
@@ -316,6 +317,22 @@ namespace ItemBags
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+                    Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);
+                }
+            });
+        }
+
+        private static void RegisterReloadConfigCommand()
+        {
+            //Possible TODO: Add translation support for this command
+            string CommandName = "itembags_reload_config";
+            string CommandHelp = "Reloads configuration settings from this mod's config.json file. Normally this file's settings are only loaded once when the game is started."
+                + " Use this command if you've made changes to the config during this game session.";
+            Helper.ConsoleCommands.Add(CommandName, CommandHelp, (string Name, string[] Args) =>
+            {
+                try { ItemBagsMod.LoadUserConfig(); }
                 catch (Exception ex)
                 {
                     Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);
