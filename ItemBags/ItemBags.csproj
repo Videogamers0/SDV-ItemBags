@@ -5,6 +5,7 @@
     <GamePath>C:\Program Files (x86)\Steam\steamapps\common\Stardew Valley</GamePath>
   </PropertyGroup>
   <PropertyGroup>
+    <EnableHarmony>true</EnableHarmony>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{B788492E-B903-4FFC-9B28-4783892A17C5}</ProjectGuid>
@@ -86,6 +87,7 @@
     <Compile Include="Menus\RucksackMenu.cs" />
     <Compile Include="Menus\UngroupedLayoutOptions.cs" />
     <Compile Include="ItemBagsMod.cs" />
+    <Compile Include="MonsterLootHandler.cs" />
     <Compile Include="MultiplayerHandler.cs" />
     <Compile Include="Persistence\ModdedItems.cs" />
     <Compile Include="Persistence\BagConfig.cs" />

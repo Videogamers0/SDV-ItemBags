@@ -1,8 +1,12 @@
 ﻿using ItemBags.Bags;
 using ItemBags.Menus;
 using Newtonsoft.Json;
+using StardewValley;
+using StardewValley.Locations;
+using StardewValley.Monsters;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
@@ -39,6 +43,7 @@ namespace ItemBags.Persistence
         [XmlArray("BundleBagSettings")]
         [XmlArrayItem("BundleBagSizeConfig")]
         public BundleBagSizeConfig[] BundleBagSettings { get; set; }
+
         [XmlArray("RucksackSettings")]
         [XmlArrayItem("RucksackSizeConfig")]
         public RucksackSizeConfig[] RucksackSettings { get; set; }
@@ -59,6 +64,9 @@ namespace ItemBags.Persistence
 
         [XmlElement("HideObsoleteBagsFromShops")]
         public bool HideObsoleteBagsFromShops { get; set; }
+
+        [XmlElement("MonsterLootSettings")]
+        public MonsterLootSettings MonsterLootSettings { get; set; }
 
         public UserConfig()
         {
@@ -110,6 +118,14 @@ namespace ItemBags.Persistence
             this.HideMassiveBagsFromShops = false;
 
             this.HideObsoleteBagsFromShops = true;
+
+            this.MonsterLootSettings = new MonsterLootSettings();
+        }
+
+        public bool AllowDowngradeBundleItemQuality(ContainerSize Size)
+        {
+            BundleBagSizeConfig SizeCfg = BundleBagSettings.First(x => x.Size == Size);
+            return SizeCfg.AllowDowngradeItemQuality;
         }
 
         public bool IsSizeVisibleInShops(ContainerSize Size)
@@ -292,6 +308,12 @@ namespace ItemBags.Persistence
         [JsonProperty("Size")]
         public string SizeName { get { return Size.ToString(); } set { Size = (ContainerSize)Enum.Parse(typeof(ContainerSize), value); } }
 
+        /// <summary>If true, then placing items inside the BundleBag will allow  downgrading the placed item's <see cref="StardewValley.Object.Quality"/> to the highest quality still needed of that item for an incomplete bundle.<para/>
+        /// For example, suppose you picked up a Gold-quality Parsnip. Gold parsnips are needed for the Quality crops bundle and Regular-quality are needed for Spring crops bundle.<para/>
+        /// If Quality crops is already complete, then the picked-up Parsnip will be downgraded to regular quality, to fulfill the Spring crops bundle instead.</summary>
+        [XmlElement("AllowDowngradeItemQuality")]
+        public bool AllowDowngradeItemQuality { get; set; } = true;
+
         [XmlElement("PriceModifier")]
         public double PriceModifier { get; set; }
         [XmlElement("BasePrice")]
@@ -316,6 +338,7 @@ namespace ItemBags.Persistence
 
         private void InitializeDefaults()
         {
+            this.AllowDowngradeItemQuality = true;
             this.Size = BundleBag.ValidSizes.First();
             this.Sellers = new BagShop[] { BagShop.TravellingCart };
             this.PriceModifier = 1.0;
@@ -448,6 +471,290 @@ namespace ItemBags.Persistence
             this.MenuColumns = 12;
             this.MenuSlotSize = BagInventoryMenu.DefaultInventoryIconSize;
             this.Sellers = new BagShop[] { BagShop.Pierre };
+        }
+
+        [OnSerializing]
+        private void OnSerializing(StreamingContext sc) { }
+        [OnSerialized]
+        private void OnSerialized(StreamingContext sc) { }
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext sc) { InitializeDefaults(); }
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext sc) { }
+    }
+
+    /// <summary>Settings which affect how likely the player is to receive an ItemBag as a monster drop when killing a monster.</summary>
+    [JsonObject(Title = "MonsterLootSettings")]
+    [DataContract(Name = "MonsterLootSettings", Namespace = "")]
+    public class MonsterLootSettings
+    {
+        [JsonProperty("LogDropChancesToConsole")]
+        public bool LogDropChancesToConsole { get; set; } = false;
+
+        public bool CanReceiveBagsAsDrops { get; set; } = true;
+
+        /// <summary>If you've earned an ItemBag drop, and that drop is randomly chosen to be a standard bag (A <see cref="BoundedBag"/>), then this is the chance that it will 
+        /// try to force a new type that you don't already own.</summary>
+        [JsonProperty("ForceNewBagTypeChance")]
+        public double ForceNewBagTypeChance { get; set; } = 0.4;
+
+        //  The settings in this region determine the odds of getting any ItemBag when killing a monster. The actual bag chosen if these rolls succeed is then based on the corresponding BagTypeDropSettings
+        #region Initial Chance
+        /// <summary>The base chance of receiving an ItemBag when any monster is slain. 0.01 = 1% chance</summary>
+        [JsonProperty("BaseDropChance")]
+        public double BaseDropChance { get; set; }
+
+        #region Location Modifiers
+        /// <summary>An additional bonus to the chance of receiving an ItemBag when a monster is slain within the mines. 0.01 = +1% chance<para/>
+        /// (Stacks multiplicatively with <see cref="BaseDropChance"/>, so if <see cref="MineDepthBonusPerLevel"/> = 0.01, and player is in Mine level 35, you would have a 0.01 * 35 = +35% (1.35 multiplier) chance to receive drops)</summary>
+        [JsonProperty("MineDepthBonusPerLevel")]
+        public double MineDepthBonusPerLevel { get; set; }
+
+        /// <summary>Values of <see cref="MineShaft.mineLevel"/> that are greater than this value will no longer give a bonus to the drop chance of receiving an ItemBag from a slain monster.</summary>
+        [JsonProperty("MaxMineDepth")]
+        public int MaxMineDepth { get; set; }
+
+        /// <summary>An additional bonus to the chance of receiving an ItemBag when a monster is slain within the Quarry, 0.01 = +1% chance<para/>
+        /// (Stacks multiplicatively with <see cref="BaseDropChance"/>, so if <see cref="QuarryLocationBonus"/> = 0.5, the player is in the Quarry, you would have a 0.5 = +50% (1.5 multiplier) chance to receive drops)</summary>
+        [JsonProperty("QuarryLocationBonus")]
+        public double QuarryLocationBonus { get; set; }
+
+        /// <summary>An additional bonus to the chance of receiving an ItemBag when a monster is slain within the Forest, 0.01 = +1% chance<para/>
+        /// (Stacks multiplicatively with <see cref="BaseDropChance"/>, so if <see cref="ForestLocationBonus"/> = 0.5, the player is in the Forest, you would have a 0.5 = +50% (1.5 multiplier) chance to receive drops)</summary>
+        [JsonProperty("ForestLocationBonus")]
+        public double ForestLocationBonus { get; set; }
+
+        /// <summary>An additional bonus to the chance of receiving an ItemBag when a monster is slain within a location not recognized by other settings (I.E. not in the mines, quarry, or forest), 0.01 = +1% chance<para/>
+        /// (Stacks multiplicatively with <see cref="BaseDropChance"/>, so if <see cref="OtherLocationBonus"/> = 0.5, the player is NOT in the mines/quarry/forest, you would have a 0.5 = +50% (1.5 multiplier) chance to receive drops)</summary>
+        [JsonProperty("OtherLocationBonus")]
+        public double OtherLocationBonus { get; set; }
+        #endregion Location Modifiers
+
+        #region Experience Modifiers
+        /// <summary>The Base amount of <see cref="Monster.ExperienceGained"/> used when calculating additional bonuses or penalties to drop chances.<para/>
+        /// If the slain monster awards MORE than <see cref="BaseExperience"/>, you will receive a bonus to the chance of receiving an ItemBag. 
+        /// This bonus is affected by <see cref="MaxExperience"/> and <see cref="MaxExperienceMultiplier"/><para/>
+        /// If the slain monster awards LESS than <see cref="BaseExperience"/>, you will receive a penalty to the chance of receiving an ItemBag.
+        /// This penalty is affected by <see cref="MinExperience"/> and <see cref="MinExperienceMultiplier"/></summary>
+        [JsonProperty("BaseExperience")]
+        public int BaseExperience { get; set; }
+
+        /// <summary>If a slain monster's <see cref="Monster.ExperienceGained"/> is greater than or equal to <see cref="MaxExperience"/>, then the additional bonus to drop rates is set to <see cref="MaxExperienceMultiplier"/></summary>
+        [JsonProperty("MaxExperience")]
+        public int MaxExperience { get; set; }
+
+        /// <summary>The bonus multiplier to apply to the chance of receiving ItemBags from slain monsters, when the monster's <see cref="Monster.ExperienceGained"/> is at least <see cref="MaxExperience"/></summary>
+        [JsonProperty("MaxExperienceMultiplier")]
+        public double MaxExperienceMultiplier { get; set; }
+
+        /// <summary>If a slain monster's <see cref="Monster.ExperienceGained"/> is less than or equal to <see cref="MinExperience"/>, then the additional penalty to drop rates is set to <see cref="MinExperienceMultiplier"/></summary>
+        [JsonProperty("MinExperience")]
+        public int MinExperience { get; set; }
+
+        /// <summary>The penalty multiplier to apply to the chance of receiving ItemBags from slain monsters, when the monster's <see cref="Monster.ExperienceGained"/> is at most <see cref="MinExperience"/></summary>
+        [JsonProperty("MinExperienceMultiplier")]
+        public double MinExperienceMultiplier { get; set; }
+        #endregion Experience Modifiers
+
+        /// <summary>An additional bonus to the chance of receiving an ItemBag when a monster is slain. This value is multiplied by the slain monster's <see cref="Monster.MaxHealth"/>/10 (0.01 = +1% chance per 10 HP)<para/>
+        /// (Stacks multiplicatively with <see cref="BaseDropChance"/>, so if <see cref="BonusPer10HP"/> = 0.05, and the slain monster had 80 HP, you would have a 0.05*80/10=0.4 = +40% (1.4 multiplier) chance to receive drops)</summary>
+        [JsonProperty("BonusPer10HP")]
+        public double BonusPer10HP { get; set; }
+
+        /// <summary>Values of <see cref="Monster.MaxHealth"/> that are greater than this value will no longer give a bonus to the drop chance of receiving an ItemBag from a slain monster.</summary>
+        [JsonProperty("MaxHP")]
+        public int MaxHP { get; set; }
+        #endregion Initial Chance
+
+        [JsonProperty("RucksackDropSettings")]
+        public BagTypeDropSettings RucksackDropSettings { get; set; }
+        [JsonProperty("OmniBagDropSettings")]
+        public BagTypeDropSettings OmniBagDropSettings { get; set; }
+        [JsonProperty("BundleBagDropSettings")]
+        public BagTypeDropSettings BundleBagDropSettings { get; set; }
+        [JsonProperty("StandardBagDropSettings")]
+        public BagTypeDropSettings StandardBagDropSettings { get; set; }
+
+        public MonsterLootSettings()
+        {
+            InitializeDefaults();
+        }
+
+        private void InitializeDefaults()
+        {
+#if DEBUG
+            this.LogDropChancesToConsole = true;
+#else
+            this.LogDropChancesToConsole = false;
+#endif
+
+            this.CanReceiveBagsAsDrops = true;
+
+            this.ForceNewBagTypeChance = 0.4;
+            this.BaseDropChance = 0.004;   // ~1/250 before additional bonuses/penalties are applied
+                                            // Killing a strong monster deep within the skull cavern will typically give ~x3-4 modifier
+                                            // While killing a weak monster in the low levels of the mines will typically give a ~0.75-1x modifier
+
+            this.MineDepthBonusPerLevel = 0.004;
+            this.MaxMineDepth = 220; // Floor #100 in the Skull Cavern (since the skull cavern starts at Depth=120)
+            this.QuarryLocationBonus = 0.3;
+            this.ForestLocationBonus = 0.2;
+            this.OtherLocationBonus = 0.1;
+
+            this.BaseExperience = 8;
+            this.MinExperience = 4;
+            this.MinExperienceMultiplier = 0.75;
+            this.MaxExperience = 15;
+            this.MaxExperienceMultiplier = 1.25;
+
+            this.BonusPer10HP = 0.015;
+            this.MaxHP = 200;
+
+            this.RucksackDropSettings = new BagTypeDropSettings()
+            {
+                TypeWeight = 10,
+                SizeWeights = new Dictionary<ContainerSize, int>()
+                {
+                    { ContainerSize.Small, 56 },
+                    { ContainerSize.Medium, 30 },
+                    { ContainerSize.Large, 10 },
+                    { ContainerSize.Giant, 3 },
+                    { ContainerSize.Massive, 1 }
+                }
+            };
+
+            this.OmniBagDropSettings = new BagTypeDropSettings()
+            {
+                TypeWeight = 4,
+                SizeWeights = new Dictionary<ContainerSize, int>()
+                {
+                    { ContainerSize.Small, 45 },
+                    { ContainerSize.Medium, 32 },
+                    { ContainerSize.Large, 20 },
+                    { ContainerSize.Giant, 2 },
+                    { ContainerSize.Massive, 1 }
+                }
+            };
+
+            this.BundleBagDropSettings = new BagTypeDropSettings()
+            {
+                TypeWeight = 26,
+                SizeWeights = new Dictionary<ContainerSize, int>()
+                {
+                    { ContainerSize.Large, 3 },
+                    { ContainerSize.Massive, 1 }
+                }
+            };
+
+            this.StandardBagDropSettings = new BagTypeDropSettings()
+            {
+                TypeWeight = 60,
+                SizeWeights = new Dictionary<ContainerSize, int>()
+                {
+                    { ContainerSize.Small, 62 },
+                    { ContainerSize.Medium, 30 },
+                    { ContainerSize.Large, 8 },
+                    { ContainerSize.Giant, 0 },
+                    { ContainerSize.Massive, 0 }
+                }
+            };
+        }
+
+        public double GetItemBagDropChance(GameLocation Location, Monster SlainMonster, out double BaseChance, out double LocationMultiplier, out double ExpMultiplier, out double HPMultiplier)
+        {
+            BaseChance = this.BaseDropChance;
+
+            //  Compute bonuses based on where the monster was killed
+            double LocationBonus;
+            if (SlainMonster.mineMonster && Location is MineShaft Mine)
+            {
+                bool IsQuarry = Mine.mapImageSource != null && Mine.mapImageSource.Value != null && Path.GetFileName(Mine.mapImageSource.Value).Equals("mine_quarryshaft", StringComparison.CurrentCultureIgnoreCase);
+                if (IsQuarry)
+                    LocationBonus = QuarryLocationBonus;
+                else
+                {
+                    int Depth = Math.Min(MaxMineDepth, Mine.mineLevel);
+                    LocationBonus = Depth * MineDepthBonusPerLevel;
+                }
+            }
+            else if (Location is Woods)
+            {
+                LocationBonus = ForestLocationBonus;
+            }
+            else
+            {
+                LocationBonus = OtherLocationBonus;
+            }
+            LocationMultiplier = 1.0 + LocationBonus;
+
+            //  Compute bonuses based on how strong the monster was (determined by how much experience it gave)
+            ExpMultiplier = 1.0;
+            double ExponentialDecayRate = 0.032;
+            if (SlainMonster.ExperienceGained < BaseExperience)
+            {
+                if (MinExperience >= BaseExperience)
+                    ExpMultiplier = 1.0;
+                else
+                {
+                    int TruncatedExp = Math.Max(MinExperience, SlainMonster.ExperienceGained);
+                    double LinearlyInterpolatedExp = (BaseExperience - TruncatedExp * 1.0) / (BaseExperience - MinExperience * 1.0) * 100; // Fit the monster exp to the range 0 to 100
+                    ExpMultiplier = (1.0 - MinExperienceMultiplier) * Math.Pow(Math.E, -1 * ExponentialDecayRate * LinearlyInterpolatedExp) + MinExperienceMultiplier; // Standard "exponential decay (increasing form)" model (y = Ce^(-kt)), but offset by MinExperienceMultiplier
+                }
+            }
+            else if (SlainMonster.ExperienceGained > BaseExperience)
+            {
+                if (MaxExperience <= BaseExperience)
+                    ExpMultiplier = 1.0;
+                else
+                {
+                    int TruncatedExp = Math.Min(MaxExperience, SlainMonster.ExperienceGained);
+                    double LinearlyInterpolatedExp = 100 - (TruncatedExp - BaseExperience * 1.0) / (MaxExperience - BaseExperience * 1.0) * 100; // Fit the monster exp to the range 0 to 100
+                    ExpMultiplier = (MaxExperienceMultiplier - 1.0) * Math.Pow(Math.E, -1 * ExponentialDecayRate * LinearlyInterpolatedExp) + 1.0; // Standard "exponential decay (increasing form)" model (y = Ce^(-kt)), but offset by 1.0
+                }
+            }
+
+            //  Compute bonuses based on how long it took to kill the monster (determined by the monster's MaxHealth)
+            double HealthBonus = BonusPer10HP * (Math.Min(MaxHP, SlainMonster.MaxHealth) / 10.0);
+            HPMultiplier = 1.0 + HealthBonus;
+
+            return Math.Max(0.0, Math.Min(1.0, BaseChance * LocationMultiplier * ExpMultiplier * HPMultiplier));
+        }
+
+        [OnSerializing]
+        private void OnSerializing(StreamingContext sc) { }
+        [OnSerialized]
+        private void OnSerialized(StreamingContext sc) { }
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext sc) { InitializeDefaults(); }
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext sc) { }
+    }
+
+    [JsonObject(Title = "BagTypeDropSettings")]
+    [DataContract(Name = "BagTypeDropSettings", Namespace = "")]
+    public class BagTypeDropSettings
+    {
+        [JsonProperty("TypeWeight")]
+        public int TypeWeight { get; set; } = 1;
+        [JsonProperty("SizeWeights")]
+        public Dictionary<ContainerSize, int> SizeWeights { get; set; } = new Dictionary<ContainerSize, int>();
+
+        public BagTypeDropSettings()
+        {
+            InitializeDefaults();
+        }
+
+        public BagTypeDropSettings(int TypeWeight, Dictionary<ContainerSize, int> SizeWeights)
+        {
+            InitializeDefaults();
+            this.TypeWeight = TypeWeight;
+            this.SizeWeights = SizeWeights;
+        }
+
+        private void InitializeDefaults()
+        {
+            this.TypeWeight = 1;
+            this.SizeWeights = new Dictionary<ContainerSize, int>();
         }
 
         [OnSerializing]

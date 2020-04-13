@@ -821,7 +821,7 @@ namespace ItemBags.Bags
         /// <param name="MovedQty">The Qty that was successfully moved.</param>
         /// <returns>True if any changes were made</returns>
         /// <param name="Source">The source items that are being moved to the bag. Typically this is <see cref="Game1.player.Items"/> if moving to/from the inventory.</param>
-        public bool MoveToBag(Object Item, int Qty, out int MovedQty, bool PlaySoundEffect, IList<Item> Source, bool NotifyIfContentsChanged = true, bool ResyncMultiplayerData = true)
+        public virtual bool MoveToBag(Object Item, int Qty, out int MovedQty, bool PlaySoundEffect, IList<Item> Source, bool NotifyIfContentsChanged = true, bool ResyncMultiplayerData = true)
         {
             MovedQty = 0;
             if (!IsValidBagItem(Item))

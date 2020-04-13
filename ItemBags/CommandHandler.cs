@@ -332,7 +332,11 @@ namespace ItemBags
                 + " Use this command if you've made changes to the config during this game session.";
             Helper.ConsoleCommands.Add(CommandName, CommandHelp, (string Name, string[] Args) =>
             {
-                try { ItemBagsMod.LoadUserConfig(); }
+                try
+                {
+                    ItemBagsMod.LoadUserConfig();
+                    Monitor.Log("config.json settings were successfully reloaded.", LogLevel.Alert);
+                }
                 catch (Exception ex)
                 {
                     Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);

@@ -29,14 +29,13 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 4, 4); // Last updated 4/10/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 4, 5); // Last updated 4/12/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
 
         //Possible TODO 
         //  "Equipment Bag" : subclass of BoundedBag - has a List<Weapon>, List<Hat> etc. List<AllowedHat> AllowedHats List<AllowedWeapon> AllowedWeapons etc
         //      would need to override IsValidBagItem, and the MoveToBag/MoveFromBag needs a new implementation to handle non-Objects. Allow the items to stack even if item.maximumStackSize == 1
-        //  Allow Bundle Bags to hold items that have a higher quality than what the BundleTask requires.
 
         internal static ItemBagsMod ModInstance { get; private set; }
         internal static string Translate(string Key, Dictionary<string, string> Parameters = null)
@@ -287,6 +286,7 @@ namespace ItemBags
             CommandHandler.OnModEntry(helper);
             AutofillHandler.OnModEntry(helper);
             MultiplayerHandler.OnModEntry(helper);
+            MonsterLootHandler.OnModEntry(helper);
         }
 
         internal static void LoadUserConfig()
@@ -295,9 +295,23 @@ namespace ItemBags
             UserConfig GlobalUserConfig = ModInstance.Helper.Data.ReadJsonFile<UserConfig>(UserConfigFilename);
             if (GlobalUserConfig != null)
             {
-                //  Update config file with new the settings for managing which bags are sold at shops (Added in v1.2.3)
+                bool RewriteConfig = false;
+
+                //  Update config with settings for managing which bags are sold at shops (Added in v1.2.3)
                 if (GlobalUserConfig.CreatedByVersion == null || GlobalUserConfig.CreatedByVersion < new Version(1, 2, 3))
                 {
+                    RewriteConfig = true;
+                }
+                //  Update config with settings for managing bag drop rates (Added in v1.4.5)
+                if (GlobalUserConfig.CreatedByVersion == null || GlobalUserConfig.CreatedByVersion < new Version(1, 4, 5))
+                {
+                    GlobalUserConfig.MonsterLootSettings = new MonsterLootSettings();
+                    RewriteConfig = true;
+                }
+
+                if (RewriteConfig)
+                {
+                    GlobalUserConfig.CreatedByVersion = CurrentVersion;
                     ModInstance.Helper.Data.WriteJsonFile(UserConfigFilename, GlobalUserConfig);
                 }
             }

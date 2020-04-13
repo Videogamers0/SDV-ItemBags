@@ -33,13 +33,6 @@ namespace ItemBags.Menus
         /// For example, if the bag can only store 8 items and is set to 5 columns, then the grid will display as 2 rows, 5 columns = 10 slots. The bottom-right 2 slots will be rendered as an empty slot.</summary>
         public bool ShowLockedSlots { get; }
 
-        ///// <summary>Determines which indices will start a new row afterwards. Default = Empty list.<para/>
-        ///// For example, if you have 12 columns, and 21 items, and a linebreak at index = 16, then the grid will display as:<para/>
-        ///// Row 1 = 12 items. Row 2 = 5 items ((16+1)-12=5 leftover, note that the index=16 means up to AND INCLUDING the item at index=16 (so 17 items) gets displayed before a forced linebreak). Then a linebreak of empty space. Row 3 = 4 items</summary>
-        //public ReadOnlyCollection<int> LineBreaks { get; }
-        ///// <summary>Only relevant if <see cref="LineBreaks"/> is a non-empty list. Determines the verical spacing, in pixels, to use for each new line.</summary>
-        //public ReadOnlyCollection<int> LineBreakHeights { get; }
-
         /// <summary>The bounds of this menu's content, relative to <see cref="TopLeftScreenPosition"/></summary>
         public Rectangle RelativeContentBounds { get; private set; }
         public override Rectangle GetRelativeContentBounds() { return this.RelativeContentBounds; }

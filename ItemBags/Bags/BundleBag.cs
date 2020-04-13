@@ -37,6 +37,11 @@ namespace ItemBags.Bags
 
         public override int MaxStackSize { get { return int.MaxValue; } }
 
+        /// <summary>If true, then placing items inside the BundleBag will allow  downgrading the placed item's <see cref="StardewValley.Object.Quality"/> to the highest quality still needed of that item for an incomplete bundle.<para/>
+        /// For example, suppose you picked up a Gold-quality Parsnip. Gold parsnips are needed for the Quality crops bundle and Regular-quality are needed for Spring crops bundle.<para/>
+        /// If Quality crops is already complete, then the picked-up Parsnip will be downgraded to regular quality, to fulfill the Spring crops bundle instead.</summary>
+        public bool AllowDowngradeItemQuality { get { return ItemBagsMod.UserConfig.AllowDowngradeBundleItemQuality(this.Size); } }
+
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         public BundleBag() : base()
         {
@@ -143,20 +148,24 @@ namespace ItemBags.Bags
                 }
                 else
                 {
-                    //  Yes, I know the Quality is a 'MinimumQuality' so technically any higher value should be accepted, but that adds too much complexity,
-                    //  so for simplicity, only allow an exact quality match.
-                    return Enum.IsDefined(typeof(ObjectQuality), item.Quality) && AcceptedQualities.Contains((ObjectQuality)item.Quality);
+                    if (!Enum.IsDefined(typeof(ObjectQuality), item.Quality))
+                        return false;
+                    else
+                    {
+                        ObjectQuality ItemQuality = (ObjectQuality)item.Quality;
+                        if (AcceptedQualities.Contains(ItemQuality))
+                            return true;
+                        else if (AllowDowngradeItemQuality)
+                            return AcceptedQualities.Any(x => x <= ItemQuality);
+                        else
+                            return false;
+                    }
                 }
             }
         }
 
-        protected override int GetMaxStackSize(Object Item)
+        private Dictionary<ObjectQuality, int> GetRequiredQuantities(Object Item)
         {
-            if (!BaseIsValidBagObject(Item) || Item.bigCraftable)
-                return 0;
-
-            ObjectQuality ItemQuality = (ObjectQuality)Item.Quality;
-
             //  Get all incomplete bundle items referring to the given item, and index the required quantity of each quality
             Dictionary<ObjectQuality, int> RequiredAmounts = new Dictionary<ObjectQuality, int>();
             CommunityCenterBundles.Instance.IterateAllBundleItems(x =>
@@ -175,10 +184,90 @@ namespace ItemBags.Bags
                     }
                 }
             });
-            if (!RequiredAmounts.ContainsKey(ItemQuality))
+            return RequiredAmounts;
+        }
+
+        /// <param name="RequiredQuantities">Optional. Use null to have this automatically computed, or use <see cref="GetRequiredQuantities(Object)"/> and cache the value if making several successive calls to this method for the same Object.</param>
+        private int GetMaxStackSize(Object Item, Dictionary<ObjectQuality, int> RequiredQuantities)
+        {
+            if (!BaseIsValidBagObject(Item) || Item.bigCraftable)
+                return 0;
+
+            if (RequiredQuantities == null)
+                RequiredQuantities = GetRequiredQuantities(Item);
+
+            ObjectQuality ItemQuality = (ObjectQuality)Item.Quality;
+
+            /*if (AllowDowngradeItemQuality)
+            {
+                return RequiredAmounts.Where(x => x.Key <= ItemQuality).Sum(x => x.Value);
+            }
+            else
+            {
+                if (!RequiredAmounts.ContainsKey(ItemQuality))
+                    return 0;
+                else
+                    return RequiredAmounts[ItemQuality];
+            }*/
+
+            if (!RequiredQuantities.ContainsKey(ItemQuality))
                 return 0;
             else
-                return RequiredAmounts[ItemQuality];
+                return RequiredQuantities[ItemQuality];
+        }
+
+        protected override int GetMaxStackSize(Object Item)
+        {
+            return GetMaxStackSize(Item, null);
+        }
+
+        public override bool MoveToBag(Object Item, int Qty, out int MovedQty, bool PlaySoundEffect, IList<Item> Source, bool NotifyIfContentsChanged = true, bool ResyncMultiplayerData = true)
+        {
+            ObjectQuality OriginalQuality = (ObjectQuality)Item.Quality;
+            bool CanDowngradeQuality = OriginalQuality > ObjectQuality.Regular && this.AllowDowngradeItemQuality && Source != null && Item != null && Source.Contains(Item);
+            if (!CanDowngradeQuality)
+                return base.MoveToBag(Item, Qty, out MovedQty, PlaySoundEffect, Source, NotifyIfContentsChanged, ResyncMultiplayerData);
+            else
+            {
+                //Dictionary<ObjectQuality, int> RequiredQuantities = GetRequiredQuantities(Item);
+
+                //  Keep trying to transfer the next worse quality until all have been transferred, or we reach the minimum quality
+                int RemainingQty = Qty;
+                int TotalMovedQty = 0;
+                List<ObjectQuality> ValidQualities = Enum.GetValues(typeof(ObjectQuality)).Cast<ObjectQuality>().Where(x => x <= OriginalQuality).OrderByDescending(x => x).ToList();
+                foreach (ObjectQuality CurrentQuality in ValidQualities)
+                {
+                    Item.Quality = (int)CurrentQuality;
+                    if (base.MoveToBag(Item, RemainingQty, out int CurrentMovedQty, false, Source, false, false))
+                    {
+                        TotalMovedQty += CurrentMovedQty;
+                        RemainingQty -= CurrentMovedQty;
+                    }
+                    if (TotalMovedQty >= Qty)
+                        break;
+                }
+
+                //  Put any leftover stack back to the original quality
+                Item.Quality = (int)OriginalQuality;
+
+                MovedQty = TotalMovedQty;
+                if (MovedQty > 0)
+                {
+                    if (NotifyIfContentsChanged)
+                        OnContentsChanged?.Invoke(this, EventArgs.Empty);
+                    if (ResyncMultiplayerData)
+                        Resync();
+                    if (PlaySoundEffect)
+                        Game1.playSound(MoveContentsSuccessSound);
+                    return true;
+                }
+                else
+                {
+                    if (PlaySoundEffect)
+                        Game1.playSound(MoveContentsFailedSound);
+                    return false;
+                }
+            }
         }
 
         public override void drawTooltip(SpriteBatch spriteBatch, ref int x, ref int y, SpriteFont font, float alpha, string overrideText)
