@@ -103,15 +103,41 @@ namespace ItemBags
                             int ChosenTypeWeight = Randomizer.Next(0, TotalTypeWeight);
                             if (ChosenTypeWeight < RucksackWeight)
                             {
+                                ContainerSize CurrentSize = GetWeightedRandomSize(LootSettings.RucksackDropSettings.SizeWeights);
+
+                                //  Try to force a non-obsolete bag to spawn
+                                if (RollDice(LootSettings.ForceNewBagTypeChance))
+                                {
+                                    List<ContainerSize> ValidSizes = LootSettings.RucksackDropSettings.SizeWeights.Where(size => size.Value > 0).Select(size => size.Key).ToList();
+                                    ContainerSize MaxSize = ValidSizes.DefaultIfEmpty(ContainerSize.Small).Max();
+
+                                    while (CurrentSize < MaxSize && IsSizeObsolete(OwnedBags, Rucksack.RucksackTypeId, CurrentSize))
+                                    {
+                                        CurrentSize = ValidSizes.Where(size => size > CurrentSize).OrderBy(size => size).First();
+                                    }
+                                }
+
                                 //  Spawn a Rucksack
-                                ContainerSize Size = GetWeightedRandomSize(LootSettings.RucksackDropSettings.SizeWeights);
-                                ChosenBag = new Rucksack(Size, false);
+                                ChosenBag = new Rucksack(CurrentSize, false);
                             }
                             else if (ChosenTypeWeight < RucksackWeight + OmniBagWeight)
                             {
+                                ContainerSize CurrentSize = GetWeightedRandomSize(LootSettings.OmniBagDropSettings.SizeWeights);
+
+                                //  Try to force a non-obsolete bag to spawn
+                                if (RollDice(LootSettings.ForceNewBagTypeChance))
+                                {
+                                    List<ContainerSize> ValidSizes = LootSettings.OmniBagDropSettings.SizeWeights.Where(size => size.Value > 0).Select(size => size.Key).ToList();
+                                    ContainerSize MaxSize = ValidSizes.DefaultIfEmpty(ContainerSize.Small).Max();
+
+                                    while (CurrentSize < MaxSize && IsSizeObsolete(OwnedBags, OmniBag.OmniBagTypeId, CurrentSize))
+                                    {
+                                        CurrentSize = ValidSizes.Where(size => size > CurrentSize).OrderBy(size => size).First();
+                                    }
+                                }
+
                                 //  Spawn an OmniBag
-                                ContainerSize Size = GetWeightedRandomSize(LootSettings.OmniBagDropSettings.SizeWeights);
-                                ChosenBag = new OmniBag(Size);
+                                ChosenBag = new OmniBag(CurrentSize);
                             }
                             else if (ChosenTypeWeight < RucksackWeight + OmniBagWeight + BundleBagWeight)
                             {
@@ -121,20 +147,35 @@ namespace ItemBags
                             }
                             else
                             {
-                                ContainerSize Size = GetWeightedRandomSize(LootSettings.StandardBagDropSettings.SizeWeights);
+                                ContainerSize CurrentSize = GetWeightedRandomSize(LootSettings.StandardBagDropSettings.SizeWeights);
 
                                 //  Get all standard BagTypes that are available in the chosen size
-                                List<BagType> StandardTypes = ItemBagsMod.BagConfig.BagTypes.Where(type => type.SizeSettings.Any(sizeCfg => sizeCfg.Size == Size)).ToList();
-                                if (RollDice(LootSettings.ForceNewBagTypeChance) && StandardTypes.Any(type => !IsSizeObsolete(OwnedBags, type.Id, Size)))
+                                List<BagType> StandardTypes = ItemBagsMod.BagConfig.BagTypes.Where(type => type.SizeSettings.Any(sizeCfg => sizeCfg.Size == CurrentSize)).ToList();
+
+                                //  Try to force a non-obsolete bag to spawn
+                                if (RollDice(LootSettings.ForceNewBagTypeChance))
                                 {
-                                    StandardTypes.RemoveAll(type => IsSizeObsolete(OwnedBags, type.Id, Size));
+                                    StandardTypes.RemoveAll(type => IsSizeObsolete(OwnedBags, type.Id, CurrentSize));
+
+                                    //  If all bag types were obsolete, then keep incrementing the size until we find a non-obsolete bag to spawn
+                                    if (!StandardTypes.Any())
+                                    {
+                                        List<ContainerSize> ValidSizes = LootSettings.StandardBagDropSettings.SizeWeights.Where(size => size.Value > 0).Select(size => size.Key).ToList();
+                                        ContainerSize MaxSize = ValidSizes.DefaultIfEmpty(ContainerSize.Small).Max();
+
+                                        while (CurrentSize < MaxSize && !StandardTypes.Any())
+                                        {
+                                            CurrentSize = ValidSizes.Where(size => size > CurrentSize).OrderBy(size => size).First();
+                                            StandardTypes = ItemBagsMod.BagConfig.BagTypes.Where(type => type.SizeSettings.Any(sizeCfg => sizeCfg.Size == CurrentSize) && !IsSizeObsolete(OwnedBags, type.Id, CurrentSize)).ToList();
+                                        }
+                                    }
                                 }
 
                                 if (StandardTypes.Any())
                                 {
                                     //  Spawn a standard BoundedBag
                                     int ChosenTypeIndex = Randomizer.Next(StandardTypes.Count);
-                                    ChosenBag = new BoundedBag(StandardTypes[ChosenTypeIndex], Size, false);
+                                    ChosenBag = new BoundedBag(StandardTypes[ChosenTypeIndex], CurrentSize, false);
                                 }
                                 else
                                     ChosenBag = null;

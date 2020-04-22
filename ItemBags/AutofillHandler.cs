@@ -3,6 +3,8 @@ using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Menus;
+using StardewValley.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +24,49 @@ namespace ItemBags
         {
             AutofillHandler.Helper = Helper;
             Helper.Events.Player.InventoryChanged += Player_InventoryChanged;
+            Helper.Events.GameLoop.UpdateTicking += GameLoop_UpdateTicking;
+        }
+
+        private static Item PreviousInventoryCursorSlotItem = null;
+        private static Item PreviousGeodeMenuCursorSlotItem = null;
+        private static Item PreviousFishingChestCursorSlotItem = null;
+
+        private static void GameLoop_UpdateTicking(object sender, UpdateTickingEventArgs e)
+        {
+            if (Context.IsWorldReady)
+            {
+                PreviousInventoryCursorSlotItem = Game1.player.CursorSlotItem;
+
+                if (Game1.activeClickableMenu is GeodeMenu GM)
+                    PreviousGeodeMenuCursorSlotItem = GM.heldItem;
+                else
+                    PreviousGeodeMenuCursorSlotItem = null;
+
+                if (IsFishingTreasureChestMenu(Game1.activeClickableMenu, out Item FishingChestHeldItem))
+                    PreviousFishingChestCursorSlotItem = FishingChestHeldItem;
+                else
+                    PreviousFishingChestCursorSlotItem = null;
+            }
+        }
+
+        private static bool IsFishingTreasureChestMenu(IClickableMenu Menu, out Item HeldItem)
+        {
+            if (Menu is ItemGrabMenu IGM && IGM.context is FishingRod)
+            {
+                HeldItem = IGM.heldItem;
+                return true;
+            }
+            else
+            {
+                HeldItem = null;
+                return false;
+            }
+        }
+
+        private const int HayId = 178;
+        private static bool IsHay(Item item)
+        {
+            return item != null && item.ParentSheetIndex == HayId && item is Object obj && !obj.bigCraftable.Value;
         }
 
         private static bool IsHandlingInventoryChanged { get; set; } = false;
@@ -32,19 +77,43 @@ namespace ItemBags
             if (e.IsLocalPlayer && !IsHandlingInventoryChanged)
             {
                 if (Game1.activeClickableMenu == null)
-                    // !(Game1.activeClickableMenu is ItemBagMenu) && !(Game1.activeClickableMenu is GameMenu) && !(Game1.activeClickableMenu is ShopMenu) && !(Game1.activeClickableMenu is ItemGrabMenu))
                 {
                     CanAutofill = true;
                 }
                 else
                 {
+                    if (Game1.activeClickableMenu is DialogueBox DB)
+                    {
+                        IReflectedField<Dialogue> ReflectionDialogue = Helper.Reflection.GetField<Dialogue>(DB, "characterDialogue", false);
+                        //  (characterDialogue is null when attempting to eat a food item)
+                        CanAutofill = ReflectionDialogue != null && ReflectionDialogue.GetValue() == null;
+                    }
+                    else if (Game1.activeClickableMenu is GameMenu GameMenu && GameMenu.currentTab != GameMenu.craftingTab)
+                    {
+                        //  Ignore InventoryChanged events that are due to an inventory item being dragged/dropped to/from the cursor
+                        bool DidCursorSlotItemChange = Game1.player.CursorSlotItem != PreviousInventoryCursorSlotItem;
+                        CanAutofill = !DidCursorSlotItemChange;
+                    }
+                    else if (Game1.activeClickableMenu is GeodeMenu GeodeMenu)
+                    {
+                        //  Ignore InventoryChanged events that are due to an inventory item being dragged/dropped to/from the cursor
+                        bool DidCursorSlotItemChange = GeodeMenu.heldItem != PreviousGeodeMenuCursorSlotItem;
+                        CanAutofill = !DidCursorSlotItemChange;
+                    }
+                    else if (IsFishingTreasureChestMenu(Game1.activeClickableMenu, out Item FishingChestHeldItem))
+                    {
+                        //  Ignore InventoryChanged events that are due to an inventory item being dragged/dropped to/from the cursor
+                        bool DidCursorSlotItemChange = FishingChestHeldItem != PreviousFishingChestCursorSlotItem;
+                        CanAutofill = !DidCursorSlotItemChange;
+                    }
+
                     //Possible TODO
                     //  Improve autofilling logic by allowing autofill even if certain menus are open.
-                    //  Currently, autofilling is disabled while a menu is active, because we don't know if the inventory changed event is due to an item being picked up, or due to some other action happening.
-                    //  (such as by receiving a gift in the mail, or buying from a shop, or from a quest reward, or using a mod command to spawn items in inventory etc)
-                    //  Maybe I should still allow autofilling if the active menu is StardewValley.Menus.GameMenu (but ignore InventoryChanged events that are due to an inventory item being dragged/dropped to/from the cursor)
-                    //  Maybe also allow autofilling if the active menu is a DialogueBox AND the player is located in the skull cavern? 
-                    //  (Players might've picked up an item while inspecting a skull cavern hole to drop down through, so active menu is a DialogueBox)
+                    //  Currently, autofilling is disabled while a menu is active (with certain exceptions), because we don't know if the inventory changed event is due to an item being picked up, or due to some other action happening.
+                    //  (such as by receiving a gift in the mail, or buying from a shop, or from a quest reward, or using a mod command to spawn items in inventory etc).
+
+                    if (Game1.CurrentEvent != null)
+                        CanAutofill = false;
                 }
             }
 
@@ -61,6 +130,10 @@ namespace ItemBags
                     {
                         foreach (Item NewItem in e.Added)
                         {
+                            //  Skip autofilling hay that was just grabbed from the hopper, since the player probably wants to place it on the feeding bench
+                            if (IsHay(NewItem) && Game1.player.currentLocation is AnimalHouse && Game1.activeClickableMenu == null)
+                                continue;
+
                             TryAutofill(AutofillableBags, NestedBags, NewItem, out int AutofilledQuantity);
                         }
                     }

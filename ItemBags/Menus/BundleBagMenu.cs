@@ -114,6 +114,9 @@ namespace ItemBags.Menus
                     Placeholder.Stack = Quantity;
                     RemainingQuantity -= Quantity;
 
+                    if (Quantity > 0 && BagItem.Category == Object.artisanGoodsCategory)
+                        Placeholder.Price = BagItem.Price;
+
                     CurrentIndex++;
                 }
             }

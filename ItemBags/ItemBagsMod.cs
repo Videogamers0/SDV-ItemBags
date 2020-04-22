@@ -29,7 +29,7 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 4, 5); // Last updated 4/12/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 4, 6); // Last updated 4/21/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
 
@@ -115,6 +115,15 @@ namespace ItemBags
                 {
                     GlobalBagConfig.EnsureBagTypesExist(BagTypeFactory.GetCropBagType());
                     RewriteConfig = true;
+                }
+                if (GlobalBagConfig.CreatedByVersion == null || GlobalBagConfig.CreatedByVersion < new Version(1, 4, 6))
+                {
+                    //  I was accidentally serializing BagConfig.IndexedBagTypes which doubled the file size. Whatever, doesn't really matter since it's a small file
+                    RewriteConfig = true;
+
+                    //  Lots of rebalancing happened in v1.4.6, so completely remake the config but save a backup copy of the existing file in case user manually edited it
+                    helper.Data.WriteGlobalData(BagConfigDataKey + "-backup_before_v1.4.6_update", GlobalBagConfig);
+                    GlobalBagConfig = new BagConfig() { CreatedByVersion = CurrentVersion };
                 }
 
                 //  Suppose you just added a new BagType "Scarecrow Bag" to version 1.0.12

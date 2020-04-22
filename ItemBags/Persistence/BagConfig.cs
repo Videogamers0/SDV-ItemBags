@@ -35,6 +35,7 @@ namespace ItemBags.Persistence
             set { CreatedByVersionString = value == null ? null : value.ToString(); }
         }
 
+        [JsonIgnore]
         public Dictionary<string, BagType> IndexedBagTypes { get; private set; }
 
         public BagConfig()

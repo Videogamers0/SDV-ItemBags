@@ -15,10 +15,10 @@ namespace ItemBags.Persistence
         public static readonly Dictionary<ContainerSize, int> DefaultPrices = new Dictionary<ContainerSize, int>()
         {
             { ContainerSize.Small, 2500 },
-            { ContainerSize.Medium, 8000 },
-            { ContainerSize.Large, 28000 },
-            { ContainerSize.Giant, 85000 },
-            { ContainerSize.Massive, 400000 }
+            { ContainerSize.Medium, 7500 },
+            { ContainerSize.Large, 25000 },
+            { ContainerSize.Giant, 75000 },
+            { ContainerSize.Massive, 250000 }
         };
 
         public static readonly Dictionary<ContainerSize, int> DefaultCapacities = new Dictionary<ContainerSize, int>()
@@ -77,16 +77,16 @@ namespace ItemBags.Persistence
                     }
 
                     x.Items = Items.Take(Items.Length - (int)ContainerSize.Massive + (int)x.Size).ToList();
-                    if (x.Size == ContainerSize.Small)
-                        x.CapacityMultiplier = 5.0 / DefaultCapacities[x.Size];
-                    else if (x.Size == ContainerSize.Medium)
-                        x.CapacityMultiplier = 10.0 / DefaultCapacities[x.Size];
-                    else if (x.Size == ContainerSize.Large)
-                        x.CapacityMultiplier = 25.0 / DefaultCapacities[x.Size];
-                    else if (x.Size == ContainerSize.Giant)
-                        x.CapacityMultiplier = 100.0 / DefaultCapacities[x.Size];
-                    else if (x.Size == ContainerSize.Massive)
-                        x.CapacityMultiplier = 999.0 / DefaultCapacities[x.Size];
+                    //if (x.Size == ContainerSize.Small)
+                    //    x.CapacityMultiplier = 5.0 / DefaultCapacities[x.Size];
+                    //else if (x.Size == ContainerSize.Medium)
+                    //    x.CapacityMultiplier = 10.0 / DefaultCapacities[x.Size];
+                    //else if (x.Size == ContainerSize.Large)
+                    //    x.CapacityMultiplier = 25.0 / DefaultCapacities[x.Size];
+                    //else if (x.Size == ContainerSize.Giant)
+                    //    x.CapacityMultiplier = 100.0 / DefaultCapacities[x.Size];
+                    //else if (x.Size == ContainerSize.Massive)
+                    //    x.CapacityMultiplier = 999.0 / DefaultCapacities[x.Size];
                 })
             };
         }
@@ -430,7 +430,7 @@ namespace ItemBags.Persistence
                             378, 334, 380, 335, 338,
                             390, 382, 771, 330, 388
                         }.Select(x => new StoreableBagItem(x, false)).ToList(),
-                        CapacityMultiplier = 80 / (double)DefaultCapacities[ContainerSize.Medium],
+                        //CapacityMultiplier = 80 / (double)DefaultCapacities[ContainerSize.Medium],
                         MenuOptions = new BagMenuOptions()
                         {
                             GroupByQuality = false,
@@ -450,7 +450,7 @@ namespace ItemBags.Persistence
                             378, 334, 380, 335, 384, 336, 338,
                             390, 382, 771, 330, 388, 709
                         }.Select(x => new StoreableBagItem(x, false)).ToList(),
-                        CapacityMultiplier = 200 / (double)DefaultCapacities[ContainerSize.Large],
+                        //CapacityMultiplier = 200 / (double)DefaultCapacities[ContainerSize.Large],
                         MenuOptions = new BagMenuOptions()
                         {
                             GroupByQuality = false,
@@ -533,7 +533,7 @@ namespace ItemBags.Persistence
                 Description = "A bag for storing fences, floors, path,\nand construction resources.",
                 IconSourceTexture = BagType.SourceTexture.Cursors,
                 IconSourceRect = new Rectangle(367, 309, 16, 16),
-                SizeSettings = GenerateSizeConfigs(DefaultSellers, MenuOptions, Items, 1.0, x => { })
+                SizeSettings = GenerateSizeConfigs(DefaultSellers, MenuOptions, Items, 0.7, x => { })
             };
         }
 
@@ -704,7 +704,7 @@ namespace ItemBags.Persistence
                             new int[] { },
                             BigCraftableIds
                         ),
-                        CapacityMultiplier = 5.0 / DefaultCapacities[ContainerSize.Small],
+                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Small],
                         MenuOptions = new BagMenuOptions()
                         {
                             GroupByQuality = true,
@@ -732,7 +732,7 @@ namespace ItemBags.Persistence
                             new int[] { },
                             BigCraftableIds
                         ),
-                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Medium],
+                        CapacityMultiplier = 25.0 / DefaultCapacities[ContainerSize.Medium],
                         MenuOptions = new BagMenuOptions()
                         {
                             GroupByQuality = true,
@@ -794,7 +794,7 @@ namespace ItemBags.Persistence
                             }, 
                             BigCraftableIds
                         ),
-                        CapacityMultiplier = 200.0 / DefaultCapacities[ContainerSize.Giant],
+                        //CapacityMultiplier = 200.0 / DefaultCapacities[ContainerSize.Giant],
                         MenuOptions = new BagMenuOptions()
                         {
                             GroupByQuality = true,
@@ -980,7 +980,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Small,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Small] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 5.0 / DefaultCapacities[ContainerSize.Small],
+                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Small],
                         Items = CreateStoreableItemList(
                             new int[] { },
                             new int[] 
@@ -1002,7 +1002,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Medium,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Medium] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 15.0 / DefaultCapacities[ContainerSize.Medium],
+                        CapacityMultiplier = 25.0 / DefaultCapacities[ContainerSize.Medium],
                         Items = CreateStoreableItemList(
                             new int[] { },
                             new int[]
@@ -1024,7 +1024,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Large,
                         Sellers = DefaultSellers.Take(1).ToList(),
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 50.0 / DefaultCapacities[ContainerSize.Large],
+                        CapacityMultiplier = 100.0 / DefaultCapacities[ContainerSize.Large],
                         Items = CreateStoreableItemList(
                             new int[] { },
                             new int[]
@@ -1046,7 +1046,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Giant,
                         Sellers = DefaultSellers.Take(1).ToList(),
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 200.0 / DefaultCapacities[ContainerSize.Giant],
+                        CapacityMultiplier = 500.0 / DefaultCapacities[ContainerSize.Giant],
                         Items = CreateStoreableItemList(
                             new int[] { },
                             new int[]
@@ -1094,7 +1094,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { };
             List<BagSizeConfig.BagShop> DefaultSellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Sandy, BagSizeConfig.BagShop.Pierre };
-            double PriceMultiplier = 2.3;
+            double PriceMultiplier = 2.2;
 
             return new BagType()
             {
@@ -1110,7 +1110,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Small,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Small] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 2.0 / DefaultCapacities[ContainerSize.Small],
+                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Small],
                         Items = CreateStoreableItemList(
                             new int[] 
                             {
@@ -1139,7 +1139,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Medium,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Medium] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 5.0 / DefaultCapacities[ContainerSize.Medium],
+                        CapacityMultiplier = 25.0 / DefaultCapacities[ContainerSize.Medium],
                         Items = CreateStoreableItemList(
                             new int[] 
                             {
@@ -1169,7 +1169,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Large,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 20.0 / DefaultCapacities[ContainerSize.Large],
+                        CapacityMultiplier = 60.0 / DefaultCapacities[ContainerSize.Large],
                         Items = CreateStoreableItemList(
                             new int[] 
                             {
@@ -1199,7 +1199,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Giant,
                         Sellers = DefaultSellers.Take(1).ToList(),
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 50.0 / DefaultCapacities[ContainerSize.Giant],
+                        CapacityMultiplier = 200.0 / DefaultCapacities[ContainerSize.Giant],
                         Items = CreateStoreableItemList(
                             new int[]
                             {
@@ -1264,7 +1264,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { };
             List<BagSizeConfig.BagShop> DefaultSellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Krobus, BagSizeConfig.BagShop.Dwarf };
-            double PriceMultiplier = 1.1;
+            double PriceMultiplier = 1.05;
 
             List<int> ArtifactIds = new List<int>()
             {
@@ -1288,7 +1288,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Small,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Small] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 3.0 / DefaultCapacities[ContainerSize.Small],
+                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Small],
                         Items = CreateStoreableItemList(
                             new int[] { },
                             ArtifactIds.Take(ArtifactIds.Count - ((int)ContainerSize.Massive - (int)ContainerSize.Small) * 6).ToArray(),
@@ -1306,7 +1306,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Medium,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Medium] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 9.0 / DefaultCapacities[ContainerSize.Medium],
+                        CapacityMultiplier = 25.0 / DefaultCapacities[ContainerSize.Medium],
                         Items = CreateStoreableItemList(
                             new int[] { },
                             ArtifactIds.Take(ArtifactIds.Count - ((int)ContainerSize.Massive - (int)ContainerSize.Medium) * 6).ToArray(),
@@ -1324,7 +1324,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Large,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 30.0 / DefaultCapacities[ContainerSize.Large],
+                        CapacityMultiplier = 60.0 / DefaultCapacities[ContainerSize.Large],
                         Items = CreateStoreableItemList(
                             new int[] { },
                             ArtifactIds.Take(ArtifactIds.Count - ((int)ContainerSize.Massive - (int)ContainerSize.Large) * 6).ToArray(),
@@ -1342,7 +1342,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Giant,
                         Sellers = DefaultSellers.Take(1).ToList(),
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 100.0 / DefaultCapacities[ContainerSize.Giant],
+                        CapacityMultiplier = 200.0 / DefaultCapacities[ContainerSize.Giant],
                         Items = CreateStoreableItemList(
                             new int[] { },
                             ArtifactIds.Take(ArtifactIds.Count - ((int)ContainerSize.Massive - (int)ContainerSize.Giant) * 6).ToArray(),
@@ -1381,7 +1381,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { 25 }; // Seed Maker
             List<BagSizeConfig.BagShop> DefaultSellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Sandy, BagSizeConfig.BagShop.Pierre };
-            double PriceMultiplier = 1.35;
+            double PriceMultiplier = 1.25;
 
             List<int> RegularSeeds = new List<int>()
             {
@@ -1503,7 +1503,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { 154 }; // Worm Bin
             List<BagSizeConfig.BagShop> DefaultSellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Willy };
-            double PriceMultiplier = 1.05;
+            double PriceMultiplier = .75;
 
             List<int> FishIds = new List<int>()
             {
@@ -1532,7 +1532,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Small,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Small] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 5.0 / DefaultCapacities[ContainerSize.Small],
+                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Small],
                         Items = CreateStoreableItemList(
                             FishIds.Take(8),
                             MiscIds.Take(4),
@@ -1550,7 +1550,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Medium,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Medium] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Medium],
+                        CapacityMultiplier = 25.0 / DefaultCapacities[ContainerSize.Medium],
                         Items = CreateStoreableItemList(
                             FishIds.Take(12),
                             MiscIds.Take(5),
@@ -1568,7 +1568,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Large,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 30.0 / DefaultCapacities[ContainerSize.Large],
+                        CapacityMultiplier = 50.0 / DefaultCapacities[ContainerSize.Large],
                         Items = CreateStoreableItemList(
                             FishIds.Take(16),
                             MiscIds.Take(6),
@@ -1586,7 +1586,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Giant,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 99.0 / DefaultCapacities[ContainerSize.Giant],
+                        CapacityMultiplier = 200.0 / DefaultCapacities[ContainerSize.Giant],
                         Items = CreateStoreableItemList(
                             FishIds,
                             MiscIds.Take(7),
@@ -1625,7 +1625,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { 154 }; // Worm Bin
             List<BagSizeConfig.BagShop> DefaultSellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Willy };
-            double PriceMultiplier = 0.85;
+            double PriceMultiplier = 0.65;
 
             List<int> FishIds = new List<int>()
             {
@@ -1654,7 +1654,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Small,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Small] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 5.0 / DefaultCapacities[ContainerSize.Small],
+                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Small],
                         Items = CreateStoreableItemList(
                             FishIds.Take(6),
                             MiscIds.Take(4),
@@ -1672,7 +1672,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Medium,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Medium] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Medium],
+                        CapacityMultiplier = 25.0 / DefaultCapacities[ContainerSize.Medium],
                         Items = CreateStoreableItemList(
                             FishIds.Take(10),
                             MiscIds.Take(5),
@@ -1690,7 +1690,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Large,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 30.0 / DefaultCapacities[ContainerSize.Large],
+                        CapacityMultiplier = 50.0 / DefaultCapacities[ContainerSize.Large],
                         Items = CreateStoreableItemList(
                             FishIds.Take(14),
                             MiscIds.Take(6),
@@ -1708,7 +1708,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Giant,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 99.0 / DefaultCapacities[ContainerSize.Giant],
+                        CapacityMultiplier = 200.0 / DefaultCapacities[ContainerSize.Giant],
                         Items = CreateStoreableItemList(
                             FishIds,
                             MiscIds.Take(7),
@@ -1747,7 +1747,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { 154 }; // Worm Bin
             List<BagSizeConfig.BagShop> DefaultSellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Willy };
-            double PriceMultiplier = 0.6;
+            double PriceMultiplier = 0.45;
 
             List<int> FishIds = new List<int>()
             {
@@ -1775,7 +1775,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Small,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Small] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 5.0 / DefaultCapacities[ContainerSize.Small],
+                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Small],
                         Items = CreateStoreableItemList(
                             FishIds.Take(4),
                             MiscIds.Take(4),
@@ -1793,7 +1793,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Medium,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Medium] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Medium],
+                        CapacityMultiplier = 25.0 / DefaultCapacities[ContainerSize.Medium],
                         Items = CreateStoreableItemList(
                             FishIds.Take(8),
                             MiscIds.Take(5),
@@ -1811,7 +1811,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Large,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 30.0 / DefaultCapacities[ContainerSize.Large],
+                        CapacityMultiplier = 50.0 / DefaultCapacities[ContainerSize.Large],
                         Items = CreateStoreableItemList(
                             FishIds.Take(10),
                             MiscIds.Take(6),
@@ -1829,7 +1829,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Giant,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 99.0 / DefaultCapacities[ContainerSize.Giant],
+                        CapacityMultiplier = 200.0 / DefaultCapacities[ContainerSize.Giant],
                         Items = CreateStoreableItemList(
                             FishIds,
                             MiscIds.Take(7),
@@ -1868,7 +1868,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { 154 }; // Worm Bin
             List<BagSizeConfig.BagShop> DefaultSellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Willy };
-            double PriceMultiplier = 0.75;
+            double PriceMultiplier = 0.55;
 
             List<int> FishIds = new List<int>()
             {
@@ -1896,7 +1896,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Small,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Small] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 5.0 / DefaultCapacities[ContainerSize.Small],
+                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Small],
                         Items = CreateStoreableItemList(
                             FishIds.Take(3),
                             MiscIds.Take(4),
@@ -1914,7 +1914,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Medium,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Medium] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Medium],
+                        CapacityMultiplier = 25.0 / DefaultCapacities[ContainerSize.Medium],
                         Items = CreateStoreableItemList(
                             FishIds.Take(5),
                             MiscIds.Take(5),
@@ -1932,7 +1932,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Large,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 30.0 / DefaultCapacities[ContainerSize.Large],
+                        CapacityMultiplier = 50.0 / DefaultCapacities[ContainerSize.Large],
                         Items = CreateStoreableItemList(
                             FishIds.Take(8),
                             MiscIds.Take(6),
@@ -1950,7 +1950,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Giant,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 99.0 / DefaultCapacities[ContainerSize.Giant],
+                        CapacityMultiplier = 200.0 / DefaultCapacities[ContainerSize.Giant],
                         Items = CreateStoreableItemList(
                             FishIds.Take(10),
                             MiscIds.Take(7),
@@ -1989,7 +1989,7 @@ namespace ItemBags.Persistence
         {
             HashSet<int> BigCraftableIds = new HashSet<int>() { 154 }; // Worm Bin
             List<BagSizeConfig.BagShop> DefaultSellers = new List<BagSizeConfig.BagShop>() { BagSizeConfig.BagShop.Willy };
-            double PriceMultiplier = 2.45;
+            double PriceMultiplier = 2.4;
 
             List<int> SeasonlessCommonFishIds = new List<int>() {
                 142, 132, 702, 700, 136 // Carp, Bream, Chub, Bullhead, Largemouth Bass
@@ -2042,7 +2042,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Small,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Small] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 5.0 / DefaultCapacities[ContainerSize.Small],
+                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Small],
                         Items = CreateStoreableItemList(
                             SeasonlessCommonFishIds.Union(SpringFishIds).Union(MineFishIds.Take(1)),
                             new List<int>() { 152, 153, 157, 685 }, // Seaweed, Green Algae, White Algae, Bait
@@ -2065,7 +2065,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Medium,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Medium] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 10.0 / DefaultCapacities[ContainerSize.Medium],
+                        CapacityMultiplier = 25.0 / DefaultCapacities[ContainerSize.Medium],
                         Items = CreateStoreableItemList(
                             CrabPotFishIds.Union(SeasonlessCommonFishIds).Union(SpringFishIds).Union(SummerFishIds).Union(MineFishIds.Take(2)),
                             new List<int>() { 152, 153, 157, 685, 710, 154, 219 }, // Seaweed, Green Algae, White Algae, Bait, Crab Pot, Worm Bin, Trout Soup
@@ -2088,7 +2088,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Large,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Large] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 30.0 / DefaultCapacities[ContainerSize.Large],
+                        CapacityMultiplier = 50.0 / DefaultCapacities[ContainerSize.Large],
                         Items = CreateStoreableItemList(
                             CrabPotFishIds.Union(SeasonlessCommonFishIds).Union(SpringFishIds).Union(SummerFishIds).Union(FallFishIds).Union(WinterFishIds)
                             .Union(ForestFishIds).Union(DesertFishIds).Union(MineFishIds.Take(3)),
@@ -2112,7 +2112,7 @@ namespace ItemBags.Persistence
                         Size = ContainerSize.Giant,
                         Sellers = DefaultSellers,
                         Price = ItemBag.RoundIntegerToSecondMostSignificantDigit((int)(DefaultPrices[ContainerSize.Giant] * PriceMultiplier), ItemBag.RoundingMode.Floor),
-                        CapacityMultiplier = 99.0 / DefaultCapacities[ContainerSize.Giant],
+                        CapacityMultiplier = 200.0 / DefaultCapacities[ContainerSize.Giant],
                         Items = CreateStoreableItemList(
                             CrabPotFishIds.Union(SeasonlessCommonFishIds).Union(SpringFishIds).Union(SummerFishIds).Union(FallFishIds).Union(WinterFishIds)
                             .Union(ForestFishIds).Union(DesertFishIds).Union(MineFishIds).Union(NightMarketFishIds).Union(SpecialFishIds),

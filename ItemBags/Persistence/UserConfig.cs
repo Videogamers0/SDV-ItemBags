@@ -590,16 +590,16 @@ namespace ItemBags.Persistence
 
             this.CanReceiveBagsAsDrops = true;
 
-            this.ForceNewBagTypeChance = 0.4;
-            this.BaseDropChance = 0.004;   // ~1/250 before additional bonuses/penalties are applied
-                                            // Killing a strong monster deep within the skull cavern will typically give ~x3-4 modifier
+            this.ForceNewBagTypeChance = 0.35;
+            this.BaseDropChance = 0.0066;   // ~1/150 before additional bonuses/penalties are applied
+                                            // Killing a strong monster deep within the skull cavern will typically give ~2-2.5x modifier
                                             // While killing a weak monster in the low levels of the mines will typically give a ~0.75-1x modifier
 
-            this.MineDepthBonusPerLevel = 0.004;
+            this.MineDepthBonusPerLevel = 0.005;
             this.MaxMineDepth = 220; // Floor #100 in the Skull Cavern (since the skull cavern starts at Depth=120)
-            this.QuarryLocationBonus = 0.3;
-            this.ForestLocationBonus = 0.2;
-            this.OtherLocationBonus = 0.1;
+            this.QuarryLocationBonus = 0.4;
+            this.ForestLocationBonus = 0.3;
+            this.OtherLocationBonus = 0.2;
 
             this.BaseExperience = 8;
             this.MinExperience = 4;
@@ -607,19 +607,19 @@ namespace ItemBags.Persistence
             this.MaxExperience = 15;
             this.MaxExperienceMultiplier = 1.25;
 
-            this.BonusPer10HP = 0.015;
-            this.MaxHP = 200;
+            this.BonusPer10HP = 0.012;
+            this.MaxHP = 250;
 
             this.RucksackDropSettings = new BagTypeDropSettings()
             {
                 TypeWeight = 10,
                 SizeWeights = new Dictionary<ContainerSize, int>()
                 {
-                    { ContainerSize.Small, 56 },
-                    { ContainerSize.Medium, 30 },
-                    { ContainerSize.Large, 10 },
-                    { ContainerSize.Giant, 3 },
-                    { ContainerSize.Massive, 1 }
+                    { ContainerSize.Small, 42 },
+                    { ContainerSize.Medium, 35 },
+                    { ContainerSize.Large, 15 },
+                    { ContainerSize.Giant, 6 },
+                    { ContainerSize.Massive, 2 }
                 }
             };
 
@@ -628,11 +628,11 @@ namespace ItemBags.Persistence
                 TypeWeight = 4,
                 SizeWeights = new Dictionary<ContainerSize, int>()
                 {
-                    { ContainerSize.Small, 45 },
-                    { ContainerSize.Medium, 32 },
-                    { ContainerSize.Large, 20 },
-                    { ContainerSize.Giant, 2 },
-                    { ContainerSize.Massive, 1 }
+                    { ContainerSize.Small, 40 },
+                    { ContainerSize.Medium, 30 },
+                    { ContainerSize.Large, 10 },
+                    { ContainerSize.Giant, 4 },
+                    { ContainerSize.Massive, 2 }
                 }
             };
 
@@ -651,11 +651,11 @@ namespace ItemBags.Persistence
                 TypeWeight = 60,
                 SizeWeights = new Dictionary<ContainerSize, int>()
                 {
-                    { ContainerSize.Small, 62 },
-                    { ContainerSize.Medium, 30 },
-                    { ContainerSize.Large, 8 },
-                    { ContainerSize.Giant, 0 },
-                    { ContainerSize.Massive, 0 }
+                    { ContainerSize.Small, 30 },
+                    { ContainerSize.Medium, 52 },
+                    { ContainerSize.Large, 12 },
+                    { ContainerSize.Giant, 4 },
+                    { ContainerSize.Massive, 2 }
                 }
             };
         }
