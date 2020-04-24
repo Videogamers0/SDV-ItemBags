@@ -16,6 +16,22 @@ using Object = StardewValley.Object;
 
 namespace ItemBags.Menus
 {
+    public class ItemSlotRenderedEventArgs : EventArgs
+    {
+        public SpriteBatch SB { get; }
+        public Rectangle Slot { get; }
+        public Object Item { get; }
+        public bool IsHovered { get; }
+
+        public ItemSlotRenderedEventArgs(SpriteBatch SB, Rectangle Slot, Object Item, bool IsHovered)
+        {
+            this.SB = SB;
+            this.Slot = Slot;
+            this.Item = Item;
+            this.IsHovered = IsHovered;
+        }
+    }
+
     public class BoundedBagMenu : ItemBagMenu
     {
         public BoundedBag BoundedBag { get; }
@@ -77,8 +93,10 @@ namespace ItemBags.Menus
             this.GroupByQuality = GroupContentsByQuality;
             this.GroupedOptions = GroupedLayout;
             this.GroupedOptions.SetParent(this);
+            this.GroupedOptions.OnItemSlotRendered += OnItemSlotRendered;
             this.UngroupedOptions = UngroupedLayout;
             this.UngroupedOptions.SetParent(this);
+            this.UngroupedOptions.OnItemSlotRendered += OnItemSlotRendered;
 
             SetTopLeft(Point.Zero, false);
             InitializeLayout();
@@ -90,9 +108,13 @@ namespace ItemBags.Menus
             : this(Bag, InventorySource, ActualCapacity, Opts.InventoryColumns, Opts.InventorySlotSize, Opts.GroupByQuality, new GroupedLayoutOptions(Opts.GroupedLayoutOptions), new UngroupedLayoutOptions(Opts.UngroupedLayoutOptions)) { }
 
         #region Input Handling
+        private Point CurrentMousePosition = new Point(0, 0);
+
         protected override void OverridableOnMouseMoved(CursorMovedEventArgs e)
         {
             base.OverridableOnMouseMoved(e);
+
+            CurrentMousePosition = e.NewPosition.ScreenPixels.AsPoint();
 
             if (ContentBounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || ContentBounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
             {
@@ -111,10 +133,36 @@ namespace ItemBags.Menus
         protected override void OverridableOnMouseButtonPressed(ButtonPressedEventArgs e)
         {
             base.OverridableOnMouseButtonPressed(e);
-            if (!GroupedOptions.IsEmptyMenu)
-                GroupedOptions.OnMouseButtonPressed(e);
-            if (!UngroupedOptions.IsEmptyMenu)
-                UngroupedOptions.OnMouseButtonPressed(e);
+
+            bool Handled = false;
+            if (e.Button == StardewModdingAPI.SButton.MouseLeft && BoundedBag.Autofill)
+            {
+                if (!Handled && !GroupedOptions.IsEmptyMenu && GroupedOptions.HoveredSlot.HasValue)
+                {
+                    if (GetAutofillToggleClickableRegion(GroupedOptions.HoveredSlot.Value).Contains(CurrentMousePosition))
+                    {
+                        BoundedBag.ToggleItemAutofill(GroupedOptions.GetHoveredItem());
+                        Handled = true;
+                    }
+                }
+
+                if (!Handled && !UngroupedOptions.IsEmptyMenu && UngroupedOptions.HoveredSlot.HasValue)
+                {
+                    if (GetAutofillToggleClickableRegion(UngroupedOptions.HoveredSlot.Value).Contains(CurrentMousePosition))
+                    {
+                        BoundedBag.ToggleItemAutofill(UngroupedOptions.GetHoveredItem());
+                        Handled = true;
+                    }
+                }
+            }
+
+            if (!Handled)
+            {
+                if (!GroupedOptions.IsEmptyMenu)
+                    GroupedOptions.OnMouseButtonPressed(e);
+                if (!UngroupedOptions.IsEmptyMenu)
+                    UngroupedOptions.OnMouseButtonPressed(e);
+            }
         }
 
         protected override void OverridableOnMouseButtonReleased(ButtonReleasedEventArgs e)
@@ -138,7 +186,9 @@ namespace ItemBags.Menus
 
         public override void OnClose()
         {
+            GroupedOptions.OnItemSlotRendered -= OnItemSlotRendered;
             GroupedOptions?.SetParent(null);
+            UngroupedOptions.OnItemSlotRendered -= OnItemSlotRendered;
             UngroupedOptions?.SetParent(null);
         }
 
@@ -213,6 +263,57 @@ namespace ItemBags.Menus
         {
             GroupedOptions.DrawToolTips(b);
             UngroupedOptions.DrawToolTips(b);
+        }
+
+        private void OnItemSlotRendered(object sender, ItemSlotRenderedEventArgs e)
+        {
+            //  Draw a toggle to enable/disable autofilling this item
+            if (BoundedBag.Autofill && (e.IsHovered || IsHoveringAutofillButton))
+            {
+                Rectangle AutofillDestination;
+                float Transparency;
+                if (IsHoveringAutofillButton)
+                {
+                    double PercentSize = 0.75;
+                    int Width = (int)(e.Slot.Width * PercentSize);
+                    int Height = (int)(e.Slot.Height * PercentSize);
+
+                    AutofillDestination = new Rectangle(e.Slot.Center.X - Width / 2, e.Slot.Center.Y - Height / 2, Width, Height);
+                    Transparency = 1.0f;
+                }
+                else
+                {
+                    AutofillDestination = GetAutofillToggleDrawPosition(e.Slot);
+                    Transparency = GetAutofillToggleClickableRegion(e.Slot).Contains(CurrentMousePosition) ? 1.0f : 0.75f;
+                }
+
+                Rectangle HandIconSourceRect = new Rectangle(32, 0, 10, 10);
+                int HandIconSize = (int)(HandIconSourceRect.Width * 2.0 / 32.0 * AutofillDestination.Width);
+                //b.Draw(Game1.menuTexture, AutofillDestination, new Rectangle(128, 128, 64, 64), Color.White);
+                e.SB.Draw(Game1.mouseCursors, new Rectangle(AutofillDestination.X + (AutofillDestination.Width - HandIconSize) / 2, AutofillDestination.Y + (AutofillDestination.Height - HandIconSize) / 2, HandIconSize, HandIconSize), HandIconSourceRect, Color.White * Transparency);
+
+                if (!BoundedBag.CanAutofillWithItem(e.Item))
+                {
+                    Rectangle DisabledIconSourceRect = new Rectangle(322, 498, 12, 12);
+                    int DisabledIconSize = (int)(DisabledIconSourceRect.Width * 1.5 / 32.0 * AutofillDestination.Width);
+                    Rectangle DisabledIconDestination = new Rectangle(AutofillDestination.Right - DisabledIconSize - 2, AutofillDestination.Bottom - DisabledIconSize - 2, DisabledIconSize, DisabledIconSize);
+                    e.SB.Draw(Game1.mouseCursors, DisabledIconDestination, DisabledIconSourceRect, Color.White * Transparency);
+                }
+            }
+        }
+
+        private Rectangle GetAutofillToggleDrawPosition(Rectangle ItemSlot)
+        {
+            return new Rectangle(ItemSlot.X, ItemSlot.Y, ItemSlot.Width / 2, ItemSlot.Height / 2);
+        }
+
+        private Rectangle GetAutofillToggleClickableRegion(Rectangle ItemSlot)
+        {
+            Rectangle DrawPosition = GetAutofillToggleDrawPosition(ItemSlot);
+            double PaddingPercent = 0.2;
+            int ClickableWidth = (int)(DrawPosition.Width * (1.0 - PaddingPercent * 2));
+            int ClickableHeight = (int)(DrawPosition.Height * (1.0 - PaddingPercent * 2));
+            return new Rectangle(DrawPosition.Center.X - ClickableWidth / 2, DrawPosition.Center.Y - ClickableHeight / 2, ClickableWidth, ClickableHeight);
         }
     }
 }

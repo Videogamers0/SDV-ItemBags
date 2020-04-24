@@ -602,7 +602,13 @@ namespace ItemBags.Bags
                 //!Item.specialItem && // Removed this restriction because apparently Gunther donation rewards are marked as specialItem=true
                 (Item.questItem == null || !Item.questItem.Value) &&
                 (Item.heldObject == null || Item.heldObject.Value == null) &&
+                !IsSecretNote(Item) &&
                 !Item.isLostItem && (!Item.GetType().IsSubclassOf(typeof(Object)) || Item is ColoredObject);
+        }
+
+        private static bool IsSecretNote(Object Item)
+        {
+            return Item.ParentSheetIndex == 79 && !Item.bigCraftable.Value && !Item.IsRecipe;
         }
 
 #region Open/Close Menu

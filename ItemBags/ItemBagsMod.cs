@@ -29,13 +29,14 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 4, 6); // Last updated 4/21/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 4, 7); // Last updated 4/24/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
 
         //Possible TODO 
         //  "Equipment Bag" : subclass of BoundedBag - has a List<Weapon>, List<Hat> etc. List<AllowedHat> AllowedHats List<AllowedWeapon> AllowedWeapons etc
         //      would need to override IsValidBagItem, and the MoveToBag/MoveFromBag needs a new implementation to handle non-Objects. Allow the items to stack even if item.maximumStackSize == 1
+        //  Figure out how to correctly parse which items of community center bundles are completed. (CommunityCenterBundles.cs lines 60-84 are buggy)
 
         internal static ItemBagsMod ModInstance { get; private set; }
         internal static string Translate(string Key, Dictionary<string, string> Parameters = null)

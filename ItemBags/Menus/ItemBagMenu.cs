@@ -53,6 +53,7 @@ namespace ItemBags.Menus
             CustomizeIcon
         }
         private SidebarButton? HoveredButton { get; set; } = null;
+        public bool IsHoveringAutofillButton { get { return HoveredButton.HasValue && HoveredButton.Value == SidebarButton.Autoloot; } }
 
         private Rectangle DepositAllBounds { get; set; }
         private Rectangle WithdrawAllBounds { get; set; }
@@ -398,7 +399,7 @@ namespace ItemBags.Menus
                         b.Draw(Game1.menuTexture, WithdrawAllBounds, new Rectangle(128, 128, 64, 64), Color.White);
                         b.Draw(Game1.mouseCursors, new Rectangle(WithdrawAllBounds.X + (WithdrawAllBounds.Width - ArrowSize) / 2, WithdrawAllBounds.Y + (WithdrawAllBounds.Height - ArrowSize) / 2, ArrowSize, ArrowSize), ArrowDownIconSourceRect, Color.White);
 
-                        //  Draw the autoloot togglebutton
+                        //  Draw the autofill togglebutton
                         Rectangle HandIconSourceRect = new Rectangle(32, 0, 10, 10);
                         int HandIconSize = (int)(HandIconSourceRect.Width * 2.0 / 32.0 * AutolootBounds.Width);
                         b.Draw(Game1.menuTexture, AutolootBounds, new Rectangle(128, 128, 64, 64), Color.White);

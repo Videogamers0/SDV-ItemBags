@@ -44,6 +44,7 @@ namespace ItemBags.Menus
         public ReadOnlyCollection<Rectangle> RelativeLockedSlotBounds { get; private set; }
         /// <summary>The bounds of each null item slot (as in, one that doesn't hold any items, rather than one that holds items but quantity = 0)</summary>
         public ReadOnlyCollection<Rectangle> LockedSlotBounds { get; private set; }
+        public event EventHandler<ItemSlotRenderedEventArgs> OnItemSlotRendered;
 
         private Point _TopLeftScreenPosition;
         public Point TopLeftScreenPosition
@@ -97,7 +98,7 @@ namespace ItemBags.Menus
             : this(ULO.Columns, true, ULO.LineBreakIndices, ULO.LineBreakHeights, ULO.SlotSize) { }
 
         #region Input Handling
-        private Rectangle? HoveredSlot = null;
+        public Rectangle? HoveredSlot { get; private set; } = null;
 
         internal void OnMouseMoved(CursorMovedEventArgs e)
         {
@@ -377,6 +378,8 @@ namespace ItemBags.Menus
                 float IconScale = IsHovered ? 1.25f : 1.0f;
                 Color Overlay = CurrentItem.Stack == 0 ? Color.White * 0.30f : Color.White;
                 DrawHelpers.DrawItem(b, Destination, CurrentItem, CurrentItem.Stack > 0, true, IconScale, 1.0f, Overlay, CurrentItem.Stack >= Bag.MaxStackSize ? Color.Red : Color.White);
+
+                OnItemSlotRendered?.Invoke(this, new ItemSlotRenderedEventArgs(b, Destination, CurrentItem, IsHovered));
             }
         }
 

@@ -37,7 +37,12 @@ namespace ItemBags.Persistence
         [XmlArray("NestedBags")]
         [XmlArrayItem("Bag")]
         public BagInstance[] NestedBags { get; set; }
-#endregion Omni Bag Properties
+        #endregion Omni Bag Properties
+
+#region Standard Bag Properties
+        [XmlElement("ExcludedAutofillItems")]
+        public List<KeyValuePair<string, HashSet<ObjectQuality>>> ExcludedAutofillItems { get; set; }
+#endregion Standard Bag Properties
 
         [XmlArray("Contents")]
         [XmlArrayItem("Item")]
@@ -69,6 +74,8 @@ namespace ItemBags.Persistence
                     this.TypeId = BoundedBag.TypeInfo.Id;
                 }
                 this.Autofill = BoundedBag.Autofill;
+                this.ExcludedAutofillItems = BoundedBag.ExcludedAutofillItems.Select(x => new KeyValuePair<string, HashSet<ObjectQuality>>(x.Key, x.Value)).ToList();
+                    //BoundedBag.ExcludedAutofillItems;
             }
             else if (Bag is Rucksack Rucksack)
             {
@@ -167,6 +174,7 @@ namespace ItemBags.Persistence
             this.SortProperty = SortingProperty.Similarity;
             this.SortOrder = SortingOrder.Ascending;
             this.NestedBags = new BagInstance[] { };
+            this.ExcludedAutofillItems = new List<KeyValuePair<string, HashSet<ObjectQuality>>>();
         }
 
         #region PyTK CustomElementHandler

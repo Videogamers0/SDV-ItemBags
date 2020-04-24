@@ -1189,7 +1189,7 @@ namespace ItemBags.Persistence
                             {
                                 GroupsPerRow = 6,
                                 ShowValueColumn = true,
-                                SlotSize = 48
+                                SlotSize = 64
                             },
                             UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { }
                         }
@@ -1220,7 +1220,7 @@ namespace ItemBags.Persistence
                             {
                                 GroupsPerRow = 6,
                                 ShowValueColumn = true,
-                                SlotSize = 48
+                                SlotSize = 64
                             },
                             UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { }
                         }
@@ -1251,7 +1251,7 @@ namespace ItemBags.Persistence
                             {
                                 GroupsPerRow = 6,
                                 ShowValueColumn = true,
-                                SlotSize = 48
+                                SlotSize = 64
                             },
                             UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { }
                         }
@@ -2077,7 +2077,7 @@ namespace ItemBags.Persistence
                             GroupedLayoutOptions = new BagMenuOptions.GroupedLayout()
                             {
                                 ShowValueColumn = false,
-                                SlotSize = 48,
+                                SlotSize = 64,
                                 GroupsPerRow = 6
                             },
                             UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 7 }
@@ -2101,7 +2101,7 @@ namespace ItemBags.Persistence
                             GroupedLayoutOptions = new BagMenuOptions.GroupedLayout()
                             {
                                 ShowValueColumn = false,
-                                SlotSize = 48,
+                                SlotSize = 64,
                                 GroupsPerRow = 8
                             },
                             UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 10 }
@@ -2128,7 +2128,7 @@ namespace ItemBags.Persistence
                             GroupedLayoutOptions = new BagMenuOptions.GroupedLayout()
                             {
                                 ShowValueColumn = false,
-                                SlotSize = 48,
+                                SlotSize = 64,
                                 GroupsPerRow = 8
                             },
                             UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 8 }
@@ -2155,7 +2155,7 @@ namespace ItemBags.Persistence
                             GroupedLayoutOptions = new BagMenuOptions.GroupedLayout()
                             {
                                 ShowValueColumn = false,
-                                SlotSize = 48,
+                                SlotSize = 64,
                                 GroupsPerRow = 8
                             },
                             UngroupedLayoutOptions = new BagMenuOptions.UngroupedLayout() { Columns = 8 }

@@ -72,6 +72,7 @@ namespace ItemBags.Menus
         public Dictionary<int, Dictionary<ColumnType, Rectangle>> RelativeSlotBounds { get; private set; }
         /// <summary>Key = Item Id, then Item Quality, Value = The bounds of that item's slot</summary>
         public Dictionary<int, Dictionary<ColumnType, Rectangle>> SlotBounds { get; private set; }
+        public event EventHandler<ItemSlotRenderedEventArgs> OnItemSlotRendered;
 
         public Dictionary<int, Dictionary<ObjectQuality, Object>> Placeholders { get; private set; }
 
@@ -153,7 +154,7 @@ namespace ItemBags.Menus
             : this(GLO.GroupsPerRow, GLO.ShowValueColumn, GLO.SlotSize) { }
 
         #region Input Handling
-        private Rectangle? HoveredSlot = null;
+        public Rectangle? HoveredSlot { get; private set; } = null;
 
         internal void OnMouseMoved(CursorMovedEventArgs e)
         {
@@ -187,7 +188,7 @@ namespace ItemBags.Menus
                 RightButtonPressedTime = DateTime.Now;
             }
 
-            if (e.Button == SButton.MouseLeft || e.Button == StardewModdingAPI.SButton.MouseRight)
+            if (e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
             {
                 Object PressedObject = GetHoveredItem();
                 if (PressedObject != null)
@@ -456,6 +457,8 @@ namespace ItemBags.Menus
                         float IconScale = IsHovered ? 1.25f : 1.0f;
                         Color Overlay = CurrentItem.Stack == 0 ? Color.White * 0.30f : Color.White;
                         DrawHelpers.DrawItem(b, Destination, CurrentItem, CurrentItem.Stack > 0, true, IconScale, 1.0f, Overlay, CurrentItem.Stack >= Bag.MaxStackSize ? Color.Red : Color.White);
+
+                        OnItemSlotRendered?.Invoke(this, new ItemSlotRenderedEventArgs(b, Destination, CurrentItem, IsHovered));
                     }
                     else
                     {

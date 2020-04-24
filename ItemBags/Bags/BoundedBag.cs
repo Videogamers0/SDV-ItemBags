@@ -68,6 +68,34 @@ namespace ItemBags.Bags
         /// If multiple <see cref="BoundedBag"/> objects can store the item and have <see cref="Autofill"/>=true, then the item will be stored in the first one we can find that already has a stack of that item in it.</summary>
         public bool Autofill { get; set; }
 
+        /// <summary>Key = the DisplayName of an item that is skipped when autofilling. Value = the Qualities of that item to skip.</summary>
+        public Dictionary<string, HashSet<ObjectQuality>> ExcludedAutofillItems { get; private set; }
+
+        public void ToggleItemAutofill(Object Item)
+        {
+            if (Enum.IsDefined(typeof(ObjectQuality), Item.Quality))
+            {
+                ObjectQuality ItemQuality = (ObjectQuality)Item.Quality;
+                if (ExcludedAutofillItems.TryGetValue(Item.DisplayName, out HashSet<ObjectQuality> ExcludedQualities))
+                {
+                    if (ExcludedQualities.Contains(ItemQuality))
+                    {
+                        ExcludedQualities.Remove(ItemQuality);
+                        if (!ExcludedQualities.Any())
+                            ExcludedAutofillItems.Remove(Item.DisplayName);
+                    }
+                    else
+                        ExcludedQualities.Add(ItemQuality);
+                }
+                else
+                {
+                    ExcludedQualities = new HashSet<ObjectQuality>();
+                    ExcludedQualities.Add(ItemQuality);
+                    ExcludedAutofillItems.Add(Item.DisplayName, ExcludedQualities);
+                }
+            }
+        }
+
         /// <summary>Returns true if this Bag isn't capable of storing more Quantity of the given Item (Either because the Item is not valid for this bag, or because maximum capacity has been reached)</summary>
         public override bool IsFull(Object Item)
         {
@@ -104,6 +132,7 @@ namespace ItemBags.Bags
 
             _MaxStackSize = ItemBagsMod.UserConfig.GetStandardBagCapacity(Size, TypeInfo);
             this.AllowedObjects = new List<AllowedObject>().AsReadOnly();
+            this.ExcludedAutofillItems = new Dictionary<string, HashSet<ObjectQuality>>();
         }
 
         /// <param name="Autofill">If true, then when the player picks up an item that can be stored in this bag, it will automatically be stored if there is space for it.</param>
@@ -126,6 +155,7 @@ namespace ItemBags.Bags
                 this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(new List<AllowedObject>());
             else
                 this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(SizeInfo.Items.Select(x => new AllowedObject(x)).ToList());
+            this.ExcludedAutofillItems = new Dictionary<string, HashSet<ObjectQuality>>();
         }
 
         public BoundedBag(BagType TypeInfo, BagInstance SavedData)
@@ -141,6 +171,10 @@ namespace ItemBags.Bags
                 this.Icon = Game1.objectSpriteSheet;
                 this.IconTexturePosition = SavedData.OverriddenIcon;
             }
+
+            this.ExcludedAutofillItems = new Dictionary<string, HashSet<ObjectQuality>>();
+            foreach (var KVP in SavedData.ExcludedAutofillItems)
+                this.ExcludedAutofillItems.Add(KVP.Key, KVP.Value);
         }
 
         /// <summary>Intended to only be used when instantiating a <see cref="BundleBag"/></summary>
@@ -148,6 +182,30 @@ namespace ItemBags.Bags
             : base(BaseName, Description, Size, TextureHelpers.JunimoNoteTexture, new Rectangle(0, 244, 16, 16), new Vector2(16, 16), 0.5f, 1f)
         {
             this.Autofill = Autofill;
+        }
+
+        public bool CanAutofillWithItem(Object item)
+        {
+            if (item == null)
+            {
+                return false;
+            }
+            else if (ExcludedAutofillItems.TryGetValue(item.DisplayName, out HashSet<ObjectQuality> ExcludedQualities))
+            {
+                if (!Enum.IsDefined(typeof(ObjectQuality), item.Quality))
+                {
+                    return true;
+                }
+                else
+                {
+                    ObjectQuality ItemQuality = (ObjectQuality)item.Quality;
+                    return !ExcludedQualities.Contains(ItemQuality);
+                }
+            }
+            else
+            {
+                return true;
+            }
         }
 
         #region PyTK CustomElementHandler
@@ -173,6 +231,9 @@ namespace ItemBags.Bags
             {
                 this.Size = Data.Size;
                 this.Autofill = Data.Autofill;
+                this.ExcludedAutofillItems = new Dictionary<string, HashSet<ObjectQuality>>();
+                foreach (var KVP in Data.ExcludedAutofillItems)
+                    this.ExcludedAutofillItems.Add(KVP.Key, KVP.Value);
 
                 //  Load the type
                 this.TypeInfo = ItemBagsMod.BagConfig.BagTypes.FirstOrDefault(x => x.Id == Data.TypeId);
@@ -197,8 +258,6 @@ namespace ItemBags.Bags
 
                     this.SizeInfo = TypeInfo.SizeSettings.First();
                 }
-
-                this.Autofill = Autofill;
 
                 _MaxStackSize = ItemBagsMod.UserConfig.GetStandardBagCapacity(Size, TypeInfo);
 

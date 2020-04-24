@@ -95,20 +95,20 @@ namespace ItemBags.Persistence
 
             this.RucksackSettings = new RucksackSizeConfig[]
             {
-                new RucksackSizeConfig(ContainerSize.Small, 1.0, 1.0, 24000, 30, 6, 12, BagInventoryMenu.DefaultInventoryIconSize),
-                new RucksackSizeConfig(ContainerSize.Medium, 1.0, 1.0, 65000, 99, 12, 12, BagInventoryMenu.DefaultInventoryIconSize),
-                new RucksackSizeConfig(ContainerSize.Large, 1.0, 1.0, 175000, 300, 24, 12, BagInventoryMenu.DefaultInventoryIconSize),
-                new RucksackSizeConfig(ContainerSize.Giant, 1.0, 1.0, 350000, 999, 36, 12, BagInventoryMenu.DefaultInventoryIconSize),
-                new RucksackSizeConfig(ContainerSize.Massive, 1.0, 1.0, 1000000, 9999, 72, 12, BagInventoryMenu.DefaultInventoryIconSize)
+                new RucksackSizeConfig(ContainerSize.Small, 1.0, 1.0, 10000, 30, 6, 12, BagInventoryMenu.DefaultInventoryIconSize),
+                new RucksackSizeConfig(ContainerSize.Medium, 1.0, 1.0, 30000, 99, 12, 12, BagInventoryMenu.DefaultInventoryIconSize),
+                new RucksackSizeConfig(ContainerSize.Large, 1.0, 1.0, 90000, 300, 24, 12, BagInventoryMenu.DefaultInventoryIconSize),
+                new RucksackSizeConfig(ContainerSize.Giant, 1.0, 1.0, 200000, 999, 36, 12, BagInventoryMenu.DefaultInventoryIconSize),
+                new RucksackSizeConfig(ContainerSize.Massive, 1.0, 1.0, 500000, 9999, 72, 12, BagInventoryMenu.DefaultInventoryIconSize)
             };
 
             this.OmniBagSettings = new OmniBagSizeConfig[]
             {
-                new OmniBagSizeConfig(ContainerSize.Small, 1.0, 12000, 8, BagInventoryMenu.DefaultInventoryIconSize),
-                new OmniBagSizeConfig(ContainerSize.Medium, 1.0, 25000, 8, BagInventoryMenu.DefaultInventoryIconSize),
-                new OmniBagSizeConfig(ContainerSize.Large, 1.0, 75000, 8, BagInventoryMenu.DefaultInventoryIconSize),
-                new OmniBagSizeConfig(ContainerSize.Giant, 1.0, 300000, 8, BagInventoryMenu.DefaultInventoryIconSize),
-                new OmniBagSizeConfig(ContainerSize.Massive, 1.0, 1500000, 8, BagInventoryMenu.DefaultInventoryIconSize)
+                new OmniBagSizeConfig(ContainerSize.Small, 1.0, 5000, 8, BagInventoryMenu.DefaultInventoryIconSize),
+                new OmniBagSizeConfig(ContainerSize.Medium, 1.0, 20000, 8, BagInventoryMenu.DefaultInventoryIconSize),
+                new OmniBagSizeConfig(ContainerSize.Large, 1.0, 50000, 8, BagInventoryMenu.DefaultInventoryIconSize),
+                new OmniBagSizeConfig(ContainerSize.Giant, 1.0, 250000, 8, BagInventoryMenu.DefaultInventoryIconSize),
+                new OmniBagSizeConfig(ContainerSize.Massive, 1.0, 1000000, 8, BagInventoryMenu.DefaultInventoryIconSize)
             };
 
             this.HideSmallBagsFromShops = false;
