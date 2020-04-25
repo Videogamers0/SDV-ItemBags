@@ -600,7 +600,9 @@ namespace ItemBags.Bags
             return
                 Item != null &&
                 //!Item.specialItem && // Removed this restriction because apparently Gunther donation rewards are marked as specialItem=true
-                (Item.questItem == null || !Item.questItem.Value) &&
+                (Item.questItem == null || !Item.questItem.Value) &&    // Possible TODO: check if void salmons are questItems. 
+                                                                        // I ran into an issue where right after I caught one, it didn't get autofilled. 
+                                                                        // But when I reloaded the save it was now getting autofilled so something is different after it got deserialized
                 (Item.heldObject == null || Item.heldObject.Value == null) &&
                 !IsSecretNote(Item) &&
                 !Item.isLostItem && (!Item.GetType().IsSubclassOf(typeof(Object)) || Item is ColoredObject);

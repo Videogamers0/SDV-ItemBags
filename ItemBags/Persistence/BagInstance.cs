@@ -72,10 +72,9 @@ namespace ItemBags.Persistence
                 else
                 {
                     this.TypeId = BoundedBag.TypeInfo.Id;
+                    this.ExcludedAutofillItems = BoundedBag.ExcludedAutofillItems.Select(x => new KeyValuePair<string, HashSet<ObjectQuality>>(x.Key, x.Value)).ToList();
                 }
                 this.Autofill = BoundedBag.Autofill;
-                this.ExcludedAutofillItems = BoundedBag.ExcludedAutofillItems.Select(x => new KeyValuePair<string, HashSet<ObjectQuality>>(x.Key, x.Value)).ToList();
-                    //BoundedBag.ExcludedAutofillItems;
             }
             else if (Bag is Rucksack Rucksack)
             {

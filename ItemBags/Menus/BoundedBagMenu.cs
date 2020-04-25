@@ -3,6 +3,7 @@ using ItemBags.Helpers;
 using ItemBags.Persistence;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using System;
@@ -134,8 +135,11 @@ namespace ItemBags.Menus
         {
             base.OverridableOnMouseButtonPressed(e);
 
+            bool IsShiftHeld = e.IsDown(SButton.LeftShift) || e.IsDown(SButton.RightShift);
+            bool IsControlHeld = e.IsDown(SButton.LeftControl) || e.IsDown(SButton.RightControl);
+
             bool Handled = false;
-            if (e.Button == StardewModdingAPI.SButton.MouseLeft && BoundedBag.Autofill)
+            if (e.Button == SButton.MouseLeft && BoundedBag.Autofill && !IsShiftHeld && !IsControlHeld)
             {
                 if (!Handled && !GroupedOptions.IsEmptyMenu && GroupedOptions.HoveredSlot.HasValue)
                 {
@@ -310,7 +314,7 @@ namespace ItemBags.Menus
         private Rectangle GetAutofillToggleClickableRegion(Rectangle ItemSlot)
         {
             Rectangle DrawPosition = GetAutofillToggleDrawPosition(ItemSlot);
-            double PaddingPercent = 0.2;
+            double PaddingPercent = 0.25;
             int ClickableWidth = (int)(DrawPosition.Width * (1.0 - PaddingPercent * 2));
             int ClickableHeight = (int)(DrawPosition.Height * (1.0 - PaddingPercent * 2));
             return new Rectangle(DrawPosition.Center.X - ClickableWidth / 2, DrawPosition.Center.Y - ClickableHeight / 2, ClickableWidth, ClickableHeight);

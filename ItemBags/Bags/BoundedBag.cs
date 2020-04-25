@@ -62,6 +62,11 @@ namespace ItemBags.Bags
             {
                 return Item != null && Item.ParentSheetIndex == this.Id && Item.bigCraftable == this.IsBigCraftable && IsValidQuality(Item);
             }
+
+            public override string ToString()
+            {
+                return string.Format("Id={0}, BigCraftable={1}, Qualities={2}", Id, IsBigCraftable, string.Join(",", Qualities.Select(x => x.ToString())));
+            }
         }
 
         /// <summary>If true, then when the player picks up an item that can be stored in this bag, it will automatically be stored if there is space for it.<para/>
@@ -182,6 +187,7 @@ namespace ItemBags.Bags
             : base(BaseName, Description, Size, TextureHelpers.JunimoNoteTexture, new Rectangle(0, 244, 16, 16), new Vector2(16, 16), 0.5f, 1f)
         {
             this.Autofill = Autofill;
+            this.ExcludedAutofillItems = new Dictionary<string, HashSet<ObjectQuality>>();
         }
 
         public bool CanAutofillWithItem(Object item)
