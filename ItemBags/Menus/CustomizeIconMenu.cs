@@ -10,6 +10,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI.Events;
 using StardewValley;
+using Object = StardewValley.Object;
 
 namespace ItemBags.Menus
 {
@@ -24,6 +25,7 @@ namespace ItemBags.Menus
         private Rectangle TextureDestination { get; set; }
         private const int TextureWidth = 384;
         private const int TextureHeight = 544;
+        private const int SpriteSize = 16;
 
         private const int Padding = 24;
         private const int Spacing = 8;
@@ -60,6 +62,24 @@ namespace ItemBags.Menus
                 }
             }
         }
+
+        public int? HoveredSpriteIndex
+        {
+            get
+            {
+                if (!HoveredSprite.HasValue)
+                    return null;
+                else
+                {
+                    int ItemsPerRow = TextureWidth / SpriteSize;
+                    int HoveredRow = HoveredSprite.Value.Top / SpriteSize;
+                    int HoveredColumn = HoveredSprite.Value.Left / SpriteSize;
+                    return HoveredRow * ItemsPerRow + HoveredColumn;
+                }
+            }
+        }
+
+        public Object HoveredObject { get { return HoveredSpriteIndex.HasValue ? new Object(HoveredSpriteIndex.Value, 1) : null; } }
 
         private Rectangle? HoveredButton { get; set; }
 
@@ -115,7 +135,7 @@ namespace ItemBags.Menus
             {
                 Point RelativePos = new Point(NewPos.X - TextureDestination.X, NewPos.Y - TextureDestination.Y);
                 Rectangle? Previous = HoveredSprite;
-                Rectangle Current = new Rectangle(RelativePos.X / 16 * 16, RelativePos.Y / 16 * 16, 16, 16);
+                Rectangle Current = new Rectangle(RelativePos.X / SpriteSize * SpriteSize, RelativePos.Y / SpriteSize * SpriteSize, SpriteSize, SpriteSize);
                 if (!Previous.HasValue || Previous.Value.X != Current.X || Previous.Value.Y != Current.Y)
                     this.HoveredSprite = Current;
             }
@@ -180,7 +200,7 @@ namespace ItemBags.Menus
             {
                 Rectangle Destination = HoveredSprite.Value.GetOffseted(new Point(TextureDestination.X, TextureDestination.Y));
                 b.Draw(Highlight, Destination, Color.White * 0.25f);
-                int BorderThickness = Math.Max(2, HoveredSprite.Value.Width / 16);
+                int BorderThickness = Math.Max(2, HoveredSprite.Value.Width / SpriteSize);
                 DrawHelpers.DrawBorder(b, Destination, BorderThickness, HighlightColor);
             }
 

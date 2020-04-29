@@ -131,6 +131,37 @@ namespace ItemBags.Menus
             }
         }
 
+        protected override void UpdateHoveredItem(CursorMovedEventArgs e, out bool Handled)
+        {
+            base.UpdateHoveredItem(e, out Handled);
+            if (!Handled)
+            {
+                if (ContentBounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+                {
+                    if (!GroupedOptions.IsEmptyMenu && GroupedOptions.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+                    {
+                        HoveredItem = GroupedOptions.GetHoveredItem();
+                        Handled = true;
+                    }
+                    else if (!UngroupedOptions.IsEmptyMenu && UngroupedOptions.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+                    {
+                        HoveredItem = UngroupedOptions.GetHoveredItem();
+                        Handled = true;
+                    }
+                    else
+                    {
+                        HoveredItem = null;
+                        Handled = false;
+                    }
+                }
+                else
+                {
+                    HoveredItem = null;
+                    Handled = false;
+                }
+            }
+        }
+
         protected override void OverridableOnMouseButtonPressed(ButtonPressedEventArgs e)
         {
             base.OverridableOnMouseButtonPressed(e);

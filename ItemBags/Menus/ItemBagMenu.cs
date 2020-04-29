@@ -25,6 +25,32 @@ namespace ItemBags.Menus
 
     public abstract class ItemBagMenu : IClickableMenu
     {
+        #region Lookup Anything Compatibility
+        /// <summary>
+        /// Warning - do not remove/rename this field. It is used via reflection by Lookup Anything mod.<para/>
+        /// See also: <see cref="https://github.com/Pathoschild/StardewMods/tree/develop/LookupAnything#extensibility-for-modders"/>
+        /// </summary>
+        public Item HoveredItem = null;
+        protected virtual void UpdateHoveredItem(CursorMovedEventArgs e, out bool Handled)
+        {
+            if (IsShowingModalMenu && CustomizeIconMenu != null)
+            {
+                HoveredItem = CustomizeIconMenu.HoveredObject as Item;
+                Handled = true;
+            }
+            else if (InventoryMenu.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            {
+                HoveredItem = InventoryMenu.GetHoveredItem();
+                Handled = true;
+            }
+            else
+            {
+                HoveredItem = null;
+                Handled = false;
+            }
+        }
+        #endregion Lookup Anything Compatibility
+
         /// <summary>The number of frames to wait before repeatedly transferring items while the mouse right button is held</summary>
         public const int TransferRepeatFrequency = 4;
 
@@ -245,6 +271,8 @@ namespace ItemBags.Menus
             {
                 OverridableOnMouseMoved(e);
             }
+
+            UpdateHoveredItem(e, out bool Handled);
         }
 
         protected virtual void OverridableOnMouseMoved(CursorMovedEventArgs e)

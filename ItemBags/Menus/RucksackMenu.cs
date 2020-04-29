@@ -622,5 +622,18 @@ namespace ItemBags.Menus
             else
                 return null;
         }
+
+        protected override void UpdateHoveredItem(CursorMovedEventArgs e, out bool Handled)
+        {
+            base.UpdateHoveredItem(e, out Handled);
+            if (!Handled)
+            {
+                if (ContentBounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+                {
+                    HoveredItem = GetHoveredItem();
+                    Handled = true;
+                }
+            }
+        }
     }
 }
