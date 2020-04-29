@@ -370,6 +370,15 @@ namespace ItemBags.Bags
         /// <summary>Invoked when Items are added to or removed from the bag</summary>
         public EventHandler<EventArgs> OnContentsChanged;
 
+        #region Lookup Anything Compatibility
+        /// <summary>
+        /// This property is only intended as read-only data, for use with the Lookup Anything mod (See also: https://github.com/Pathoschild/StardewMods/tree/develop/LookupAnything#extensibility-for-modders) 
+        /// <para/>If you intend to modify the contents of the chest, use <see cref="MoveToBag(Object, int, out int, bool, IList{Item}, bool, bool)"/> or <see cref="MoveFromBag(Object, int, out int, bool, IList{Item}, int, bool, bool)"/>
+        /// </summary>
+        [XmlIgnore]
+        public virtual Chest heldObject { get { return new Chest(0, Contents.Where(x => x != null).Cast<Item>().ToList(), Vector2.Zero); } }
+        #endregion Lookup Anything Compatibility
+
         internal const int RecentlyModifiedHistorySize = 12;
         /// <summary>Key = An Object that was recently added to this bag's <see cref="Contents"/>, or had it's Quantity increased.<para/>
         /// Value = DateTime of when that event happened. Only stores up to 1 KeyValuePair for each distinct Object, and only the most recent <see cref="RecentlyModifiedHistorySize"/> changes</summary>

@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using PyTK.CustomElementHandler;
 using StardewModdingAPI;
 using StardewValley;
+using StardewValley.Objects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,15 @@ namespace ItemBags.Bags
 
         public List<ItemBag> NestedBags { get; }
         public override bool IsEmpty() { return base.IsEmpty() && (NestedBags == null || NestedBags.All(x => x.IsEmpty())); }
+
+        #region Lookup Anything Compatibility
+        /// <summary>
+        /// This property is only intended as read-only data, for use with the Lookup Anything mod (See also: https://github.com/Pathoschild/StardewMods/tree/develop/LookupAnything#extensibility-for-modders) 
+        /// <para/>If you intend to modify the contents of the chest, use <see cref="MoveToBag(Object, int, out int, bool, IList{Item}, bool, bool)"/> or <see cref="MoveFromBag(Object, int, out int, bool, IList{Item}, int, bool, bool)"/>
+        /// </summary>
+        [XmlIgnore]
+        public override Chest heldObject { get { return new Chest(0, NestedBags.SelectMany(x => x.Contents).Where(x => x != null).Cast<Item>().ToList(), Vector2.Zero); } }
+        #endregion Lookup Anything Compatibility
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         public OmniBag() : base(ItemBagsMod.Translate("OmniBagName"), ItemBagsMod.Translate("OmniBagDescription"), ContainerSize.Small, null, null, new Vector2(16, 16), 0.5f, 1f)
