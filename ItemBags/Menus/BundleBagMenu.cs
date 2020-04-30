@@ -536,7 +536,7 @@ namespace ItemBags.Menus
                     Object HoveredItem = GetHoveredItem();
                     //Rectangle Location = ItemSlotPositions[HoveredBundleItem].GetOffseted(TopLeftScreenPosition);
                     Rectangle Location = new Rectangle(Game1.getMouseX() - 8, Game1.getMouseY() + 36, 8 + 36, 1);
-                    DrawHelpers.DrawToolTipInfo(b, Location, HoveredItem, true, true, true, true, true, 
+                    DrawHelpers.DrawToolTipInfo(b, Location, HoveredItem, true, true, true, true, true, true, 
                         HoveredBundleItem.Quantity, !HoveredBundleItem.IsCompleted, Color.White);
                 }
 

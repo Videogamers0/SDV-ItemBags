@@ -268,10 +268,12 @@ namespace ItemBags.Helpers
             b.Draw(ItemRenderTarget, Destination, Color.White);*/
         }
 
-        public static void DrawToolTipInfo(SpriteBatch b, Rectangle AnchorPoint, Item Item, bool DrawName, bool DrawCategory, bool DrawDescription, bool DrawSingleItemValue, bool DrawStackValue, 
+        public static void DrawToolTipInfo(SpriteBatch b, Rectangle AnchorPoint, Item Item, bool DrawName, bool DrawCategory, bool DrawDescription, bool DrawRecovery, bool DrawSingleItemValue, bool DrawStackValue, 
                 int? MaximumCapacity = null, bool AlwaysShowCapacity = false, Color? CapacityColorOverride = null)
         {
             Object Obj = Item as Object;
+            bool IsEdible = Obj != null && Obj.Edibility != -300;
+            DrawRecovery = DrawRecovery && IsEdible;
             DrawStackValue = DrawStackValue && Obj != null && Obj.Stack > 1;
             DrawSingleItemValue = DrawSingleItemValue && Obj != null && !DrawStackValue;
             int SalePrice = ItemBag.GetSingleItemPrice(Item);
@@ -279,11 +281,13 @@ namespace ItemBags.Helpers
             int Margin = 16;
             int SeparatorHeight = 6;
             int SeparatorMargin = 3;
+            int RecoveryIconSize = 24;
             float NameScale = 0.8f;
             float DescriptionScale = 0.6f;
             float OtherTextScale = 0.6f;
             float ValueTextScale = 2.7f;
             SpriteFont Font = Game1.dialogueFont;
+            SpriteFont RecoveryAndBuffFont = Game1.smallFont;
             SpriteFont ValueFont = Game1.tinyFont;
 
             Texture2D MoneySpriteSheet = TextureHelpers.EmojiSpritesheet;
@@ -313,6 +317,7 @@ namespace ItemBags.Helpers
                     }
                     RequiredSize.Y += SeparatorHeight + SeparatorMargin * 2;
                 }
+
                 if (DrawDescription)
                 {
                     Vector2 DescriptionSize = Font.MeasureString(Item.getDescription()) * DescriptionScale;
@@ -320,6 +325,36 @@ namespace ItemBags.Helpers
                     RequiredSize.Y += DescriptionSize.Y;
                     RequiredSize.Y += SeparatorHeight + SeparatorMargin * 2;
                 }
+
+                if (DrawRecovery)
+                {
+                    RequiredSize.Y += 5;
+
+                    int StaminaRecovery = Obj.staminaRecoveredOnConsumption();
+                    if (StaminaRecovery >= 0)
+                    {
+                        RequiredSize.Y += RecoveryIconSize;
+                        int HealthRecovery = Obj.healthRecoveredOnConsumption();
+                        if (HealthRecovery > 0)
+                        {
+                            RequiredSize.Y += RecoveryIconSize;
+                        }
+                    }
+                    else if (StaminaRecovery != -300)
+                    {
+                        RequiredSize.Y += RecoveryIconSize;
+                    }
+
+                    bool HasBuffs = Game1.objectInformation[Item.ParentSheetIndex].Split(new char[] { '/' }).Length > 7;
+                    if (HasBuffs)
+                    {
+                        List<string> Buffs = Game1.objectInformation[Item.ParentSheetIndex].Split(new char[] { '/' })[7].Split(new char[] { ' ' }).Where(x => int.Parse(x) != 0).ToList();
+                        RequiredSize.Y += Buffs.Count * RecoveryIconSize;
+                    }
+
+                    RequiredSize.Y += 5;
+                }
+
                 if (DrawSingleItemValue)
                 {
                     RequiredSize.Y += 5;
@@ -331,6 +366,7 @@ namespace ItemBags.Helpers
 
                     RequiredSize.Y += 5;
                 }
+
                 if (DrawStackValue)
                 {
                     RequiredSize.Y += 5;
@@ -349,6 +385,7 @@ namespace ItemBags.Helpers
                     RequiredSize.Y += Math.Max(ValueSize.Y, MoneyIconSourceRect.Height * MoneyIconScale);
                     RequiredSize.Y += 5;
                 }
+
                 if (Obj != null && MaximumCapacity.HasValue && (AlwaysShowCapacity || Obj.Stack > 0))
                 {
                     RequiredSize.Y += 10;
@@ -356,6 +393,7 @@ namespace ItemBags.Helpers
                     RequiredSize.X = Math.Max(RequiredSize.X, CapacitySize.X);
                     RequiredSize.Y += CapacitySize.Y;
                 }
+
                 RequiredSize += new Vector2(Margin * 2);
                 RequiredSize.Y -= Margin / 2;
 
@@ -388,6 +426,7 @@ namespace ItemBags.Helpers
                     DrawHorizontalSeparator(b, Position.X, (int)(CurrentPosition.Y - SeparatorHeight / 2), Position.Width, SeparatorHeight);
                     CurrentPosition.Y += SeparatorMargin;
                 }
+
                 if (DrawDescription)
                 {
                     Vector2 DescriptionSize = Font.MeasureString(Item.getDescription()) * DescriptionScale;
@@ -398,6 +437,67 @@ namespace ItemBags.Helpers
                     DrawHorizontalSeparator(b, Position.X, (int)(CurrentPosition.Y - SeparatorHeight / 2), Position.Width, SeparatorHeight);
                     CurrentPosition.Y += SeparatorMargin;
                 }
+
+                if (DrawRecovery)
+                {
+                    CurrentPosition.Y += 5;
+
+                    //  Draw health/stamina recovery
+                    int StaminaRecovery = Obj.staminaRecoveredOnConsumption();
+                    if (StaminaRecovery >= 0)
+                    {
+                        Rectangle StaminaIconSourcePosition = new Rectangle(StaminaRecovery < 0 ? 140 : 0, 428, 10, 10);
+                        b.Draw(Game1.mouseCursors, CurrentPosition, StaminaIconSourcePosition, Color.White, 0f, Vector2.Zero, 2f, SpriteEffects.None, 1f);
+                        string StaminaRecoveryText = Game1.content.LoadString("Strings\\UI:ItemHover_Energy", string.Concat(StaminaRecovery > 0 ? "+" : "", StaminaRecovery));
+                        b.DrawString(Font, StaminaRecoveryText, new Vector2(CurrentPosition.X + RecoveryIconSize, CurrentPosition.Y), Color.Black, 0f, Vector2.Zero, OtherTextScale, SpriteEffects.None, 1f);
+                        CurrentPosition.Y += RecoveryIconSize;
+
+                        int HealthRecovery = Obj.healthRecoveredOnConsumption();
+                        if (HealthRecovery > 0)
+                        {
+                            Rectangle HealthIconSourcePosition = new Rectangle(0, 438, 10, 10);
+                            b.Draw(Game1.mouseCursors, CurrentPosition, HealthIconSourcePosition, Color.White, 0f, Vector2.Zero, 2f, SpriteEffects.None, 1f);
+                            string HealthRecoveryText = Game1.content.LoadString("Strings\\UI:ItemHover_Health", string.Concat(HealthRecovery > 0 ? "+" : "", HealthRecovery));
+                            b.DrawString(Font, HealthRecoveryText, new Vector2(CurrentPosition.X + RecoveryIconSize, CurrentPosition.Y), Color.Black, 0f, Vector2.Zero, OtherTextScale, SpriteEffects.None, 1f);
+
+                            CurrentPosition.Y += RecoveryIconSize;
+                        }
+                    }
+                    else if (StaminaRecovery != -300)
+                    {
+                        Rectangle IconSourcePosition = new Rectangle(140, 428, 10, 10);
+                        b.Draw(Game1.mouseCursors, CurrentPosition, IconSourcePosition, Color.White, 0f, Vector2.Zero, 2f, SpriteEffects.None, 1f);
+                        string RecoveryText = Game1.content.LoadString("Strings\\UI:ItemHover_Energy", string.Concat(StaminaRecovery));
+                        b.DrawString(Font, RecoveryText, new Vector2(CurrentPosition.X + RecoveryIconSize, CurrentPosition.Y), Color.Black, 0f, Vector2.Zero, OtherTextScale, SpriteEffects.None, 1f);
+
+                        CurrentPosition.Y += RecoveryIconSize;
+                    }
+
+                    //  Draw buff effects
+                    bool HasBuffs = Game1.objectInformation[Item.ParentSheetIndex].Split(new char[] { '/' }).Length > 7;
+                    if (HasBuffs)
+                    {
+                        string[] Buffs = Game1.objectInformation[Item.ParentSheetIndex].Split(new char[] { '/' })[7].Split(new char[] { ' ' });
+                        for (int i = 0; i < Buffs.Length; i++)
+                        {
+                            int BuffAmount = Convert.ToInt32(Buffs[i]);
+                            if (BuffAmount != 0)
+                            {
+                                Rectangle IconSourcePosition = new Rectangle(10 + i * 10, 428, 10, 10);
+                                b.Draw(Game1.mouseCursors, CurrentPosition, IconSourcePosition, Color.White, 0f, Vector2.Zero, 2f, SpriteEffects.None, 1f);
+                                string BuffText = string.Concat(BuffAmount > 0 ? "+" : "", BuffAmount);
+                                if (i <= 11)
+                                    BuffText = Game1.content.LoadString(string.Concat("Strings\\UI:ItemHover_Buff", i), BuffText);
+                                b.DrawString(Font, BuffText, new Vector2(CurrentPosition.X + RecoveryIconSize, CurrentPosition.Y), Color.Black, 0f, Vector2.Zero, OtherTextScale, SpriteEffects.None, 1f);
+
+                                CurrentPosition.Y += RecoveryIconSize;
+                            }
+                        }
+                    }
+
+                    CurrentPosition.Y += 5;
+                }
+
                 if (DrawSingleItemValue)
                 {
                     CurrentPosition.Y += 5;
@@ -419,6 +519,7 @@ namespace ItemBags.Helpers
                     CurrentPosition.Y += Math.Max(ValueSize.Y, MoneyIconHeight);
                     CurrentPosition.Y += 5;
                 }
+
                 if (DrawStackValue)
                 {
                     CurrentPosition.Y += 5;
@@ -456,6 +557,7 @@ namespace ItemBags.Helpers
                     CurrentPosition.Y += Math.Max(ValueSize.Y, MoneyIconHeight);
                     CurrentPosition.Y += 5;
                 }
+
                 if (Obj != null && MaximumCapacity.HasValue && (AlwaysShowCapacity || Obj.Stack > 0))
                 {
                     CurrentPosition.Y += 10;

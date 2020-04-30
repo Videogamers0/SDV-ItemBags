@@ -393,7 +393,7 @@ namespace ItemBags.Menus
                 Object HoveredItem = GetHoveredItem();
                 //Rectangle Location = HoveredSlot.Value;
                 Rectangle Location = new Rectangle(Game1.getMouseX() - 8, Game1.getMouseY() + 36, 8 + 36, 1);
-                DrawHelpers.DrawToolTipInfo(b, Location, HoveredItem, true, true, true, true, true, Bag.MaxStackSize);
+                DrawHelpers.DrawToolTipInfo(b, Location, HoveredItem, true, true, true, true, true, true, Bag.MaxStackSize);
             }
         }
 

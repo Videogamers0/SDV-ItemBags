@@ -301,7 +301,7 @@ namespace ItemBags.Menus
                     //    DrawHelpers.DrawToolTipInfo(b, Location, HoveredBag, true, true, true, true, true, Bag.MaxStackSize);
                     //}
 
-                    DrawHelpers.DrawToolTipInfo(b, Location, HoveredBag, true, true, true, true, true, Bag.MaxStackSize);
+                    DrawHelpers.DrawToolTipInfo(b, Location, HoveredBag, true, true, true, true, true, true, Bag.MaxStackSize);
                 }
             }
         }
