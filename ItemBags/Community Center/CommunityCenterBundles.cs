@@ -1,4 +1,5 @@
 ﻿using ItemBags.Bags;
+using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Locations;
 using System;
@@ -59,26 +60,18 @@ namespace ItemBags.Community_Center
                 //  Fill in data for which items of which tasks have been completed
                 foreach (var KVP in Building.bundlesDict())
                 {
-                    //Possible TODO: Building.bundlesDict() doesn't seem to have the latest completion data if using Minerva's harder community center mod
-                    //so with that mod installed, the Bundle Bag cannot properly detect partially completed rooms. (Still works with Building.isBundleComplete(...) for checking full room completion
-
-                    BundleTask Task;
-                    if (IndexedTasks.TryGetValue(KVP.Key, out Task))
+                    if (IndexedTasks.TryGetValue(KVP.Key, out BundleTask Task))
                     {
-                        //  For some strange reason, the bundlesDict bool[] is storing a boolean for every single number in the bundle's required items,
-                        //  rather than a bool for every item in the bundle's required items. (An item is composed of 3 numbers, Id, Qty, Quality)
-                        //  EX: If the data is "16 1 0", that means the bundle requires 1 horseradish of quality >= 0, but the bool[] would store { true, false, false } if that item is fulfilled.
-                        //  So we're only looking at every third boolean
-                        List<bool> CompletedItems = new List<bool>();
-                        for (int i = 0; i < KVP.Value.Length; i += 3)
+                        try
                         {
-                            CompletedItems.Add(KVP.Value[i]);
+                            for (int i = 0; i < Task.Items.Count; i++)
+                            {
+                                Task.Items[i].IsCompleted = KVP.Value[i];
+                            }
                         }
-
-                        for (int i = 0; i < CompletedItems.Count; i++)
+                        catch (Exception exception)
                         {
-                            if (Task.Items.Count > i) // User could have loaded a save file that has already completed the task, but the task now requires less items due to installing a Community Center mod
-                                Task.Items[i].IsCompleted = CompletedItems[i];
+                            ItemBagsMod.ModInstance.Monitor.Log(string.Format("Error while initializing completed items for bundle index = {0}: {1}", KVP.Key, exception.Message), LogLevel.Error);
                         }
                     }
                 }
@@ -126,8 +119,8 @@ namespace ItemBags.Community_Center
                 this.Rooms = new List<BundleRoom>().AsReadOnly();
                 this.IncompleteBundleItemIds = new Dictionary<ContainerSize, Dictionary<int, HashSet<ObjectQuality>>>();
 
-                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Error while instantiating CommunityCenterBundles: {0}", ex.Message), StardewModdingAPI.LogLevel.Error);
-                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Error while instantiating CommunityCenterBundles: {0}", ex.ToString()), StardewModdingAPI.LogLevel.Error);
+                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Error while instantiating CommunityCenterBundles: {0}", ex.Message), LogLevel.Error);
+                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Error while instantiating CommunityCenterBundles: {0}", ex.ToString()), LogLevel.Error);
             }
         }
 
