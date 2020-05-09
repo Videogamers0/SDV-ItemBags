@@ -68,6 +68,9 @@ namespace ItemBags.Persistence
         [XmlElement("MonsterLootSettings")]
         public MonsterLootSettings MonsterLootSettings { get; set; }
 
+        [XmlElement("AllowAutofillInsideChest")]
+        public bool AllowAutofillInsideChest { get; set; }
+
         public UserConfig()
         {
             InitializeDefaults();
@@ -120,6 +123,8 @@ namespace ItemBags.Persistence
             this.HideObsoleteBagsFromShops = true;
 
             this.MonsterLootSettings = new MonsterLootSettings();
+
+            this.AllowAutofillInsideChest = true;
         }
 
         public bool AllowDowngradeBundleItemQuality(ContainerSize Size)

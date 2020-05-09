@@ -199,7 +199,7 @@ namespace ItemBags
             List<ItemBag> autofillableBags = AutofillHandler.GetAutofillableBags(container, out HashSet<ItemBag> NestedBags);
             if (autofillableBags.Any())
             {
-                if (AutofillHandler.TryAutofill(autofillableBags, NestedBags, item, out int qty))
+                if (AutofillHandler.TryAutofill(container, autofillableBags, NestedBags, item, out int qty))
                 {
                     autofilledQuantity = qty;
                     return true;
