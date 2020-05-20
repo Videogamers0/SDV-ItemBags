@@ -275,7 +275,7 @@ namespace ItemBags
                         if (MovedQty > 0)
                         {
                             //Game1.addHUDMessage(new HUDMessage(string.Format("Moved {0} to {1}", Item.DisplayName, Target.DisplayName), MovedQty, true, Color.White, Target));
-                            Game1.addHUDMessage(new HUDMessage("ItemBagsAutofillMessage", MovedQty, true, Color.White, Target));
+                            Game1.addHUDMessage(new HUDMessage(string.Format("Autofilled item to {0}", Target.DisplayName), MovedQty, true, Color.White, Target));
                         }
 
                         if (Obj.Stack <= 0)

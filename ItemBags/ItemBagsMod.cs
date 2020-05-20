@@ -129,6 +129,11 @@ namespace ItemBags
                     helper.Data.WriteGlobalData(BagConfigDataKey + "-backup_before_v1.4.6_update", GlobalBagConfig);
                     GlobalBagConfig = new BagConfig() { CreatedByVersion = CurrentVersion };
                 }
+                if (GlobalBagConfig.CreatedByVersion == null || GlobalBagConfig.CreatedByVersion < new Version(1, 4, 8))
+                {
+                    //  Added a new setting, "AllowAutofillInsideChest"
+                    RewriteConfig = true;
+                }
 
                 //  Suppose you just added a new BagType "Scarecrow Bag" to version 1.0.12
                 //  Then keep the BagConfig up-to-date by doing:
