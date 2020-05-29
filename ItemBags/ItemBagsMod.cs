@@ -29,13 +29,15 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 4, 8); // Last updated 5/9/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 4, 8); // Last updated 5/29/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
 
         //Unreleased changes:
         //  Minor bugfix with menu handling for Alex's ice cream shop
         //  Items added to a chest can now be autofilled into bags inside of the chest
+        //  Minor bugfix for the way HUDMessages of autofilled items are grouped together
+        //  Fixes issue with the "generate_modded_bag" console command
 
         //Possible TODO 
         //  "Equipment Bag" : subclass of BoundedBag - has a List<Weapon>, List<Hat> etc. List<AllowedHat> AllowedHats List<AllowedWeapon> AllowedWeapons etc

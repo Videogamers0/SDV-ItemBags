@@ -121,7 +121,7 @@ namespace ItemBags.Persistence
                                     HasQualities = CategoriesWithQualities.Contains(SampleItem.Category);
                             }
 
-                            Items.AddRange(Objects.Select(x => new ModdedItem(x, false, HasQualities, RequiredSize)));
+                            Items.Add(new ModdedItem(ModdedItemName, false, HasQualities, RequiredSize));
                         }
                     }
                     //List<string> Crops = API.GetAllCropsFromContentPack(ModUniqueId);
@@ -321,8 +321,24 @@ namespace ItemBags.Persistence
                     }
                 }
 
-                IDictionary<string, int> ModdedBigCraftables = API.GetAllBigCraftableIds();
-                IDictionary<string, int> ModdedObjects = API.GetAllObjectIds();
+                Dictionary<string, int> AllBigCraftableIds = new Dictionary<string, int>();
+                foreach (System.Collections.Generic.KeyValuePair<int, string> KVP in Game1.bigCraftablesInformation)
+                {
+                    string ObjectName = KVP.Value.Split('/').First();
+                    if (!AllBigCraftableIds.ContainsKey(ObjectName))
+                        AllBigCraftableIds.Add(ObjectName, KVP.Key);
+                }
+
+                Dictionary<string, int> AllObjectIds = new Dictionary<string, int>();
+                foreach (System.Collections.Generic.KeyValuePair<int, string> KVP in Game1.objectInformation)
+                {
+                    string ObjectName = KVP.Value.Split('/').First();
+                    if (!AllObjectIds.ContainsKey(ObjectName))
+                        AllObjectIds.Add(ObjectName, KVP.Key);
+                }
+
+                IDictionary<string, int> JABigCraftableIds = API.GetAllBigCraftableIds();
+                IDictionary<string, int> JAObjectIds = API.GetAllObjectIds();
 
                 //  Import items from each ModAddon
                 foreach (ModAddon ModAddon in ModAddons)
@@ -340,10 +356,10 @@ namespace ItemBags.Persistence
                                 foreach (ModdedItem Item in BagAddon.Items)
                                 {
                                     int Id = -1;
-                                    if ((Item.IsBigCraftable && !ModdedBigCraftables.TryGetValue(Item.Name, out Id)) || 
-                                        (!Item.IsBigCraftable && !ModdedObjects.TryGetValue(Item.Name, out Id)))
+                                    if ((Item.IsBigCraftable && !JABigCraftableIds.TryGetValue(Item.Name, out Id) && !AllBigCraftableIds.TryGetValue(Item.Name, out Id)) || 
+                                        (!Item.IsBigCraftable && !JAObjectIds.TryGetValue(Item.Name, out Id) && !AllObjectIds.TryGetValue(Item.Name, out Id)))
                                     {
-                                        string Message = string.Format("Warning - no modded item with Name = '{0}' was found in Mod with UniqueId = '{1}'. This item will not be imported.", Item.Name, ModAddon.UniqueId);
+                                        string Message = string.Format("Warning - no item with Name = '{0}' was found. This item will not be imported to Bag '{1}'.", Item.Name, BagAddon.Name);
                                         ItemBagsMod.ModInstance.Monitor.Log(Message, LogLevel.Warn);
                                     }
                                     else
