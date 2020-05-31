@@ -202,8 +202,18 @@ namespace ItemBags.Bags
 
         protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity)
         {
-            ItemBagsMod.UserConfig.GetOmniBagMenuOptions(Size, out int NumColumns, out int SlotSize);
-            return new OmniBagMenu(this, InventorySource, ActualCapacity, 12, BagInventoryMenu.DefaultInventoryIconSize, NumColumns, SlotSize, true);
+            try
+            {
+                ItemBagMenu Menu = new ItemBagMenu(this, InventorySource, ActualCapacity, 12, BagInventoryMenu.DefaultInventoryIconSize);
+                ItemBagsMod.UserConfig.GetOmniBagMenuOptions(Size, out int NumColumns, out int SlotSize);
+                Menu.Content = new OmniBagMenu(Menu, this, NumColumns, SlotSize, true, 12);
+                return Menu;
+            }
+            catch (Exception ex)
+            {
+                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Unhandled error while creating OmniBagMenu: {0}", ex.Message), LogLevel.Error);
+                return null;
+            }
         }
 
         public bool MoveToBag(ItemBag Bag, bool PlaySoundEffect, IList<Item> Source, bool NotifyIfContentsChanged)

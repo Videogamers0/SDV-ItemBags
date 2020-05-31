@@ -16,10 +16,33 @@ using Object = StardewValley.Object;
 
 namespace ItemBags.Menus
 {
-    public class RucksackMenu : ItemBagMenu
+    public class RucksackMenu : IBagMenuContent
     {
+        #region Lookup Anything Compatibility
+        /// <summary>
+        /// Warning - do not remove/rename this field. It is used via reflection by Lookup Anything mod.<para/>
+        /// See also: <see cref="https://github.com/Pathoschild/StardewMods/tree/develop/LookupAnything#extensibility-for-modders"/>
+        /// </summary>
+        public Item HoveredItem { get; private set; }
+        public void UpdateHoveredItem(CursorMovedEventArgs e)
+        {
+            if (Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            {
+                HoveredItem = GetHoveredItem();
+            }
+            else
+            {
+                HoveredItem = null;
+            }
+        }
+        #endregion Lookup Anything Compatibility
+
+        public ItemBagMenu IBM { get; }
+        public ItemBag Bag { get { return Rucksack; } }
         public Rucksack Rucksack { get; }
         private void Bag_ContentsChanged(object sender, EventArgs e) { InitializePlaceholders(); }
+
+        public int Padding { get; }
 
         private int OriginalSlotSize { get; }
         /// <summary>The size, in pixels, to use when rendering an item slot. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></summary>
@@ -31,10 +54,8 @@ namespace ItemBags.Menus
         public bool ShowLockedSlots { get; }
 
         /// <summary>The bounds of this menu's content, relative to <see cref="TopLeftScreenPosition"/></summary>
-        public Rectangle RelativeContentBounds { get; private set; }
-        public override Rectangle GetRelativeContentBounds() { return this.RelativeContentBounds; }
-        public Rectangle ContentBounds { get { return RelativeContentBounds.GetOffseted(TopLeftScreenPosition); } }
-        public override Rectangle GetContentBounds() { return this.ContentBounds; }
+        public Rectangle RelativeBounds { get; private set; }
+        public Rectangle Bounds { get { return RelativeBounds.GetOffseted(TopLeftScreenPosition); } }
 
         private Point _TopLeftScreenPosition;
         public Point TopLeftScreenPosition {
@@ -42,8 +63,8 @@ namespace ItemBags.Menus
             private set { SetTopLeft(value, true); }
         }
 
-        public override void SetTopLeft(Point Point) { SetTopLeft(Point, true); }
-        public void SetTopLeft(Point NewValue, bool CheckIfChanged = true)
+        public void SetTopLeft(Point Point) { SetTopLeft(Point, true); }
+        private void SetTopLeft(Point NewValue, bool CheckIfChanged = true)
         {
             if (!CheckIfChanged || TopLeftScreenPosition != NewValue)
             {
@@ -54,12 +75,13 @@ namespace ItemBags.Menus
                 {
                     this.SlotBounds = new ReadOnlyCollection<Rectangle>(RelativeSlotBounds.Select(x => x.GetOffseted(TopLeftScreenPosition)).ToList());
 
-                    if (IsContentsRightSidebarVisible)
+                    if (IsRightSidebarVisible)
                     {
-                        this.SortingPropertyBounds = new Rectangle(xPositionOnScreen + width - ContentsMargin - ButtonLeftTopMargin - ButtonSize, 
-                            yPositionOnScreen + ContentsMargin + ButtonLeftTopMargin + SidebarTopMargin, ButtonSize, ButtonSize);
-                        this.SortingOrderBounds = new Rectangle(xPositionOnScreen + width - ContentsMargin - ButtonLeftTopMargin - ButtonSize,
-                            yPositionOnScreen + ContentsMargin + ButtonLeftTopMargin + SidebarTopMargin + ButtonSize + ButtonBottomMargin, ButtonSize, ButtonSize);
+                        this.SortingPropertyBounds = new Rectangle(IBM.xPositionOnScreen + IBM.width - ItemBagMenu.ContentsMargin - ItemBagMenu.ButtonLeftTopMargin - ItemBagMenu.ButtonSize, 
+                            IBM.yPositionOnScreen + ItemBagMenu.ContentsMargin + ItemBagMenu.ButtonLeftTopMargin + SidebarTopMargin, ItemBagMenu.ButtonSize, ItemBagMenu.ButtonSize);
+                        this.SortingOrderBounds = new Rectangle(IBM.xPositionOnScreen + IBM.width - ItemBagMenu.ContentsMargin - ItemBagMenu.ButtonLeftTopMargin - ItemBagMenu.ButtonSize,
+                            IBM.yPositionOnScreen + ItemBagMenu.ContentsMargin + ItemBagMenu.ButtonLeftTopMargin + SidebarTopMargin + ItemBagMenu.ButtonSize + ItemBagMenu.ButtonBottomMargin, 
+                            ItemBagMenu.ButtonSize, ItemBagMenu.ButtonSize);
                     }
                 }
                 else
@@ -75,7 +97,7 @@ namespace ItemBags.Menus
         public ReadOnlyCollection<Rectangle> SlotBounds { get; private set; }
 
         #region Sidebar
-        public bool IsContentsRightSidebarVisible { get; }
+        public bool IsRightSidebarVisible { get; }
 
         private enum ContentsSidebarButton
         {
@@ -112,26 +134,23 @@ namespace ItemBags.Menus
 
         public ReadOnlyCollection<Object> PlaceholderItems { get; private set; }
 
-        /// <param name="InventorySource">Typically this is <see cref="Game1.player.Items"/> if this menu should display the player's inventory.</param>
-        /// <param name="ActualCapacity">The maximum # of items that can be stored in the InventorySource list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
-        /// <param name="InventoryColumns">The number of columns to use when rendering the user's inventory at the bottom-half of the menu. Recommended = 12 to mimic the default inventory of the main GameMenu</param>
-        /// <param name="InventorySlotSize">The size, in pixels, to use when rendering each slot of the user's inventory at the bottom-half of the menu. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></param>
-        public RucksackMenu(Rucksack Bag, IList<Item> InventorySource, int ActualCapacity, int InventoryColumns, int InventorySlotSize, int ContentsColumns, int ContentsSlotSize, bool ShowLockedSlots)
-            : base(Bag, InventorySource, ActualCapacity, InventoryColumns, InventorySlotSize)
+        public RucksackMenu(ItemBagMenu IBM, Rucksack Bag, int Columns, int SlotSize, bool ShowLockedSlots, int Padding)
         {
+            this.IBM = IBM;
             this.Rucksack = Bag;
             Bag.OnContentsChanged += Bag_ContentsChanged;
+            this.Padding = Padding;
 
-            this.ColumnCount = Math.Min(Rucksack.NumSlots, ContentsColumns);
-            this.OriginalSlotSize = ContentsSlotSize;
-            this.SlotSize = ContentsSlotSize;
+            this.ColumnCount = Math.Min(Rucksack.NumSlots, Columns);
+            this.OriginalSlotSize = SlotSize;
+            this.SlotSize = SlotSize;
             this.ShowLockedSlots = ShowLockedSlots;
 
-            this.IsContentsRightSidebarVisible = true;
+            this.IsRightSidebarVisible = true;
 
             InitializePlaceholders();
             SetTopLeft(Point.Zero, false);
-            InitializeLayout();
+            InitializeLayout(1);
         }
 
         private Dictionary<Object, DateTime> TempVisualFeedback = new Dictionary<Object, DateTime>();
@@ -214,11 +233,9 @@ namespace ItemBags.Menus
         #region Input Handling
         private Rectangle? HoveredSlot = null;
 
-        protected override void OverridableOnMouseMoved(CursorMovedEventArgs e)
+        public void OnMouseMoved(CursorMovedEventArgs e)
         {
-            base.OverridableOnMouseMoved(e);
-
-            if (ContentBounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || ContentBounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            if (Bounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
             {
                 Rectangle? PreviouslyHovered = HoveredSlot;
 
@@ -238,7 +255,7 @@ namespace ItemBags.Menus
                 }
             }
 
-            if (IsContentsRightSidebarVisible)
+            if (IsRightSidebarVisible)
             {
                 Point OldPos = e.OldPosition.ScreenPixels.AsPoint();
                 Point NewPos = e.NewPosition.ScreenPixels.AsPoint();
@@ -255,16 +272,16 @@ namespace ItemBags.Menus
                 else
                     this.HoveredContentsButton = null;
             }
+
+            UpdateHoveredItem(e);
         }
 
         private DateTime? RightButtonPressedTime = null;
         private bool IsRightButtonHeld { get { return RightButtonPressedTime.HasValue; } }
         private Rectangle? RightButtonPressedLocation = null;
 
-        protected override void OverridableOnMouseButtonPressed(ButtonPressedEventArgs e)
+        public void OnMouseButtonPressed(ButtonPressedEventArgs e)
         {
-            base.OverridableOnMouseButtonPressed(e);
-
             if (e.Button == SButton.MouseRight)
             {
                 RightButtonPressedLocation = HoveredSlot;
@@ -277,11 +294,11 @@ namespace ItemBags.Menus
                 if (PressedObject != null)
                 {
                     int Qty = ItemBag.GetQuantityToTransfer(e, PressedObject);
-                    Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, true, InventorySource, ActualInventoryCapacity);
+                    Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, true, IBM.InventorySource, IBM.ActualInventoryCapacity);
                 }
             }
 
-            if (e.Button == SButton.MouseLeft && IsContentsRightSidebarVisible && HoveredContentsButton.HasValue)
+            if (e.Button == SButton.MouseLeft && IsRightSidebarVisible && HoveredContentsButton.HasValue)
             {
                 if (HoveredContentsButton.Value == ContentsSidebarButton.SortingProperty)
                 {
@@ -298,10 +315,8 @@ namespace ItemBags.Menus
             }
         }
 
-        protected override void OverridableOnMouseButtonReleased(ButtonReleasedEventArgs e)
+        public void OnMouseButtonReleased(ButtonReleasedEventArgs e)
         {
-            base.OverridableOnMouseButtonReleased(e);
-
             if (e.Button == SButton.MouseRight)
             {
                 RightButtonPressedTime = null;
@@ -310,10 +325,8 @@ namespace ItemBags.Menus
         }
         #endregion Input Handling
 
-        protected override void OverridableUpdate(UpdateTickedEventArgs e)
+        public void Update(UpdateTickedEventArgs e)
         {
-            base.OverridableUpdate(e);
-
             if (e.IsMultipleOf(ItemBagMenu.TransferRepeatFrequency))
             {
                 if (IsRightButtonHeld && HoveredSlot.HasValue && RightButtonPressedLocation.HasValue && HoveredSlot.Value == RightButtonPressedLocation.Value
@@ -329,7 +342,7 @@ namespace ItemBags.Menus
                         bool IsControlHeld = KeyState.IsKeyDown(Keys.LeftControl) || KeyState.IsKeyDown(Keys.RightControl);
                         int Qty = ItemBag.GetQuantityToTransfer(ItemBag.InputTransferAction.RightButtonHeld, PressedObject, IsShiftHeld, IsControlHeld);
 
-                        Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, false, InventorySource, ActualInventoryCapacity);
+                        Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, false, IBM.InventorySource, IBM.ActualInventoryCapacity);
                         if (MovedQty > 0)
                             Game1.playSound(ItemBag.MoveContentsSuccessSound);
                     }
@@ -337,16 +350,16 @@ namespace ItemBags.Menus
             }
         }
 
-        public override void OnClose()
+        public void OnClose()
         {
             Bag.OnContentsChanged -= Bag_ContentsChanged;
         }
 
-        protected override bool CanResize() { return true; }
+        public bool CanResize { get; } = true;
 
         private int SidebarTopMargin = Constants.TargetPlatform == GamePlatform.Android ? 32 : 16;
 
-        protected override void InitializeContentsLayout()
+        public void InitializeLayout(int ResizeIteration)
         {
             if (Rucksack == null)
                 return;
@@ -356,11 +369,12 @@ namespace ItemBags.Menus
 
             int SidebarWidth = 0;
             int SidebarHeight = 0;
-            if (IsContentsRightSidebarVisible)
+            if (IsRightSidebarVisible)
             {
-                SidebarWidth = ButtonSize + ButtonLeftTopMargin * 2;
+                SidebarWidth = ItemBagMenu.ButtonSize + ItemBagMenu.ButtonLeftTopMargin * 2;
                 int RightButtons = ContentsRightSidebarButtonBounds.Count();
-                int RightHeight = ContentsMargin + ButtonLeftTopMargin + RightButtons * ButtonSize + (RightButtons - 1) * ButtonBottomMargin + ButtonLeftTopMargin + ContentsMargin;
+                int RightHeight = ItemBagMenu.ContentsMargin + ItemBagMenu.ButtonLeftTopMargin + RightButtons * ItemBagMenu.ButtonSize + (RightButtons - 1) * ItemBagMenu.ButtonBottomMargin
+                    + ItemBagMenu.ButtonLeftTopMargin + ItemBagMenu.ContentsMargin;
                 SidebarHeight = RightHeight;
             }
 
@@ -385,27 +399,29 @@ namespace ItemBags.Menus
 
                 int X = CurrentColumn * SlotSize;
                 int Y = CurrentRow * SlotSize;
-                SlotBounds.Add(new Rectangle(ContentsMargin + SidebarWidth + X, ContentsMargin + Y, SlotSize, SlotSize));
+                SlotBounds.Add(new Rectangle(Padding + SidebarWidth + X, Padding + Y, SlotSize, SlotSize));
 
                 CurrentColumn++;
             }
 
             RelativeSlotBounds = new ReadOnlyCollection<Rectangle>(SlotBounds);
 
-            int TotalWidth = ColumnCount * SlotSize + ContentsMargin * 2 + SidebarWidth * 2;
-            int TotalHeight = Math.Max((CurrentRow + 1) * SlotSize + ContentsMargin * 2, SidebarHeight);
+            int TotalWidth = ColumnCount * SlotSize + Padding * 2 + SidebarWidth * 2;
+            int TotalHeight = Math.Max((CurrentRow + 1) * SlotSize + Padding * 2, SidebarHeight);
 
             //  Set bounds of sidebar buttons
-            if (IsContentsRightSidebarVisible)
+            if (IsRightSidebarVisible)
             {
-                SortingPropertyBounds = new Rectangle(TotalWidth - ContentsMargin - ButtonLeftTopMargin - ButtonSize, ButtonLeftTopMargin, ButtonSize, ButtonSize);
-                SortingOrderBounds = new Rectangle(TotalWidth - ContentsMargin - ButtonLeftTopMargin - ButtonSize, ButtonLeftTopMargin + ButtonSize + ButtonBottomMargin, ButtonSize, ButtonSize);
+                SortingPropertyBounds = new Rectangle(TotalWidth - ItemBagMenu.ContentsMargin - ItemBagMenu.ButtonLeftTopMargin - ItemBagMenu.ButtonSize,
+                    ItemBagMenu.ButtonLeftTopMargin, ItemBagMenu.ButtonSize, ItemBagMenu.ButtonSize);
+                SortingOrderBounds = new Rectangle(TotalWidth - ItemBagMenu.ContentsMargin - ItemBagMenu.ButtonLeftTopMargin - ItemBagMenu.ButtonSize,
+                    ItemBagMenu.ButtonLeftTopMargin + ItemBagMenu.ButtonSize + ItemBagMenu.ButtonBottomMargin, ItemBagMenu.ButtonSize, ItemBagMenu.ButtonSize);
             }
 
-            this.RelativeContentBounds = new Rectangle(0, 0, TotalWidth, TotalHeight);
+            this.RelativeBounds = new Rectangle(0, 0, TotalWidth, TotalHeight);
         }
 
-        protected override void DrawContents(SpriteBatch b)
+        public void Draw(SpriteBatch b)
         {
             //b.Draw(TextureHelpers.GetSolidColorTexture(Game1.graphics.GraphicsDevice, Color.Cyan), Bounds, Color.White);
 
@@ -464,7 +480,7 @@ namespace ItemBags.Menus
             }
 
             //  Draw the sidebar buttons
-            if (IsContentsRightSidebarVisible)
+            if (IsRightSidebarVisible)
             {
                 //  Draw Sort Property icons
                 b.Draw(Game1.menuTexture, SortingPropertyBounds, new Rectangle(128, 128, 64, 64), Color.White);
@@ -571,7 +587,7 @@ namespace ItemBags.Menus
             }
         }
 
-        protected override void DrawContentsToolTips(SpriteBatch b)
+        public void DrawToolTips(SpriteBatch b)
         {
             //  Draw tooltips on the hovered item inside the bag
             if (HoveredSlot.HasValue)
@@ -586,7 +602,7 @@ namespace ItemBags.Menus
             }
 
             //  Draw tooltips on the sidebar buttons
-            if (IsContentsRightSidebarVisible && HoveredContentsButton.HasValue)
+            if (IsRightSidebarVisible && HoveredContentsButton.HasValue)
             {
                 string ButtonToolTip = "";
                 if (HoveredContentsButton.Value == ContentsSidebarButton.SortingProperty)
@@ -621,19 +637,6 @@ namespace ItemBags.Menus
             }
             else
                 return null;
-        }
-
-        protected override void UpdateHoveredItem(CursorMovedEventArgs e, out bool Handled)
-        {
-            base.UpdateHoveredItem(e, out Handled);
-            if (!Handled)
-            {
-                if (ContentBounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
-                {
-                    HoveredItem = GetHoveredItem();
-                    Handled = true;
-                }
-            }
         }
     }
 }

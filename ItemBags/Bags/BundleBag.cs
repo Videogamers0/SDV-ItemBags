@@ -5,6 +5,7 @@ using ItemBags.Persistence;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using PyTK.CustomElementHandler;
+using StardewModdingAPI;
 using StardewValley;
 using System;
 using System.Collections.Generic;
@@ -130,7 +131,17 @@ namespace ItemBags.Bags
         /// <param name="ActualCapacity">The maximum # of items that can be stored in the InventorySource list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
         protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity)
         {
-            return new BundleBagMenu(this, InventorySource, ActualCapacity, 12, BagInventoryMenu.DefaultInventoryIconSize, 20, 48, true);
+            try
+            {
+                ItemBagMenu Menu = new ItemBagMenu(this, InventorySource, ActualCapacity, 12, BagInventoryMenu.DefaultInventoryIconSize);
+                Menu.Content = new BundleBagMenu(Menu, this, 20, 48, true, 12);
+                return Menu;
+            }
+            catch (Exception ex)
+            {
+                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Unhandled error while creating BundleBagMenu: {0}", ex.Message), LogLevel.Error);
+                return null;
+            }
         }
 
         public override bool IsValidBagObject(Object item)

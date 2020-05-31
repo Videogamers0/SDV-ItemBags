@@ -138,7 +138,7 @@ namespace ItemBags.Menus
                 if (PressedObject != null)
                 {
                     int Qty = ItemBag.GetQuantityToTransfer(e, PressedObject);
-                    Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, true, Menu.InventorySource, Menu.ActualInventoryCapacity);
+                    Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, true, Menu.IBM.InventorySource, Menu.IBM.ActualInventoryCapacity);
                 }
             }
         }
@@ -168,7 +168,7 @@ namespace ItemBags.Menus
                         bool IsControlHeld = KeyState.IsKeyDown(Keys.LeftControl) || KeyState.IsKeyDown(Keys.RightControl);
                         int Qty = ItemBag.GetQuantityToTransfer(ItemBag.InputTransferAction.RightButtonHeld, PressedObject, IsShiftHeld, IsControlHeld);
 
-                        Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, false, Menu.InventorySource, Menu.ActualInventoryCapacity);
+                        Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, false, Menu.IBM.InventorySource, Menu.IBM.ActualInventoryCapacity);
                         if (MovedQty > 0)
                             Game1.playSound(ItemBag.MoveContentsSuccessSound);
                     }

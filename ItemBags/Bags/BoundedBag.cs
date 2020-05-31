@@ -320,7 +320,17 @@ namespace ItemBags.Bags
         /// <param name="ActualCapacity">The maximum # of items that can be stored in the InventorySource list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
         protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity)
         {
-            return new BoundedBagMenu(this, InventorySource, ActualCapacity, SizeInfo.MenuOptions);
+            try
+            {
+                ItemBagMenu Menu = new ItemBagMenu(this, InventorySource, ActualCapacity, SizeInfo.MenuOptions);
+                Menu.Content = new BoundedBagMenu(Menu, this, SizeInfo.MenuOptions, 12);
+                return Menu;
+            }
+            catch (Exception ex)
+            {
+                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Unhandled error while creating BoundedBagMenu: {0}", ex.Message), LogLevel.Error);
+                return null;
+            }
         }
 
         public override bool IsValidBagObject(Object item)

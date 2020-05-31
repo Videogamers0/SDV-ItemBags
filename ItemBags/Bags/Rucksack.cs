@@ -12,6 +12,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Netcode;
 using PyTK.CustomElementHandler;
+using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Menus;
 using StardewValley.Objects;
@@ -382,8 +383,18 @@ namespace ItemBags.Bags
 
         protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity)
         {
-            ItemBagsMod.UserConfig.GetRucksackMenuOptions(Size, out int NumColumns, out int SlotSize);
-            return new RucksackMenu(this, InventorySource, ActualCapacity, 12, BagInventoryMenu.DefaultInventoryIconSize, NumColumns, SlotSize, true);
+            try
+            {
+                ItemBagMenu Menu = new ItemBagMenu(this, InventorySource, ActualCapacity, 12, BagInventoryMenu.DefaultInventoryIconSize);
+                ItemBagsMod.UserConfig.GetRucksackMenuOptions(Size, out int NumColumns, out int SlotSize);
+                Menu.Content = new RucksackMenu(Menu, this, NumColumns, SlotSize, true, 12);
+                return Menu;
+            }
+            catch (Exception ex)
+            {
+                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Unhandled error while creating RucksackMenu: {0}", ex.Message), LogLevel.Error);
+                return null;
+            }
         }
 
         public override void drawTooltip(SpriteBatch spriteBatch, ref int x, ref int y, SpriteFont font, float alpha, string overrideText)

@@ -18,11 +18,34 @@ using Object = StardewValley.Object;
 
 namespace ItemBags.Menus
 {
-    public class BundleBagMenu : ItemBagMenu
+    public class BundleBagMenu : IBagMenuContent
     {
+        #region Lookup Anything Compatibility
+        /// <summary>
+        /// Warning - do not remove/rename this field. It is used via reflection by Lookup Anything mod.<para/>
+        /// See also: <see cref="https://github.com/Pathoschild/StardewMods/tree/develop/LookupAnything#extensibility-for-modders"/>
+        /// </summary>
+        public Item HoveredItem { get; private set; }
+        public void UpdateHoveredItem(CursorMovedEventArgs e)
+        {
+            if (Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            {
+                HoveredItem = GetHoveredItem();
+            }
+            else
+            {
+                HoveredItem = null;
+            }
+        }
+        #endregion Lookup Anything Compatibility
+
+        public ItemBagMenu IBM { get; }
+        public ItemBag Bag { get { return BundleBag; } }
         public BundleBag BundleBag { get; }
         public bool IsJojaMember { get; }
         private void Bag_ContentsChanged(object sender, EventArgs e) { UpdateQuantities(); }
+
+        public int Padding { get; }
 
         private int OriginalSlotSize { get; }
         /// <summary>The size, in pixels, to use when rendering an item slot. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></summary>
@@ -34,20 +57,17 @@ namespace ItemBags.Menus
         public bool ShowLockedSlots { get; }
 
         /// <summary>The bounds of this menu's content, relative to <see cref="TopLeftScreenPosition"/></summary>
-        public Rectangle RelativeContentBounds { get; private set; }
-        public override Rectangle GetRelativeContentBounds() { return this.RelativeContentBounds; }
-        public Rectangle ContentBounds { get { return RelativeContentBounds.GetOffseted(TopLeftScreenPosition); } }
-        public override Rectangle GetContentBounds() { return this.ContentBounds; }
+        public Rectangle RelativeBounds { get; private set; }
+        public Rectangle Bounds { get { return RelativeBounds.GetOffseted(TopLeftScreenPosition); } }
 
         private Point _TopLeftScreenPosition;
-        public Point TopLeftScreenPosition
-        {
+        public Point TopLeftScreenPosition {
             get { return _TopLeftScreenPosition; }
             private set { SetTopLeft(value, true); }
         }
 
-        public override void SetTopLeft(Point Point) { SetTopLeft(Point, true); }
-        public void SetTopLeft(Point NewValue, bool CheckIfChanged = true)
+        public void SetTopLeft(Point Point) { SetTopLeft(Point, true); }
+        private void SetTopLeft(Point NewValue, bool CheckIfChanged = true)
         {
             if (!CheckIfChanged || TopLeftScreenPosition != NewValue)
             {
@@ -56,20 +76,18 @@ namespace ItemBags.Menus
             }
         }
 
-        /// <param name="InventorySource">Typically this is <see cref="Game1.player.Items"/> if this menu should display the player's inventory.</param>
-        /// <param name="ActualCapacity">The maximum # of items that can be stored in the InventorySource list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
-        /// <param name="InventoryColumns">The number of columns to use when rendering the user's inventory at the bottom-half of the menu. Recommended = 12 to mimic the default inventory of the main GameMenu</param>
-        /// <param name="InventorySlotSize">The size, in pixels, to use when rendering each slot of the user's inventory at the bottom-half of the menu. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></param>
-        public BundleBagMenu(BundleBag Bag, IList<Item> InventorySource, int ActualCapacity, int InventoryColumns, int InventorySlotSize, int ContentsColumns, int ContentsSlotSize, bool ShowLockedSlots)
-            : base(Bag, InventorySource, ActualCapacity, InventoryColumns, InventorySlotSize)
+        public BundleBagMenu(ItemBagMenu IBM, BundleBag Bag, int Columns, int SlotSize, bool ShowLockedSlots, int Padding)
         {
+            this.IBM = IBM;
             this.BundleBag = Bag;
             this.IsJojaMember = CommunityCenterBundles.Instance.IsJojaMember;
             Bag.OnContentsChanged += Bag_ContentsChanged;
 
-            this.ColumnCount = ContentsColumns;
-            this.OriginalSlotSize = ContentsSlotSize;
-            this.SlotSize = ContentsSlotSize;
+            this.Padding = Padding;
+
+            this.ColumnCount = Columns;
+            this.OriginalSlotSize = SlotSize;
+            this.SlotSize = SlotSize;
             this.ShowLockedSlots = ShowLockedSlots;
 
             this.ItemPlaceholders = new Dictionary<BundleItem, Object>();
@@ -86,7 +104,7 @@ namespace ItemBags.Menus
 
             UpdateQuantities();
             SetTopLeft(Point.Zero, false);
-            InitializeLayout();
+            InitializeLayout(1);
         }
 
         public void UpdateQuantities()
@@ -126,13 +144,11 @@ namespace ItemBags.Menus
         private BundleTask HoveredBundleTask = null;
         private BundleItem HoveredBundleItem = null;
 
-        protected override void OverridableOnMouseMoved(CursorMovedEventArgs e)
+        public void OnMouseMoved(CursorMovedEventArgs e)
         {
-            base.OverridableOnMouseMoved(e);
-
             if (!IsJojaMember)
             {
-                if (ContentBounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || ContentBounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+                if (Bounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
                 {
                     BundleItem PreviouslyHovered = HoveredBundleItem;
 
@@ -167,16 +183,16 @@ namespace ItemBags.Menus
                     }
                 }
             }
+
+            UpdateHoveredItem(e);
         }
 
         private DateTime? RightButtonPressedTime = null;
         private bool IsRightButtonHeld { get { return RightButtonPressedTime.HasValue; } }
         private BundleItem RightButtonPressedItem = null;
 
-        protected override void OverridableOnMouseButtonPressed(ButtonPressedEventArgs e)
+        public void OnMouseButtonPressed(ButtonPressedEventArgs e)
         {
-            base.OverridableOnMouseButtonPressed(e);
-
             if (!IsJojaMember)
             {
                 if (e.Button == SButton.MouseRight)
@@ -191,16 +207,14 @@ namespace ItemBags.Menus
                     if (PressedObject != null)
                     {
                         int Qty = ItemBag.GetQuantityToTransfer(e, PressedObject);
-                        Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, true, InventorySource, ActualInventoryCapacity);
+                        Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, true, IBM.InventorySource, IBM.ActualInventoryCapacity);
                     }
                 }
             }
         }
 
-        protected override void OverridableOnMouseButtonReleased(ButtonReleasedEventArgs e)
+        public void OnMouseButtonReleased(ButtonReleasedEventArgs e)
         {
-            base.OverridableOnMouseButtonReleased(e);
-
             if (!IsJojaMember)
             {
                 if (e.Button == SButton.MouseRight)
@@ -212,10 +226,8 @@ namespace ItemBags.Menus
         }
         #endregion Input Handling
 
-        protected override void OverridableUpdate(UpdateTickedEventArgs e)
+        public void Update(UpdateTickedEventArgs e)
         {
-            base.OverridableUpdate(e);
-
             if (!IsJojaMember)
             {
                 if (e.IsMultipleOf(ItemBagMenu.TransferRepeatFrequency))
@@ -231,7 +243,7 @@ namespace ItemBags.Menus
                             bool IsControlHeld = KeyState.IsKeyDown(Keys.LeftControl) || KeyState.IsKeyDown(Keys.RightControl);
                             int Qty = ItemBag.GetQuantityToTransfer(ItemBag.InputTransferAction.RightButtonHeld, PressedObject, IsShiftHeld, IsControlHeld);
 
-                            Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, false, InventorySource, ActualInventoryCapacity);
+                            Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, false, IBM.InventorySource, IBM.ActualInventoryCapacity);
                             if (MovedQty > 0)
                                 Game1.playSound(ItemBag.MoveContentsSuccessSound);
                         }
@@ -240,7 +252,7 @@ namespace ItemBags.Menus
             }
         }
 
-        public override void OnClose()
+        public void OnClose()
         {
             Bag.OnContentsChanged -= Bag_ContentsChanged;
         }
@@ -264,9 +276,9 @@ namespace ItemBags.Menus
         private SpriteFont RoomHeaderFont { get { return Game1.smallFont; } }
         private const float RoomHeaderScale = 0.8f;
 
-        protected override bool CanResize() { return true; }
+        public bool CanResize { get; } = true;
 
-        protected override void InitializeContentsLayout()
+        public void InitializeLayout(int ResizeIteration)
         {
             if (BundleBag == null)
                 return;
@@ -276,15 +288,15 @@ namespace ItemBags.Menus
 
             if (IsJojaMember)
             {
-                this.RelativeContentBounds = new Rectangle(0, 0, 640 + ContentsMargin * 2, 288 + ContentsMargin * 2);
+                this.RelativeBounds = new Rectangle(0, 0, 640 + Padding * 2, 288 + Padding * 2);
             }
             else
             {
                 int RoomBottomMargin = 12;
                 int RoomRightMargin = 8;
 
-                int StartX = ContentsMargin;
-                int StartY = ContentsMargin;
+                int StartX = Padding;
+                int StartY = Padding;
 
                 CommunityCenterBundles CC = CommunityCenterBundles.Instance;
 
@@ -363,8 +375,8 @@ namespace ItemBags.Menus
                     RoomIndex++;
                 }
 
-                this.RelativeContentBounds = new Rectangle(0, 0, ContentsMargin + RoomNameWidth + RoomRightMargin + ColumnCount * SlotSize + ContentsMargin,
-                    ContentsMargin + CurrentRow * SlotSize + ContentsMargin + (RoomIndex - 1) * RoomBottomMargin);
+                this.RelativeBounds = new Rectangle(0, 0, Padding + RoomNameWidth + RoomRightMargin + ColumnCount * SlotSize + Padding,
+                    Padding + CurrentRow * SlotSize + Padding + (RoomIndex - 1) * RoomBottomMargin);
             }
         }
 
@@ -374,11 +386,11 @@ namespace ItemBags.Menus
         private static Rectangle CheckMark = new Rectangle(51, 4, 11, 8);
         private static int CheckMarkScale = 2;
 
-        protected override void DrawContents(SpriteBatch b)
+        public void Draw(SpriteBatch b)
         {
             if (IsJojaMember)
             {
-                Rectangle BackgroundDestination = new Rectangle(ContentsMargin, ContentsMargin, RelativeContentBounds.Width - ContentsMargin * 2, RelativeContentBounds.Height - ContentsMargin * 2).GetOffseted(TopLeftScreenPosition);
+                Rectangle BackgroundDestination = new Rectangle(Padding, Padding, RelativeBounds.Width - Padding * 2, RelativeBounds.Height - Padding * 2).GetOffseted(TopLeftScreenPosition);
                 b.Draw(TextureHelpers.JojaCDForm, BackgroundDestination, new Rectangle(0, 0, TextureHelpers.JojaCDForm.Width, TextureHelpers.JojaCDForm.Height - 16), Color.White);
 
                 string Text = "You Traitor!";
@@ -391,7 +403,7 @@ namespace ItemBags.Menus
                 int BoxWidth = Math.Max((int)TextSize.X, JojaSuxDestinationSize) + BoxPadding * 2;
                 int BoxHeight = (int)TextSize.Y + BoxPadding * 2 + JojaSuxDestinationSize - JojaSuxDestinationSize / 8;
 
-                Rectangle BoxDestination = new Rectangle((RelativeContentBounds.Width - BoxWidth) / 2, (RelativeContentBounds.Height - BoxHeight) / 2, 
+                Rectangle BoxDestination = new Rectangle((RelativeBounds.Width - BoxWidth) / 2, (RelativeBounds.Height - BoxHeight) / 2, 
                     BoxWidth, BoxHeight).GetOffseted(TopLeftScreenPosition);
                 DrawHelpers.DrawBox(b, BoxDestination);
 
@@ -527,7 +539,7 @@ namespace ItemBags.Menus
             }
         }
 
-        protected override void DrawContentsToolTips(SpriteBatch b)
+        public void DrawToolTips(SpriteBatch b)
         {
             if (!IsJojaMember)
             {
@@ -632,19 +644,6 @@ namespace ItemBags.Menus
                 }
                 else
                     return null;
-            }
-        }
-
-        protected override void UpdateHoveredItem(CursorMovedEventArgs e, out bool Handled)
-        {
-            base.UpdateHoveredItem(e, out Handled);
-            if (!Handled)
-            {
-                if (ContentBounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
-                {
-                    HoveredItem = GetHoveredItem();
-                    Handled = true;
-                }
             }
         }
     }

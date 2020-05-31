@@ -161,7 +161,7 @@ namespace ItemBags.Menus
                         else if (IB != this.Bag && !(this.Bag is OmniBag) && (e.Button == SButton.MouseRight || Constants.TargetPlatform == GamePlatform.Android))
                         {
                             IClickableMenu PreviousMenu = this.Bag.PreviousMenu;
-                            if (PreviousMenu is OmniBagMenu OBM)
+                            if (PreviousMenu is ItemBagMenu IBM && IBM.Content is OmniBagMenu OBM)
                                 PreviousMenu = OBM.OmniBag.PreviousMenu;
                             this.Bag.CloseContents(false, false);
                             IB.OpenContents(Source, ActualCapacity, PreviousMenu);

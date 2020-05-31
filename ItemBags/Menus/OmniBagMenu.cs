@@ -17,10 +17,34 @@ using ItemBags.Persistence;
 
 namespace ItemBags.Menus
 {
-    public class OmniBagMenu : ItemBagMenu
+    public class OmniBagMenu : IBagMenuContent
     {
+        #region Lookup Anything Compatibility
+        /// <summary>
+        /// Warning - do not remove/rename this field. It is used via reflection by Lookup Anything mod.<para/>
+        /// See also: <see cref="https://github.com/Pathoschild/StardewMods/tree/develop/LookupAnything#extensibility-for-modders"/>
+        /// </summary>
+        public Item HoveredItem { get; private set; }
+        public void UpdateHoveredItem(CursorMovedEventArgs e)
+        {
+            if (Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            {
+                HoveredItem = GetHoveredBag();
+            }
+            else
+            {
+                HoveredItem = null;
+            }
+        }
+        #endregion Lookup Anything Compatibility
+
+        public ItemBagMenu IBM { get; }
+        public ItemBag Bag { get { return OmniBag; } }
         public OmniBag OmniBag { get; }
         private void Bag_ContentsChanged(object sender, EventArgs e) { UpdateActualContents(); }
+        public bool IsJojaMember { get; }
+
+        public int Padding { get; }
 
         private int OriginalSlotSize { get; }
         /// <summary>The size, in pixels, to use when rendering an item slot. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></summary>
@@ -32,10 +56,8 @@ namespace ItemBags.Menus
         public bool ShowLockedSlots { get; }
 
         /// <summary>The bounds of this menu's content, relative to <see cref="TopLeftScreenPosition"/></summary>
-        public Rectangle RelativeContentBounds { get; private set; }
-        public override Rectangle GetRelativeContentBounds() { return this.RelativeContentBounds; }
-        public Rectangle ContentBounds { get { return RelativeContentBounds.GetOffseted(TopLeftScreenPosition); } }
-        public override Rectangle GetContentBounds() { return this.ContentBounds; }
+        public Rectangle RelativeBounds { get; private set; }
+        public Rectangle Bounds { get { return RelativeBounds.GetOffseted(TopLeftScreenPosition); } }
 
         private Point _TopLeftScreenPosition;
         public Point TopLeftScreenPosition {
@@ -43,8 +65,8 @@ namespace ItemBags.Menus
             private set { SetTopLeft(value, true); }
         }
 
-        public override void SetTopLeft(Point Point) { SetTopLeft(Point, true); }
-        public void SetTopLeft(Point NewValue, bool CheckIfChanged = true)
+        public void SetTopLeft(Point Point) { SetTopLeft(Point, true); }
+        private void SetTopLeft(Point NewValue, bool CheckIfChanged = true)
         {
             if (!CheckIfChanged || TopLeftScreenPosition != NewValue)
             {
@@ -70,19 +92,17 @@ namespace ItemBags.Menus
         public ReadOnlyCollection<ItemBag> Placeholders { get; }
         public List<ItemBag> ActualContents { get; }
 
-        /// <param name="InventorySource">Typically this is <see cref="Game1.player.Items"/> if this menu should display the player's inventory.</param>
-        /// <param name="ActualCapacity">The maximum # of items that can be stored in the InventorySource list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
-        /// <param name="InventoryColumns">The number of columns to use when rendering the user's inventory at the bottom-half of the menu. Recommended = 12 to mimic the default inventory of the main GameMenu</param>
-        /// <param name="InventorySlotSize">The size, in pixels, to use when rendering each slot of the user's inventory at the bottom-half of the menu. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></param>
-        public OmniBagMenu(OmniBag Bag, IList<Item> InventorySource, int ActualCapacity, int InventoryColumns, int InventorySlotSize, int ContentsColumns, int ContentsSlotSize, bool ShowLockedSlots)
-            : base(Bag, InventorySource, ActualCapacity, InventoryColumns, InventorySlotSize)
+        public OmniBagMenu(ItemBagMenu IBM, OmniBag Bag, int Columns, int SlotSize, bool ShowLockedSlots, int Padding)
         {
+            this.IBM = IBM;
             this.OmniBag = Bag;
             Bag.OnContentsChanged += Bag_ContentsChanged;
 
-            this.ColumnCount = ContentsColumns;
-            this.OriginalSlotSize = ContentsSlotSize;
-            this.SlotSize = ContentsSlotSize;
+            this.Padding = Padding;
+
+            this.ColumnCount = Columns;
+            this.OriginalSlotSize = SlotSize;
+            this.SlotSize = SlotSize;
             this.ShowLockedSlots = ShowLockedSlots;
 
             //  Create a placeholder item for every kind of bag the OmniBag can store
@@ -109,7 +129,7 @@ namespace ItemBags.Menus
             UpdateActualContents();
 
             SetTopLeft(Point.Zero, false);
-            InitializeLayout();
+            InitializeLayout(1);
         }
 
         public void UpdateActualContents()
@@ -129,11 +149,9 @@ namespace ItemBags.Menus
         #region Input Handling
         private Rectangle? HoveredSlot = null;
 
-        protected override void OverridableOnMouseMoved(CursorMovedEventArgs e)
+        public void OnMouseMoved(CursorMovedEventArgs e)
         {
-            base.OverridableOnMouseMoved(e);
-
-            if (ContentBounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || ContentBounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            if (Bounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
             {
                 Rectangle? PreviouslyHovered = HoveredSlot;
 
@@ -150,41 +168,51 @@ namespace ItemBags.Menus
                     }
                 }
             }
+
+            UpdateHoveredItem(e);
         }
 
-        protected override void OverridableOnMouseButtonPressed(ButtonPressedEventArgs e)
+        public void OnMouseButtonPressed(ButtonPressedEventArgs e)
         {
-            base.OverridableOnMouseButtonPressed(e);
-
             if (e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
             {
                 ItemBag PressedBag = GetHoveredBag();
                 if (PressedBag != null)
                 {
                     if (e.Button == SButton.MouseLeft)
-                        OmniBag.MoveFromBag(PressedBag, true, InventorySource, ActualInventoryCapacity, true);
+                        OmniBag.MoveFromBag(PressedBag, true, IBM.InventorySource, IBM.ActualInventoryCapacity, true);
                     else if (e.Button == SButton.MouseRight)
                     {
                         //IClickableMenu PreviousMenu = this.Bag.PreviousMenu;
                         //this.Bag.CloseContents(false, false);
                         //PressedBag.OpenContents(InventorySource, ActualInventoryCapacity, PreviousMenu);
-                        PressedBag.OpenContents(InventorySource, ActualInventoryCapacity, this.Bag.ContentsMenu);
+                        PressedBag.OpenContents(IBM.InventorySource, IBM.ActualInventoryCapacity, this.Bag.ContentsMenu);
 
                         this.HoveredSlot = null;
                     }
                 }
             }
         }
+
+        public void OnMouseButtonReleased(ButtonReleasedEventArgs e)
+        {
+
+        }
         #endregion Input Handling
 
-        public override void OnClose()
+        public void Update(UpdateTickedEventArgs e)
+        {
+
+        }
+
+        public void OnClose()
         {
             Bag.OnContentsChanged -= Bag_ContentsChanged;
         }
 
-        protected override bool CanResize() { return true; }
+        public bool CanResize { get; } = true;
 
-        protected override void InitializeContentsLayout()
+        public void InitializeLayout(int ResizeIteration)
         {
             if (OmniBag == null)
                 return;
@@ -210,20 +238,20 @@ namespace ItemBags.Menus
 
                 int X = CurrentColumn * SlotSize;
                 int Y = CurrentRow * SlotSize;
-                SlotBounds.Add(new Rectangle(ContentsMargin + X, ContentsMargin + Y, SlotSize, SlotSize));
+                SlotBounds.Add(new Rectangle(Padding + X, Padding + Y, SlotSize, SlotSize));
 
                 CurrentColumn++;
             }
 
             RelativeSlotBounds = new ReadOnlyCollection<Rectangle>(SlotBounds);
 
-            int TotalWidth = ColumnCount * SlotSize + ContentsMargin * 2;
-            int TotalHeight = (CurrentRow + 1) * SlotSize + ContentsMargin * 2;
+            int TotalWidth = ColumnCount * SlotSize + Padding * 2;
+            int TotalHeight = (CurrentRow + 1) * SlotSize + Padding * 2;
 
-            this.RelativeContentBounds = new Rectangle(0, 0, TotalWidth, TotalHeight);
+            this.RelativeBounds = new Rectangle(0, 0, TotalWidth, TotalHeight);
         }
 
-        protected override void DrawContents(SpriteBatch b)
+        public void Draw(SpriteBatch b)
         {
             //b.Draw(TextureHelpers.GetSolidColorTexture(Game1.graphics.GraphicsDevice, Color.Cyan), Bounds, Color.White);
 
@@ -270,7 +298,7 @@ namespace ItemBags.Menus
             }
         }
 
-        protected override void DrawContentsToolTips(SpriteBatch b)
+        public void DrawToolTips(SpriteBatch b)
         {
             //  Draw tooltips on the hovered item inside the bag
             if (HoveredSlot.HasValue)
@@ -322,19 +350,6 @@ namespace ItemBags.Menus
             }
             else
                 return null;
-        }
-
-        protected override void UpdateHoveredItem(CursorMovedEventArgs e, out bool Handled)
-        {
-            base.UpdateHoveredItem(e, out Handled);
-            if (!Handled)
-            {
-                if (ContentBounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
-                {
-                    HoveredItem = GetHoveredBag();
-                    Handled = true;
-                }
-            }
         }
     }
 }

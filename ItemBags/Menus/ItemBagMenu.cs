@@ -15,15 +15,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Object = StardewValley.Object;
 using static ItemBags.Helpers.DrawHelpers;
+using ItemBags.Persistence;
 
 namespace ItemBags.Menus
 {
-    //  This really shouldn't have been an abstract class. 
-    //  BoundedBagMenu, BundleBagMenu, and RucksackMenu should have just been child objects of ItemBagMenu, not subclasses of it.
-    //  Then they could have implemented some kind of ItemBagContentsRenderer interface, for drawing the upper half portion of the menu.
-    //  But whatever, too lazy to change it now so enjoy the spaghetti
-
-    public abstract class ItemBagMenu : IClickableMenu
+    public class ItemBagMenu : IClickableMenu
     {
         #region Lookup Anything Compatibility
         /// <summary>
@@ -31,22 +27,23 @@ namespace ItemBags.Menus
         /// See also: <see cref="https://github.com/Pathoschild/StardewMods/tree/develop/LookupAnything#extensibility-for-modders"/>
         /// </summary>
         public Item HoveredItem = null;
-        protected virtual void UpdateHoveredItem(CursorMovedEventArgs e, out bool Handled)
+        protected void UpdateHoveredItem(CursorMovedEventArgs e)
         {
             if (IsShowingModalMenu && CustomizeIconMenu != null)
             {
                 HoveredItem = CustomizeIconMenu.HoveredObject as Item;
-                Handled = true;
             }
             else if (InventoryMenu.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
             {
                 HoveredItem = InventoryMenu.GetHoveredItem();
-                Handled = true;
+            }
+            else if (Content.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            {
+                HoveredItem = Content.HoveredItem;
             }
             else
             {
                 HoveredItem = null;
-                Handled = false;
             }
         }
         #endregion Lookup Anything Compatibility
@@ -64,7 +61,20 @@ namespace ItemBags.Menus
         protected Texture2D White { get { return TextureHelpers.GetSolidColorTexture(Game1.graphics.GraphicsDevice, Color.White); } }
 
         private BagInventoryMenu InventoryMenu { get; }
-        //private BagInfo BagInfo { get; }
+
+        private IBagMenuContent _Content;
+        public IBagMenuContent Content
+        {
+            get { return _Content; }
+            set
+            {
+                if (Content != value)
+                {
+                    _Content = value;
+                    InitializeLayout();
+                }
+            }
+        }
 
         #region Sidebar
         private bool IsLeftSidebarVisible { get; }
@@ -135,7 +145,7 @@ namespace ItemBags.Menus
         /// <param name="ActualCapacity">The maximum # of items that can be stored in the Source list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
         /// <param name="InventoryColumns">The number of columns to use when rendering the user's inventory at the bottom-half of the menu. Recommended = 12 to mimic the default inventory of the main GameMenu</param>
         /// <param name="InventorySlotSize">The size, in pixels, to use when rendering each slot of the user's inventory at the bottom-half of the menu. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></param>
-        protected ItemBagMenu(ItemBag Bag, IList<Item> InventorySource, int ActualCapacity, int InventoryColumns, int InventorySlotSize = BagInventoryMenu.DefaultInventoryIconSize)
+        public ItemBagMenu(ItemBag Bag, IList<Item> InventorySource, int ActualCapacity, int InventoryColumns, int InventorySlotSize = BagInventoryMenu.DefaultInventoryIconSize)
             : base(1, 1, 1, 1, true)
         {
             this.BorderColor = new Color(220, 123, 5, 255);
@@ -148,12 +158,12 @@ namespace ItemBags.Menus
             this.InventorySource = InventorySource;
             this.ActualInventoryCapacity = Math.Max(ActualCapacity, InventorySource.Count);
             this.InventoryMenu = new BagInventoryMenu(Bag, InventorySource, ActualCapacity, InventoryColumns, InventorySlotSize);
-            //this.BagInfo = new BagInfo(Bag);
 
             this.exitFunction += () => { Bag.CloseContents(); };
-
-            InitializeLayout();
         }
+
+        public ItemBagMenu(ItemBag Bag, IList<Item> InventorySource, int ActualCapacity, BagMenuOptions Options)
+            : this(Bag, InventorySource, ActualCapacity, Options.InventoryColumns, Options.InventorySlotSize) { }
 
         internal void OnWindowSizeChanged()
         {
@@ -163,14 +173,13 @@ namespace ItemBags.Menus
         }
 
         private const int InventoryMargin = 12;
-        protected const int ContentsMargin = 12;
+        public const int ContentsMargin = 12;
 
-        protected int ButtonLeftTopMargin = 4;
-        protected int ButtonBottomMargin = 6;
-        protected int ButtonSize { get { return 32; } } //{ get { return Constants.TargetPlatform == GamePlatform.Android ? 48 : 32; } }
+        public const int ButtonLeftTopMargin = 4;
+        public const int ButtonBottomMargin = 6;
+        public static int ButtonSize { get { return 32; } } //{ get { return Constants.TargetPlatform == GamePlatform.Android ? 48 : 32; } }
 
-        public int ResizeIteration { get; private set; } = 0;
-
+        private int ResizeIteration { get; set; } = 0;
         protected void InitializeLayout()
         {
             ResizeIteration = 0;
@@ -197,14 +206,14 @@ namespace ItemBags.Menus
 
                 InventoryMenu.InitializeLayout();
                 //BagInfo.InitializeLayout();
-                InitializeContentsLayout();
+                Content.InitializeLayout(ResizeIteration);
 
                 //  Compute size of menu
                 int InventoryWidth = InventoryMenu.RelativeBounds.Width + InventoryMargin * 2 + SidebarWidth * 2;
-                int ContentsWidth = GetRelativeContentBounds().Width + ContentsMargin * 2 /*+ BagInfo.RelativeBounds.Width*/;
+                int ContentsWidth = Content.RelativeBounds.Width + ContentsMargin * 2;
                 width = Math.Max(InventoryWidth, ContentsWidth);
                 bool IsWidthBoundToContents = ContentsWidth > InventoryWidth;
-                height = Math.Max(InventoryMenu.RelativeBounds.Height + InventoryMargin * 2, SidebarHeight) + Math.Max(GetRelativeContentBounds().Height + ContentsMargin * 2, /*BagInfo.RelativeBounds.Height*/0);
+                height = Math.Max(InventoryMenu.RelativeBounds.Height + InventoryMargin * 2, SidebarHeight) + Math.Max(Content.RelativeBounds.Height + ContentsMargin * 2, 0);
                 xPositionOnScreen = (Game1.viewport.Size.Width - width) / 2;
                 yPositionOnScreen = (Game1.viewport.Size.Height - height) / 2;
 
@@ -216,20 +225,16 @@ namespace ItemBags.Menus
                 PreviousWidth = width;
                 PreviousHeight = height;
 
-                AttemptResize = !FitsOnScreen && ResizeIteration < 5 && CanResize() && DidSizeChange && (IsWidthBoundToContents || IsMenuTooTall);
+                AttemptResize = !FitsOnScreen && ResizeIteration < 5 && Content.CanResize && DidSizeChange && (IsWidthBoundToContents || IsMenuTooTall);
             } while (AttemptResize);
 
             //  Set position of inventory and contents
             InventoryMenu.SetTopLeft(new Point(
                 xPositionOnScreen + (width - InventoryMenu.RelativeBounds.Width) / 2,
-                yPositionOnScreen + GetRelativeContentBounds().Height + ContentsMargin * 2 + InventoryMargin)
+                yPositionOnScreen + Content.RelativeBounds.Height + ContentsMargin * 2 + InventoryMargin)
             );
-            //BagInfo.SetTopLeft(new Point(
-            //    xPositionOnScreen,
-            //    yPositionOnScreen)
-            //);
-            SetTopLeft(new Point(
-                xPositionOnScreen + (width - GetRelativeContentBounds().Width) / 2,
+            Content.SetTopLeft(new Point(
+                xPositionOnScreen + (width - Content.RelativeBounds.Width) / 2,
                 //BagInfo.Bounds.Right - ContentsMargin + (width - BagInfo.Bounds.Width - ContentsMargin - GetRelativeContentBounds().Width) / 2,
                 yPositionOnScreen + ContentsMargin));
 
@@ -252,15 +257,6 @@ namespace ItemBags.Menus
             upperRightCloseButton.bounds.Y = yPositionOnScreen + CloseButtonOffset.Y;
         }
 
-        protected abstract void InitializeContentsLayout();
-        protected abstract void DrawContents(SpriteBatch b);
-        protected abstract void DrawContentsToolTips(SpriteBatch b);
-        public abstract Rectangle GetRelativeContentBounds();
-        public abstract Rectangle GetContentBounds();
-        protected abstract bool CanResize();
-        public abstract void SetTopLeft(Point Point);
-        public abstract void OnClose();
-
         public void OnMouseMoved(CursorMovedEventArgs e)
         {
             if (IsShowingModalMenu && CustomizeIconMenu != null)
@@ -269,41 +265,41 @@ namespace ItemBags.Menus
             }
             else
             {
-                OverridableOnMouseMoved(e);
-            }
-
-            UpdateHoveredItem(e, out bool Handled);
-        }
-
-        protected virtual void OverridableOnMouseMoved(CursorMovedEventArgs e)
-        {
-            if (InventoryMenu.Bounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || InventoryMenu.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
-            {
-                InventoryMenu.OnMouseMoved(e);
-            }
-
-            if (IsLeftSidebarVisible || IsRightSidebarVisible)
-            {
-                Point OldPos = e.OldPosition.ScreenPixels.AsPoint();
-                Point NewPos = e.NewPosition.ScreenPixels.AsPoint();
-
-                if (LeftSidebarButtonBounds.Any(x => x.Contains(OldPos) || x.Contains(NewPos)) ||
-                    RightSidebarButtonBounds.Any(x => x.Contains(OldPos) || x.Contains(NewPos)))
+                if (InventoryMenu.Bounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || InventoryMenu.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
                 {
-                    if (IsLeftSidebarVisible && DepositAllBounds.Contains(NewPos))
-                        this.HoveredButton = SidebarButton.DepositAll;
-                    else if (IsLeftSidebarVisible && WithdrawAllBounds.Contains(NewPos))
-                        this.HoveredButton = SidebarButton.WithdrawAll;
-                    else if (IsLeftSidebarVisible && AutolootBounds.Contains(NewPos))
-                        this.HoveredButton = SidebarButton.Autoloot;
-                    else if (IsRightSidebarVisible && HelpInfoBounds.Contains(NewPos))
-                        this.HoveredButton = SidebarButton.HelpInfo;
-                    else if (IsRightSidebarVisible && !(Bag is BundleBag) && CustomizeIconBounds.Contains(NewPos))
-                        this.HoveredButton = SidebarButton.CustomizeIcon;
-                    else
-                        this.HoveredButton = null;
+                    InventoryMenu.OnMouseMoved(e);
+                }
+
+                if (Content.Bounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || Content.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+                {
+                    Content.OnMouseMoved(e);
+                }
+
+                if (IsLeftSidebarVisible || IsRightSidebarVisible)
+                {
+                    Point OldPos = e.OldPosition.ScreenPixels.AsPoint();
+                    Point NewPos = e.NewPosition.ScreenPixels.AsPoint();
+
+                    if (LeftSidebarButtonBounds.Any(x => x.Contains(OldPos) || x.Contains(NewPos)) ||
+                        RightSidebarButtonBounds.Any(x => x.Contains(OldPos) || x.Contains(NewPos)))
+                    {
+                        if (IsLeftSidebarVisible && DepositAllBounds.Contains(NewPos))
+                            this.HoveredButton = SidebarButton.DepositAll;
+                        else if (IsLeftSidebarVisible && WithdrawAllBounds.Contains(NewPos))
+                            this.HoveredButton = SidebarButton.WithdrawAll;
+                        else if (IsLeftSidebarVisible && AutolootBounds.Contains(NewPos))
+                            this.HoveredButton = SidebarButton.Autoloot;
+                        else if (IsRightSidebarVisible && HelpInfoBounds.Contains(NewPos))
+                            this.HoveredButton = SidebarButton.HelpInfo;
+                        else if (IsRightSidebarVisible && !(Bag is BundleBag) && CustomizeIconBounds.Contains(NewPos))
+                            this.HoveredButton = SidebarButton.CustomizeIcon;
+                        else
+                            this.HoveredButton = null;
+                    }
                 }
             }
+
+            UpdateHoveredItem(e);
         }
 
         public void OnMouseButtonPressed(ButtonPressedEventArgs e)
@@ -314,59 +310,55 @@ namespace ItemBags.Menus
             }
             else
             {
-                OverridableOnMouseButtonPressed(e);
-            }
-        }
+                InventoryMenu.OnMouseButtonPressed(e);
+                Content.OnMouseButtonPressed(e);
 
-        protected virtual void OverridableOnMouseButtonPressed(ButtonPressedEventArgs e)
-        {
-            InventoryMenu.OnMouseButtonPressed(e);
-
-            if ((IsLeftSidebarVisible || IsRightSidebarVisible) && HoveredButton.HasValue && e.Button == SButton.MouseLeft)
-            {
-                if (IsLeftSidebarVisible && HoveredButton.Value == SidebarButton.DepositAll)
+                if ((IsLeftSidebarVisible || IsRightSidebarVisible) && HoveredButton.HasValue && e.Button == SButton.MouseLeft)
                 {
-                    List<Object> ToDeposit = InventorySource.Where(x => x != null && x is Object Obj && Bag.IsValidBagObject(Obj)).Cast<Object>().ToList();
-                    Bag.MoveToBag(ToDeposit, ToDeposit.Select(x => x.Stack).ToList(), out int TotalMovedQty, true, InventorySource);
-                }
-                else if (IsLeftSidebarVisible && HoveredButton.Value == SidebarButton.WithdrawAll)
-                {
-                    List<Object> ToWithdraw = Bag.Contents.Where(x => x != null).ToList();
-                    Bag.MoveFromBag(ToWithdraw, ToWithdraw.Select(x => x.Stack).ToList(), out int TotalMovedQty, true, InventorySource, ActualInventoryCapacity);
-                }
-                else if (IsLeftSidebarVisible && HoveredButton.Value == SidebarButton.Autoloot)
-                {
-                    if (Bag is BoundedBag BB)
-                        BB.Autofill = !BB.Autofill;
-                    else if (Bag is Rucksack RS)
-                        RS.CycleAutofill();
-                }
-                else if (IsRightSidebarVisible && HoveredButton.Value == SidebarButton.HelpInfo)
-                {
-
-                }
-                else if (IsRightSidebarVisible && HoveredButton.Value == SidebarButton.CustomizeIcon && Bag.CanCustomizeIcon())
-                {
-                    ItemBag Copy;
-                    if (Bag is BoundedBag BB)
+                    if (IsLeftSidebarVisible && HoveredButton.Value == SidebarButton.DepositAll)
                     {
-                        if (BB is BundleBag)
-                            Copy = new BundleBag(Bag.Size, false);
+                        List<Object> ToDeposit = InventorySource.Where(x => x != null && x is Object Obj && Bag.IsValidBagObject(Obj)).Cast<Object>().ToList();
+                        Bag.MoveToBag(ToDeposit, ToDeposit.Select(x => x.Stack).ToList(), out int TotalMovedQty, true, InventorySource);
+                    }
+                    else if (IsLeftSidebarVisible && HoveredButton.Value == SidebarButton.WithdrawAll)
+                    {
+                        List<Object> ToWithdraw = Bag.Contents.Where(x => x != null).ToList();
+                        Bag.MoveFromBag(ToWithdraw, ToWithdraw.Select(x => x.Stack).ToList(), out int TotalMovedQty, true, InventorySource, ActualInventoryCapacity);
+                    }
+                    else if (IsLeftSidebarVisible && HoveredButton.Value == SidebarButton.Autoloot)
+                    {
+                        if (Bag is BoundedBag BB)
+                            BB.Autofill = !BB.Autofill;
+                        else if (Bag is Rucksack RS)
+                            RS.CycleAutofill();
+                    }
+                    else if (IsRightSidebarVisible && HoveredButton.Value == SidebarButton.HelpInfo)
+                    {
+
+                    }
+                    else if (IsRightSidebarVisible && HoveredButton.Value == SidebarButton.CustomizeIcon && Bag.CanCustomizeIcon())
+                    {
+                        ItemBag Copy;
+                        if (Bag is BoundedBag BB)
+                        {
+                            if (BB is BundleBag)
+                                Copy = new BundleBag(Bag.Size, false);
+                            else
+                                Copy = new BoundedBag(BB.TypeInfo, Bag.Size, false);
+                        }
+                        else if (Bag is Rucksack RS)
+                        {
+                            Copy = new Rucksack(Bag.Size, false);
+                        }
+                        else if (Bag is OmniBag OB)
+                        {
+                            Copy = new OmniBag(Bag.Size);
+                        }
                         else
-                            Copy = new BoundedBag(BB.TypeInfo, Bag.Size, false);
-                    }
-                    else if (Bag is Rucksack RS)
-                    {
-                        Copy = new Rucksack(Bag.Size, false);
-                    }
-                    else if (Bag is OmniBag OB)
-                    {
-                        Copy = new OmniBag(Bag.Size);
-                    }
-                    else
-                        throw new NotImplementedException(string.Format("Unexpected Bag Type while creating CustomizeIconMenu: {0}", Bag.GetType().ToString()));
+                            throw new NotImplementedException(string.Format("Unexpected Bag Type while creating CustomizeIconMenu: {0}", Bag.GetType().ToString()));
 
-                    CustomizeIconMenu = new CustomizeIconMenu(this, this.Bag, Copy);
+                        CustomizeIconMenu = new CustomizeIconMenu(this, this.Bag, Copy);
+                    }
                 }
             }
         }
@@ -379,13 +371,9 @@ namespace ItemBags.Menus
             }
             else
             {
-                OverridableOnMouseButtonReleased(e);
+                InventoryMenu.OnMouseButtonReleased(e);
+                Content.OnMouseButtonReleased(e);
             }
-        }
-
-        protected virtual void OverridableOnMouseButtonReleased(ButtonReleasedEventArgs e)
-        {
-            InventoryMenu.OnMouseButtonReleased(e);
         }
 
         public void Update(UpdateTickedEventArgs e)
@@ -396,13 +384,9 @@ namespace ItemBags.Menus
             }
             else
             {
-                OverridableUpdate(e);
+                InventoryMenu.Update(e);
+                Content.Update(e);
             }
-        }
-
-        protected virtual void OverridableUpdate(UpdateTickedEventArgs e)
-        {
-            InventoryMenu.Update(e);
         }
 
         public sealed override void draw(SpriteBatch b)
@@ -505,8 +489,7 @@ namespace ItemBags.Menus
                     }
                 }
 
-                //BagInfo.Draw(b);
-                DrawContents(b);
+                Content.Draw(b);
 
                 if (IsShowingModalMenu && CustomizeIconMenu != null)
                 {
@@ -515,7 +498,7 @@ namespace ItemBags.Menus
                 else
                 {
                     InventoryMenu.DrawToolTips(b);
-                    DrawContentsToolTips(b);
+                    Content.DrawToolTips(b);
 
                     //  Draw tooltips on the sidebar buttons
                     if ((IsLeftSidebarVisible || IsRightSidebarVisible) && HoveredButton.HasValue)
@@ -588,6 +571,11 @@ namespace ItemBags.Menus
             {
                 ItemBagsMod.ModInstance.Monitor.Log(string.Format("Unhandled error in ItemBagMenu.Draw: {0}", ex.Message), LogLevel.Error);
             }
+        }
+
+        internal void OnClose()
+        {
+            Content.OnClose();
         }
     }
 }

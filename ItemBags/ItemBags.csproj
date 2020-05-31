@@ -75,12 +75,12 @@
     <Compile Include="Helpers\XMLSerializer.cs" />
     <Compile Include="ItemBagsAPI.cs" />
     <Compile Include="JsonAssetsAPI.cs" />
-    <Compile Include="Menus\BagInfo.cs" />
     <Compile Include="Menus\BagInventoryMenu.cs" />
     <Compile Include="Menus\BoundedBagMenu.cs" />
     <Compile Include="Menus\BundleBagMenu.cs" />
     <Compile Include="Menus\CustomizeIconMenu.cs" />
     <Compile Include="Menus\GroupedLayoutOptions.cs" />
+    <Compile Include="Menus\IBagMenuContent.cs" />
     <Compile Include="Menus\ItemBagMenu.cs" />
     <Compile Include="Bags\ItemBag.cs" />
     <Compile Include="Menus\OmniBagMenu.cs" />

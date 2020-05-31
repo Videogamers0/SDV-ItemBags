@@ -33,9 +33,43 @@ namespace ItemBags.Menus
         }
     }
 
-    public class BoundedBagMenu : ItemBagMenu
+    public class BoundedBagMenu : IBagMenuContent
     {
+        #region Lookup Anything Compatibility
+        /// <summary>
+        /// Warning - do not remove/rename this field. It is used via reflection by Lookup Anything mod.<para/>
+        /// See also: <see cref="https://github.com/Pathoschild/StardewMods/tree/develop/LookupAnything#extensibility-for-modders"/>
+        /// </summary>
+        public Item HoveredItem { get; private set; }
+        public void UpdateHoveredItem(CursorMovedEventArgs e)
+        {
+            if (Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            {
+                if (!GroupedOptions.IsEmptyMenu && GroupedOptions.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+                {
+                    HoveredItem = GroupedOptions.GetHoveredItem();
+                }
+                else if (!UngroupedOptions.IsEmptyMenu && UngroupedOptions.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+                {
+                    HoveredItem = UngroupedOptions.GetHoveredItem();
+                }
+                else
+                {
+                    HoveredItem = null;
+                }
+            }
+            else
+            {
+                HoveredItem = null;
+            }
+        }
+        #endregion Lookup Anything Compatibility
+
+        public ItemBagMenu IBM { get; }
+        public ItemBag Bag { get { return BoundedBag; } }
         public BoundedBag BoundedBag { get; }
+
+        public int Padding { get; }
 
         /// <summary>If true, each distinct Item Id that can have multiple qualities will be displayed adjacent to each other in a group of 4 columns, where the columns in are the different qualities (Regular, Silver, Gold, Iridium)</summary>
         public bool GroupByQuality { get; }
@@ -46,10 +80,8 @@ namespace ItemBags.Menus
         public UngroupedLayoutOptions UngroupedOptions { get; }
 
         /// <summary>The bounds of this menu's content, relative to <see cref="TopLeftScreenPosition"/></summary>
-        public Rectangle RelativeContentBounds { get; private set; }
-        public override Rectangle GetRelativeContentBounds() { return this.RelativeContentBounds; }
-        public Rectangle ContentBounds { get; private set; }
-        public override Rectangle GetContentBounds() { return this.ContentBounds; }
+        public Rectangle RelativeBounds { get; private set; }
+        public Rectangle Bounds { get; private set; }
 
         private Point _TopLeftScreenPosition;
         public Point TopLeftScreenPosition {
@@ -57,8 +89,8 @@ namespace ItemBags.Menus
             private set { SetTopLeft(value, true); }
         }
 
-        public override void SetTopLeft(Point Point) { SetTopLeft(Point, true); }
-        public void SetTopLeft(Point NewValue, bool CheckIfChanged = true)
+        public void SetTopLeft(Point Point) { SetTopLeft(Point, true); }
+        private void SetTopLeft(Point NewValue, bool CheckIfChanged = true)
         {
             if (!CheckIfChanged || TopLeftScreenPosition != NewValue)
             {
@@ -77,19 +109,16 @@ namespace ItemBags.Menus
                     if (HorizontalSeparatorPosition.HasValue)
                         HorizontalSeparatorPosition = HorizontalSeparatorPosition.Value.GetOffseted(Offset);
 
-                    this.ContentBounds = new Rectangle(TopLeftScreenPosition.X, TopLeftScreenPosition.Y, RelativeContentBounds.Width, RelativeContentBounds.Height);
+                    this.Bounds = new Rectangle(TopLeftScreenPosition.X, TopLeftScreenPosition.Y, RelativeBounds.Width, RelativeBounds.Height);
                 }
             }
         }
 
-        /// <param name="InventorySource">Typically this is <see cref="Game1.player.Items"/> if this menu should display the player's inventory.</param>
-        /// <param name="ActualCapacity">The maximum # of items that can be stored in the InventorySource list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
-        /// <param name="InventoryColumns">The number of columns to use when rendering the user's inventory at the bottom-half of the menu. Recommended = 12 to mimic the default inventory of the main GameMenu</param>
-        /// <param name="InventorySlotSize">The size, in pixels, to use when rendering each slot of the user's inventory at the bottom-half of the menu. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></param>
-        public BoundedBagMenu(BoundedBag Bag, IList<Item> InventorySource, int ActualCapacity, int InventoryColumns, int InventorySlotSize, bool GroupContentsByQuality, GroupedLayoutOptions GroupedLayout, UngroupedLayoutOptions UngroupedLayout)
-            : base(Bag, InventorySource, ActualCapacity, InventoryColumns, InventorySlotSize)
+        public BoundedBagMenu(ItemBagMenu IBM, BoundedBag Bag, bool GroupContentsByQuality, GroupedLayoutOptions GroupedLayout, UngroupedLayoutOptions UngroupedLayout, int Padding)
         {
+            this.IBM = IBM;
             this.BoundedBag = Bag;
+            this.Padding = Padding;
 
             this.GroupByQuality = GroupContentsByQuality;
             this.GroupedOptions = GroupedLayout;
@@ -100,24 +129,20 @@ namespace ItemBags.Menus
             this.UngroupedOptions.OnItemSlotRendered += OnItemSlotRendered;
 
             SetTopLeft(Point.Zero, false);
-            InitializeLayout();
+            InitializeLayout(1);
         }
 
-        /// <param name="InventorySource">Typically this is <see cref="Game1.player.Items"/> if this menu should display the player's inventory.</param>
-        /// <param name="ActualCapacity">The maximum # of items that can be stored in the InventorySource list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
-        public BoundedBagMenu(BoundedBag Bag, IList<Item> InventorySource, int ActualCapacity, BagMenuOptions Opts)
-            : this(Bag, InventorySource, ActualCapacity, Opts.InventoryColumns, Opts.InventorySlotSize, Opts.GroupByQuality, new GroupedLayoutOptions(Opts.GroupedLayoutOptions), new UngroupedLayoutOptions(Opts.UngroupedLayoutOptions)) { }
+        public BoundedBagMenu(ItemBagMenu IBM, BoundedBag Bag, BagMenuOptions Opts, int Padding)
+            : this(IBM, Bag, Opts.GroupByQuality, new GroupedLayoutOptions(Opts.GroupedLayoutOptions), new UngroupedLayoutOptions(Opts.UngroupedLayoutOptions), Padding) { }
 
         #region Input Handling
         private Point CurrentMousePosition = new Point(0, 0);
 
-        protected override void OverridableOnMouseMoved(CursorMovedEventArgs e)
+        public void OnMouseMoved(CursorMovedEventArgs e)
         {
-            base.OverridableOnMouseMoved(e);
-
             CurrentMousePosition = e.NewPosition.ScreenPixels.AsPoint();
 
-            if (ContentBounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || ContentBounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            if (Bounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
             {
                 if (!GroupedOptions.IsEmptyMenu && (GroupedOptions.Bounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || GroupedOptions.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint())))
                 {
@@ -129,43 +154,12 @@ namespace ItemBags.Menus
                     UngroupedOptions.OnMouseMoved(e);
                 }
             }
+
+            UpdateHoveredItem(e);
         }
 
-        protected override void UpdateHoveredItem(CursorMovedEventArgs e, out bool Handled)
+        public void OnMouseButtonPressed(ButtonPressedEventArgs e)
         {
-            base.UpdateHoveredItem(e, out Handled);
-            if (!Handled)
-            {
-                if (ContentBounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
-                {
-                    if (!GroupedOptions.IsEmptyMenu && GroupedOptions.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
-                    {
-                        HoveredItem = GroupedOptions.GetHoveredItem();
-                        Handled = true;
-                    }
-                    else if (!UngroupedOptions.IsEmptyMenu && UngroupedOptions.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
-                    {
-                        HoveredItem = UngroupedOptions.GetHoveredItem();
-                        Handled = true;
-                    }
-                    else
-                    {
-                        HoveredItem = null;
-                        Handled = false;
-                    }
-                }
-                else
-                {
-                    HoveredItem = null;
-                    Handled = false;
-                }
-            }
-        }
-
-        protected override void OverridableOnMouseButtonPressed(ButtonPressedEventArgs e)
-        {
-            base.OverridableOnMouseButtonPressed(e);
-
             bool IsShiftHeld = e.IsDown(SButton.LeftShift) || e.IsDown(SButton.RightShift);
             bool IsControlHeld = e.IsDown(SButton.LeftControl) || e.IsDown(SButton.RightControl);
 
@@ -200,9 +194,8 @@ namespace ItemBags.Menus
             }
         }
 
-        protected override void OverridableOnMouseButtonReleased(ButtonReleasedEventArgs e)
+        public void OnMouseButtonReleased(ButtonReleasedEventArgs e)
         {
-            base.OverridableOnMouseButtonReleased(e);
             if (!GroupedOptions.IsEmptyMenu)
                 GroupedOptions.OnMouseButtonReleased(e);
             if (!UngroupedOptions.IsEmptyMenu)
@@ -210,16 +203,15 @@ namespace ItemBags.Menus
         }
         #endregion Input Handling
 
-        protected override void OverridableUpdate(UpdateTickedEventArgs e)
+        public void Update(UpdateTickedEventArgs e)
         {
-            base.OverridableUpdate(e);
             if (!GroupedOptions.IsEmptyMenu)
                 GroupedOptions.Update(e);
             if (!UngroupedOptions.IsEmptyMenu)
                 UngroupedOptions.Update(e);
         }
 
-        public override void OnClose()
+        public void OnClose()
         {
             GroupedOptions.OnItemSlotRendered -= OnItemSlotRendered;
             GroupedOptions?.SetParent(null);
@@ -227,11 +219,11 @@ namespace ItemBags.Menus
             UngroupedOptions?.SetParent(null);
         }
 
-        public Rectangle? HorizontalSeparatorPosition { get; private set; }
+        protected Rectangle? HorizontalSeparatorPosition { get; private set; }
 
-        protected override bool CanResize() { return true; }
+        public bool CanResize { get; } = true;
 
-        protected override void InitializeContentsLayout()
+        public void InitializeLayout(int ResizeIteration)
         {
             if (GroupedOptions == null || UngroupedOptions == null)
                 return;
@@ -243,10 +235,10 @@ namespace ItemBags.Menus
             int RequiredHeight;
             if (UngroupedOptions.IsEmptyMenu)
             {
-                RequiredWidth = GroupedOptions.RelativeBounds.Width + ContentsMargin * 2;
-                RequiredHeight = GroupedOptions.RelativeBounds.Height + ContentsMargin * 2;
+                RequiredWidth = GroupedOptions.RelativeBounds.Width + Padding * 2;
+                RequiredHeight = GroupedOptions.RelativeBounds.Height + Padding * 2;
 
-                Point GroupedOptionsPos = new Point(TopLeftScreenPosition.X + ContentsMargin, TopLeftScreenPosition.Y + ContentsMargin);
+                Point GroupedOptionsPos = new Point(TopLeftScreenPosition.X + Padding, TopLeftScreenPosition.Y + Padding);
                 GroupedOptions.SetTopLeft(GroupedOptionsPos);
                 Point UngroupedOptionsPos = new Point(0, 0);
                 UngroupedOptions.SetTopLeft(UngroupedOptionsPos);
@@ -254,37 +246,37 @@ namespace ItemBags.Menus
             }
             else if (GroupedOptions.IsEmptyMenu)
             {
-                RequiredWidth = UngroupedOptions.RelativeBounds.Width + ContentsMargin * 2;
-                RequiredHeight = UngroupedOptions.RelativeBounds.Height + ContentsMargin * 2;
+                RequiredWidth = UngroupedOptions.RelativeBounds.Width + Padding * 2;
+                RequiredHeight = UngroupedOptions.RelativeBounds.Height + Padding * 2;
 
                 Point GroupedOptionsPos = new Point(0, 0);
                 GroupedOptions.SetTopLeft(GroupedOptionsPos);
-                Point UngroupedOptionsPos = new Point(TopLeftScreenPosition.X + ContentsMargin, TopLeftScreenPosition.Y + ContentsMargin);
+                Point UngroupedOptionsPos = new Point(TopLeftScreenPosition.X + Padding, TopLeftScreenPosition.Y + Padding);
                 UngroupedOptions.SetTopLeft(UngroupedOptionsPos);
                 HorizontalSeparatorPosition = null;
             }
             else
             {
                 int SeparatorHeight = 12;
-                RequiredWidth = Math.Max(GroupedOptions.RelativeBounds.Width, UngroupedOptions.RelativeBounds.Width) + ContentsMargin * 2;
-                RequiredHeight = ContentsMargin + GroupedOptions.RelativeBounds.Height + SeparatorHeight + UngroupedOptions.RelativeBounds.Height + ContentsMargin;
+                RequiredWidth = Math.Max(GroupedOptions.RelativeBounds.Width, UngroupedOptions.RelativeBounds.Width) + Padding * 2;
+                RequiredHeight = Padding + GroupedOptions.RelativeBounds.Height + SeparatorHeight + UngroupedOptions.RelativeBounds.Height + Padding;
 
-                Point GroupedOptionsPos = new Point(TopLeftScreenPosition.X + (RequiredWidth - GroupedOptions.RelativeBounds.Width) / 2, TopLeftScreenPosition.Y + ContentsMargin);
+                Point GroupedOptionsPos = new Point(TopLeftScreenPosition.X + (RequiredWidth - GroupedOptions.RelativeBounds.Width) / 2, TopLeftScreenPosition.Y + Padding);
                 GroupedOptions.SetTopLeft(GroupedOptionsPos);
-                Point UngroupedOptionsPos = new Point(TopLeftScreenPosition.X + (RequiredWidth - UngroupedOptions.RelativeBounds.Width) / 2, TopLeftScreenPosition.Y + ContentsMargin + GroupedOptions.RelativeBounds.Height + SeparatorHeight);
+                Point UngroupedOptionsPos = new Point(TopLeftScreenPosition.X + (RequiredWidth - UngroupedOptions.RelativeBounds.Width) / 2, TopLeftScreenPosition.Y + Padding + GroupedOptions.RelativeBounds.Height + SeparatorHeight);
                 UngroupedOptions.SetTopLeft(UngroupedOptionsPos);
 
                 //  Add a horizontal separator
-                int SeparatorXPosition = TopLeftScreenPosition.X + ContentsMargin;
-                int SeparatorYPosition = TopLeftScreenPosition.Y + ContentsMargin + GroupedOptions.RelativeBounds.Height;
+                int SeparatorXPosition = TopLeftScreenPosition.X + Padding;
+                int SeparatorYPosition = TopLeftScreenPosition.Y + Padding + GroupedOptions.RelativeBounds.Height;
                 int SeparatorWidth = Math.Max(GroupedOptions.RelativeBounds.Width, UngroupedOptions.RelativeBounds.Width);
                 HorizontalSeparatorPosition = new Rectangle(SeparatorXPosition, SeparatorYPosition, SeparatorWidth, SeparatorHeight);
             }
 
-            this.RelativeContentBounds = new Rectangle(0, 0, RequiredWidth, RequiredHeight);
+            this.RelativeBounds = new Rectangle(0, 0, RequiredWidth, RequiredHeight);
         }
 
-        protected override void DrawContents(SpriteBatch b)
+        public void Draw(SpriteBatch b)
         {
             //b.Draw(TextureHelpers.GetSolidColorTexture(Game1.graphics.GraphicsDevice, Color.Red), ContentsBounds, Color.White);
 
@@ -294,7 +286,7 @@ namespace ItemBags.Menus
             UngroupedOptions.Draw(b);
         }
 
-        protected override void DrawContentsToolTips(SpriteBatch b)
+        public void DrawToolTips(SpriteBatch b)
         {
             GroupedOptions.DrawToolTips(b);
             UngroupedOptions.DrawToolTips(b);
@@ -303,11 +295,11 @@ namespace ItemBags.Menus
         private void OnItemSlotRendered(object sender, ItemSlotRenderedEventArgs e)
         {
             //  Draw a toggle to enable/disable autofilling this item
-            if (BoundedBag.Autofill && (e.IsHovered || IsHoveringAutofillButton))
+            if (BoundedBag.Autofill && (e.IsHovered || IBM.IsHoveringAutofillButton))
             {
                 Rectangle AutofillDestination;
                 float Transparency;
-                if (IsHoveringAutofillButton)
+                if (IBM.IsHoveringAutofillButton)
                 {
                     double PercentSize = 0.75;
                     int Width = (int)(e.Slot.Width * PercentSize);
