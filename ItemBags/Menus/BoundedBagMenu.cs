@@ -3,6 +3,7 @@ using ItemBags.Helpers;
 using ItemBags.Persistence;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -128,6 +129,12 @@ namespace ItemBags.Menus
             this.UngroupedOptions.SetParent(this);
             this.UngroupedOptions.OnItemSlotRendered += OnItemSlotRendered;
 
+            if (!GroupedOptions.IsEmptyMenu && !UngroupedOptions.IsEmptyMenu)
+            {
+                GroupedOptions.MenuNeighbors[NavigationDirection.Down] = UngroupedOptions;
+                UngroupedOptions.MenuNeighbors[NavigationDirection.Up] = GroupedOptions;
+            }
+
             SetTopLeft(Point.Zero, false);
             InitializeLayout(1);
         }
@@ -136,6 +143,8 @@ namespace ItemBags.Menus
             : this(IBM, Bag, Opts.GroupByQuality, new GroupedLayoutOptions(Opts.GroupedLayoutOptions), new UngroupedLayoutOptions(Opts.UngroupedLayoutOptions), Padding) { }
 
         #region Input Handling
+
+        #region Mouse Handling
         private Point CurrentMousePosition = new Point(0, 0);
 
         public void OnMouseMoved(CursorMovedEventArgs e)
@@ -160,30 +169,9 @@ namespace ItemBags.Menus
 
         public void OnMouseButtonPressed(ButtonPressedEventArgs e)
         {
-            bool IsShiftHeld = e.IsDown(SButton.LeftShift) || e.IsDown(SButton.RightShift);
-            bool IsControlHeld = e.IsDown(SButton.LeftControl) || e.IsDown(SButton.RightControl);
-
             bool Handled = false;
-            if (e.Button == SButton.MouseLeft && BoundedBag.Autofill && !IsShiftHeld && !IsControlHeld)
-            {
-                if (!Handled && !GroupedOptions.IsEmptyMenu && GroupedOptions.HoveredSlot.HasValue)
-                {
-                    if (GetAutofillToggleClickableRegion(GroupedOptions.HoveredSlot.Value).Contains(CurrentMousePosition))
-                    {
-                        BoundedBag.ToggleItemAutofill(GroupedOptions.GetHoveredItem());
-                        Handled = true;
-                    }
-                }
-
-                if (!Handled && !UngroupedOptions.IsEmptyMenu && UngroupedOptions.HoveredSlot.HasValue)
-                {
-                    if (GetAutofillToggleClickableRegion(UngroupedOptions.HoveredSlot.Value).Contains(CurrentMousePosition))
-                    {
-                        BoundedBag.ToggleItemAutofill(UngroupedOptions.GetHoveredItem());
-                        Handled = true;
-                    }
-                }
-            }
+            if (e.Button == SButton.MouseLeft)
+                Handled = TryHandlePrimaryAction(true);
 
             if (!Handled)
             {
@@ -201,10 +189,124 @@ namespace ItemBags.Menus
             if (!UngroupedOptions.IsEmptyMenu)
                 UngroupedOptions.OnMouseButtonReleased(e);
         }
+        #endregion Mouse Handling
+
+        #region Gamepad support
+        public bool RecentlyGainedFocus { get; private set; } = false;
+
+        public bool IsGamepadFocused
+        {
+            get
+            {
+                return (GroupedOptions != null && !GroupedOptions.IsEmptyMenu && GroupedOptions.IsGamepadFocused) || 
+                    (UngroupedOptions != null && !UngroupedOptions.IsEmptyMenu && UngroupedOptions.IsGamepadFocused);
+            }
+        }
+
+        public void GainedGamepadFocus()
+        {
+            RecentlyGainedFocus = true;
+        }
+
+        public void LostGamepadFocus()
+        {
+
+        }
+
+        public Dictionary<NavigationDirection, IGamepadControllable> MenuNeighbors { get; private set; } = new Dictionary<NavigationDirection, IGamepadControllable>();
+        public bool TryGetMenuNeighbor(NavigationDirection Direction, out IGamepadControllable Neighbor)
+        {
+            return MenuNeighbors.TryGetValue(Direction, out Neighbor);
+        }
+
+        public bool TryGetSlotNeighbor(Rectangle? ItemSlot, NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping, out Rectangle? Neighbor)
+        {
+            Neighbor = null;
+            return false;
+        }
+
+        public bool TryNavigate(NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping)
+        {
+            return false;
+        }
+
+        public bool TryNavigateEnter(NavigationDirection StartingSide)
+        {
+            if (!GroupedOptions.IsEmptyMenu && !UngroupedOptions.IsEmptyMenu)
+            {
+                if (StartingSide == NavigationDirection.Down)
+                    return UngroupedOptions.TryNavigateEnter(StartingSide);
+                else if (StartingSide == NavigationDirection.Up)
+                    return GroupedOptions.TryNavigateEnter(StartingSide);
+            }
+
+            if (!GroupedOptions.IsEmptyMenu)
+                return GroupedOptions.TryNavigateEnter(StartingSide);
+            else if (!UngroupedOptions.IsEmptyMenu)
+                return UngroupedOptions.TryNavigateEnter(StartingSide);
+            else
+                return false;
+        }
+
+        public bool IsNavigatingWithGamepad { get; private set; }
+
+        public void OnGamepadButtonsPressed(Buttons GamepadButtons)
+        {
+            if (IsGamepadFocused && !RecentlyGainedFocus)
+            {
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.BoundedBagToggleAutofill))
+                    TryHandlePrimaryAction(false);
+
+                if (!GroupedOptions.IsEmptyMenu)
+                    GroupedOptions.OnGamepadButtonsPressed(GamepadButtons);
+                if (!UngroupedOptions.IsEmptyMenu)
+                    UngroupedOptions.OnGamepadButtonsPressed(GamepadButtons);
+            }
+        }
+
+        public void OnGamepadButtonsReleased(Buttons GamepadButtons)
+        {
+            if (IsGamepadFocused && !RecentlyGainedFocus)
+            {
+                if (!GroupedOptions.IsEmptyMenu)
+                    GroupedOptions.OnGamepadButtonsReleased(GamepadButtons);
+                if (!UngroupedOptions.IsEmptyMenu)
+                    UngroupedOptions.OnGamepadButtonsReleased(GamepadButtons);
+            }
+        }
+        #endregion Gamepad support
+
+        private bool TryHandlePrimaryAction(bool IsMouseInput)
+        {
+            if (BoundedBag.Autofill && !IBM.IsTransferMultipleModifierHeld && !IBM.IsTransferHalfModifierHeld)
+            {
+                if (!GroupedOptions.IsEmptyMenu && GroupedOptions.HoveredSlot.HasValue)
+                {
+                    if (!IsMouseInput || GetAutofillToggleClickableRegion(GroupedOptions.HoveredSlot.Value).Contains(CurrentMousePosition))
+                    {
+                        BoundedBag.ToggleItemAutofill(GroupedOptions.GetHoveredItem());
+                        return true;
+                    }
+                }
+
+                if (!UngroupedOptions.IsEmptyMenu && UngroupedOptions.HoveredSlot.HasValue)
+                {
+                    if (!IsMouseInput || GetAutofillToggleClickableRegion(UngroupedOptions.HoveredSlot.Value).Contains(CurrentMousePosition))
+                    {
+                        BoundedBag.ToggleItemAutofill(UngroupedOptions.GetHoveredItem());
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
         #endregion Input Handling
 
         public void Update(UpdateTickedEventArgs e)
         {
+            RecentlyGainedFocus = false;
+
             if (!GroupedOptions.IsEmptyMenu)
                 GroupedOptions.Update(e);
             if (!UngroupedOptions.IsEmptyMenu)
@@ -214,9 +316,9 @@ namespace ItemBags.Menus
         public void OnClose()
         {
             GroupedOptions.OnItemSlotRendered -= OnItemSlotRendered;
-            GroupedOptions?.SetParent(null);
+            GroupedOptions?.OnClose();
             UngroupedOptions.OnItemSlotRendered -= OnItemSlotRendered;
-            UngroupedOptions?.SetParent(null);
+            UngroupedOptions?.OnClose();
         }
 
         protected Rectangle? HorizontalSeparatorPosition { get; private set; }

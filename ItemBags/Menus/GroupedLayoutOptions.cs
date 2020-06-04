@@ -18,8 +18,27 @@ using Object = StardewValley.Object;
 
 namespace ItemBags.Menus
 {
-    public class GroupedLayoutOptions
+    public class GroupedLayoutOptions : IBagMenuContent
     {
+        #region Lookup Anything Compatibility
+        /// <summary>
+        /// Warning - do not remove/rename this field. It is used via reflection by Lookup Anything mod.<para/>
+        /// See also: <see cref="https://github.com/Pathoschild/StardewMods/tree/develop/LookupAnything#extensibility-for-modders"/>
+        /// </summary>
+        public Item HoveredItem { get; private set; }
+        public void UpdateHoveredItem(CursorMovedEventArgs e)
+        {
+            if (Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            {
+                HoveredItem = GetHoveredItem();
+            }
+            else
+            {
+                HoveredItem = null;
+            }
+        }
+        #endregion Lookup Anything Compatibility
+
         public enum ColumnType
         {
             RegularQuality = 0,
@@ -59,6 +78,10 @@ namespace ItemBags.Menus
                 throw new NotImplementedException(string.Format("Unrecognized ColumnType: {0}", Column.ToString()));
         }
 
+        public ItemBagMenu IBM { get { return Menu?.IBM; } }
+
+        public int Padding { get; } = 8;
+
         private int OriginalSlotSize { get; }
         /// <summary>The size, in pixels, to use when rendering an item slot. Recommended = <see cref="BagInventoryMenu.DefaultInventoryIconSize"/></summary>
         public int SlotSize { get; private set; }
@@ -69,9 +92,9 @@ namespace ItemBags.Menus
         public bool ShowValueColumn { get; }
 
         /// <summary>Key = Item Id, then Item Quality, Value = The bounds of that item's slot, relative to <see cref="TopLeftScreenPosition"/>. Use <see cref="SlotBounds"/> when rendering to screen space.</summary>
-        public Dictionary<int, Dictionary<ColumnType, Rectangle>> RelativeSlotBounds { get; private set; }
+        public OrderedDictionary<int, Dictionary<ColumnType, Rectangle>> RelativeSlotBounds { get; private set; }
         /// <summary>Key = Item Id, then Item Quality, Value = The bounds of that item's slot</summary>
-        public Dictionary<int, Dictionary<ColumnType, Rectangle>> SlotBounds { get; private set; }
+        public OrderedDictionary<int, Dictionary<ColumnType, Rectangle>> SlotBounds { get; private set; }
         public event EventHandler<ItemSlotRenderedEventArgs> OnItemSlotRendered;
 
         public Dictionary<int, Dictionary<ObjectQuality, Object>> Placeholders { get; private set; }
@@ -80,14 +103,13 @@ namespace ItemBags.Menus
         public ReadOnlyCollection<Rectangle> ColumnHeaderBounds { get; private set; }
 
         private Point _TopLeftScreenPosition;
-        public Point TopLeftScreenPosition
-        {
+        public Point TopLeftScreenPosition {
             get { return _TopLeftScreenPosition; }
             private set { SetTopLeft(value, true); }
         }
 
         public void SetTopLeft(Point Point) { SetTopLeft(Point, true); }
-        public void SetTopLeft(Point NewValue, bool CheckIfChanged)
+        internal void SetTopLeft(Point NewValue, bool CheckIfChanged)
         {
             if (!CheckIfChanged || TopLeftScreenPosition != NewValue)
             {
@@ -95,8 +117,8 @@ namespace ItemBags.Menus
 
                 if (RelativeSlotBounds != null)
                 {
-                    //  Shift every Rectangle in the RelativeSlotBounds dictionary over by the new TopLeft point
-                    Dictionary<int, Dictionary<ColumnType, Rectangle>> Temp = new Dictionary<int, Dictionary<ColumnType, Rectangle>>();
+                    //  Shift every Rectangle over by the new TopLeft point
+                    OrderedDictionary<int, Dictionary<ColumnType, Rectangle>> Temp = new OrderedDictionary<int, Dictionary<ColumnType, Rectangle>>();
                     foreach (var KVP in RelativeSlotBounds)
                     {
                         int ItemId = KVP.Key;
@@ -135,7 +157,6 @@ namespace ItemBags.Menus
         public int RowCount { get; private set; }
         public int ColumnsPerGroup { get; }
 
-        public const int ContentMargin = 8;
         public const int HorizontalMarginBetweenGroups = 8;
 
         public GroupedLayoutOptions(int GroupsPerRow, bool ShowValueColumn, int SlotSize = BagInventoryMenu.DefaultInventoryIconSize)
@@ -156,7 +177,12 @@ namespace ItemBags.Menus
         #region Input Handling
         public Rectangle? HoveredSlot { get; private set; } = null;
 
-        internal void OnMouseMoved(CursorMovedEventArgs e)
+        private DateTime? SecondaryActionButtonPressedTime = null;
+        private bool IsSecondaryActionButtonHeld { get { return SecondaryActionButtonPressedTime.HasValue; } }
+        private Rectangle? SecondaryActionButtonPressedLocation = null;
+
+        #region Mouse Handling
+        public void OnMouseMoved(CursorMovedEventArgs e)
         {
             Rectangle? PreviouslyHovered = HoveredSlot;
 
@@ -168,67 +194,205 @@ namespace ItemBags.Menus
                     if (Rect.Contains(e.NewPosition.ScreenPixels.AsPoint()))
                     {
                         if (PreviouslyHovered.HasValue && Rect != PreviouslyHovered.Value)
-                            RightButtonPressedLocation = null;
+                            SecondaryActionButtonPressedLocation = null;
                         this.HoveredSlot = Rect;
+                        IsNavigatingWithGamepad = false;
                         break;
                     }
                 }
             }
+
+            UpdateHoveredItem(e);
         }
 
-        private DateTime? RightButtonPressedTime = null;
-        private bool IsRightButtonHeld { get { return RightButtonPressedTime.HasValue; } }
-        private Rectangle? RightButtonPressedLocation = null;
+        public void OnMouseButtonPressed(ButtonPressedEventArgs e)
+        {
+            if (e.Button == SButton.MouseLeft)
+            {
+                Object PressedObject = GetHoveredItem();
+                HandlePrimaryAction(PressedObject);
+            }
 
-        internal void OnMouseButtonPressed(ButtonPressedEventArgs e)
+            if (e.Button == SButton.MouseRight)
+            {
+                Object PressedObject = GetHoveredItem();
+                HandleSecondaryAction(PressedObject);
+
+                SecondaryActionButtonPressedLocation = HoveredSlot;
+                SecondaryActionButtonPressedTime = DateTime.Now;
+            }
+        }
+
+        public void OnMouseButtonReleased(ButtonReleasedEventArgs e)
         {
             if (e.Button == SButton.MouseRight)
             {
-                RightButtonPressedLocation = HoveredSlot;
-                RightButtonPressedTime = DateTime.Now;
+                SecondaryActionButtonPressedTime = null;
+                SecondaryActionButtonPressedLocation = null;
             }
+        }
+        #endregion Mouse Handling
 
-            if (e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
+        #region Gamepad support
+        public bool RecentlyGainedFocus { get; private set; }
+
+        private bool _IsGamepadFocused;
+        public bool IsGamepadFocused
+        {
+            get { return _IsGamepadFocused; }
+            set
             {
-                Object PressedObject = GetHoveredItem();
-                if (PressedObject != null)
+                if (IsGamepadFocused != value)
                 {
-                    int Qty = ItemBag.GetQuantityToTransfer(e, PressedObject);
-                    Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, true, Menu.IBM.InventorySource, Menu.IBM.ActualInventoryCapacity);
+                    _IsGamepadFocused = value;
+                    if (IsGamepadFocused)
+                        GainedGamepadFocus();
+                    else
+                        LostGamepadFocus();
                 }
             }
         }
 
-        internal void OnMouseButtonReleased(ButtonReleasedEventArgs e)
+        public void GainedGamepadFocus()
         {
-            if (e.Button == SButton.MouseRight)
+            RecentlyGainedFocus = true;
+            HoveredSlot = SlotBounds.First().Value[ColumnType.RegularQuality];
+            IsNavigatingWithGamepad = true;
+        }
+
+        public void LostGamepadFocus()
+        {
+            HoveredSlot = null;
+            SecondaryActionButtonPressedLocation = null;
+            SecondaryActionButtonPressedTime = null;
+        }
+
+        public Dictionary<NavigationDirection, IGamepadControllable> MenuNeighbors { get; private set; } = new Dictionary<NavigationDirection, IGamepadControllable>();
+        public bool TryGetMenuNeighbor(NavigationDirection Direction, out IGamepadControllable Neighbor)
+        {
+            if (MenuNeighbors.TryGetValue(Direction, out Neighbor))
+                return true;
+            else if (Menu != null)
+                return Menu.MenuNeighbors.TryGetValue(Direction, out Neighbor);
+            else
+                return false;
+        }
+
+        public bool TryGetSlotNeighbor(Rectangle? ItemSlot, NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping, out Rectangle? Neighbor)
+        {
+            List<Rectangle> AllSlots = SlotBounds.Select(x => x.Value).SelectMany(x => x.OrderBy(y => y.Key).Select(z => z.Value)).ToList();
+            return GamepadControls.TryGetSlotNeighbor(AllSlots, ItemSlot, GroupsPerRow * ColumnsPerGroup, Direction, HorizontalWrapping, VerticalWrapping, out Neighbor);
+        }
+
+        public bool TryNavigate(NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping)
+        {
+            if (IsGamepadFocused && HoveredSlot == null)
             {
-                RightButtonPressedTime = null;
-                RightButtonPressedLocation = null;
+                HoveredSlot = SlotBounds.First().Value[ColumnType.RegularQuality];
+                IsNavigatingWithGamepad = HoveredSlot != null;
+                return HoveredSlot != null;
+            }
+            else if (TryGetSlotNeighbor(HoveredSlot, Direction, HorizontalWrapping, VerticalWrapping, out Rectangle? Neighbor))
+            {
+                HoveredSlot = Neighbor.Value;
+                IsNavigatingWithGamepad = true;
+                return true;
+            }
+            else
+                return false;
+        }
+
+        public bool TryNavigateEnter(NavigationDirection StartingSide)
+        {
+            IsGamepadFocused = true;
+            IsNavigatingWithGamepad = true;
+
+            if (StartingSide == NavigationDirection.Right)
+            {
+                while (TryNavigate(NavigationDirection.Right, NavigationWrappingMode.NoWrap, NavigationWrappingMode.NoWrap)) { }
+            }
+            if (StartingSide == NavigationDirection.Down)
+            {
+                while (TryNavigate(NavigationDirection.Down, NavigationWrappingMode.NoWrap, NavigationWrappingMode.NoWrap)) { }
+            }
+
+            return true;
+        }
+
+        public bool IsNavigatingWithGamepad { get; private set; }
+
+        public void OnGamepadButtonsPressed(Buttons GamepadButtons)
+        {
+            if (IsGamepadFocused && !RecentlyGainedFocus)
+            {
+                if (!GamepadControls.HandleNavigationButtons(this, GamepadButtons))
+                    this.IsGamepadFocused = false;
+
+                //  Handle action buttons
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.PrimaryAction))
+                {
+                    HandlePrimaryAction(GetHoveredItem());
+                }
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.SecondaryAction))
+                {
+                    HandleSecondaryAction(GetHoveredItem());
+                    SecondaryActionButtonPressedLocation = HoveredSlot;
+                    SecondaryActionButtonPressedTime = DateTime.Now;
+                }
+            }
+        }
+
+        public void OnGamepadButtonsReleased(Buttons GamepadButtons)
+        {
+            if (IsGamepadFocused && !RecentlyGainedFocus)
+            {
+                //  Handle action buttons
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.SecondaryAction))
+                {
+                    SecondaryActionButtonPressedLocation = null;
+                    SecondaryActionButtonPressedTime = null;
+                }
+            }
+        }
+        #endregion Gamepad support
+
+        private void HandlePrimaryAction(Item TargetItem)
+        {
+            if (TargetItem is Object PressedObject)
+            {
+                int Qty = ItemBag.GetQuantityToTransfer(ItemBag.InputTransferAction.PrimaryActionButtonPressed, PressedObject, IBM.IsTransferMultipleModifierHeld, IBM.IsTransferHalfModifierHeld);
+                Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, true, Menu.IBM.InventorySource, Menu.IBM.ActualInventoryCapacity);
+            }
+        }
+
+        private void HandleSecondaryAction(Item TargetItem)
+        {
+            if (TargetItem is Object PressedObject)
+            {
+                ItemBag.InputTransferAction TransferAction = IsSecondaryActionButtonHeld ? ItemBag.InputTransferAction.SecondaryActionButtonHeld : ItemBag.InputTransferAction.SecondaryActionButtonPressed;
+                int Qty = ItemBag.GetQuantityToTransfer(TransferAction, PressedObject, IBM.IsTransferMultipleModifierHeld, IBM.IsTransferHalfModifierHeld);
+                Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, true, Menu.IBM.InventorySource, Menu.IBM.ActualInventoryCapacity);
             }
         }
         #endregion Input Handling
 
-        internal void Update(UpdateTickedEventArgs e)
+        public void Update(UpdateTickedEventArgs e)
         {
-            if (e.IsMultipleOf(ItemBagMenu.TransferRepeatFrequency))
-            {
-                if (IsRightButtonHeld && HoveredSlot.HasValue && RightButtonPressedLocation.HasValue && HoveredSlot.Value == RightButtonPressedLocation.Value
-                    && RightButtonPressedTime.HasValue && DateTime.Now.Subtract(RightButtonPressedTime.Value).TotalMilliseconds >= 500)
-                {
-                    Object PressedObject = GetHoveredItem();
-                    if (PressedObject != null)
-                    {
-                        KeyboardState KeyState = Game1.GetKeyboardState();
-                        bool IsShiftHeld = KeyState.IsKeyDown(Keys.LeftShift) || KeyState.IsKeyDown(Keys.RightShift);
-                        bool IsControlHeld = KeyState.IsKeyDown(Keys.LeftControl) || KeyState.IsKeyDown(Keys.RightControl);
-                        int Qty = ItemBag.GetQuantityToTransfer(ItemBag.InputTransferAction.RightButtonHeld, PressedObject, IsShiftHeld, IsControlHeld);
+            RecentlyGainedFocus = false;
 
-                        Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, false, Menu.IBM.InventorySource, Menu.IBM.ActualInventoryCapacity);
-                        if (MovedQty > 0)
-                            Game1.playSound(ItemBag.MoveContentsSuccessSound);
-                    }
+            if (e.IsMultipleOf(ItemBagMenu.TransferRepeatFrequency) && HoveredSlot.HasValue)
+            {
+                if (IsSecondaryActionButtonHeld && SecondaryActionButtonPressedLocation.HasValue && HoveredSlot.Value == SecondaryActionButtonPressedLocation.Value
+                    && SecondaryActionButtonPressedTime.HasValue && DateTime.Now.Subtract(SecondaryActionButtonPressedTime.Value).TotalMilliseconds >= 500)
+                {
+                    HandleSecondaryAction(GetHoveredItem());
                 }
+            }
+
+            if (e.IsMultipleOf(GamepadControls.NavigationRepeatFrequency) && IsGamepadFocused && IsNavigatingWithGamepad)
+            {
+                if (!GamepadControls.HandleNavigationButtons(this, null))
+                    this.IsGamepadFocused = false;
             }
         }
 
@@ -339,24 +503,26 @@ namespace ItemBags.Menus
         }
         #endregion Parent Menu
 
+        public bool CanResize { get; } = true;
+
         public void InitializeLayout(int ResizeIteration)
         {
             if (ResizeIteration > 1)
                 this.SlotSize = Math.Min(OriginalSlotSize, Math.Max(24, OriginalSlotSize - (ResizeIteration - 1) * 8));
 
             HoveredSlot = null;
-            RightButtonPressedTime = null;
-            RightButtonPressedLocation = null;
+            SecondaryActionButtonPressedTime = null;
+            SecondaryActionButtonPressedLocation = null;
 
             int ColumnHeaderHeight = SlotSize;
             int GroupWidth = ColumnsPerGroup * SlotSize;
 
-            int RequiredWidth = GroupsPerRow * ColumnsPerGroup * SlotSize + ContentMargin * 2 + (GroupsPerRow - 1) * HorizontalMarginBetweenGroups;
-            int RequiredHeight = RowCount * SlotSize + ContentMargin * 2 + ColumnHeaderHeight;
+            int RequiredWidth = GroupsPerRow * ColumnsPerGroup * SlotSize + Padding * 2 + (GroupsPerRow - 1) * HorizontalMarginBetweenGroups;
+            int RequiredHeight = RowCount * SlotSize + Padding * 2 + ColumnHeaderHeight;
             this.RelativeBounds = new Rectangle(0, 0, RequiredWidth, RequiredHeight);
 
             //  Create the cells within each row/column
-            Dictionary<int, Dictionary<ColumnType, Rectangle>> SlotBounds = new Dictionary<int, Dictionary<ColumnType, Rectangle>>();
+            OrderedDictionary<int, Dictionary<ColumnType, Rectangle>> SlotBounds = new OrderedDictionary<int, Dictionary<ColumnType, Rectangle>>();
             for (int i = 0; i < GroupedObjects.Count; i++)
             {
                 AllowedObject Group = GroupedObjects[i];
@@ -364,14 +530,14 @@ namespace ItemBags.Menus
                 int Row = i / GroupsPerRow;
                 int Column = i - Row * GroupsPerRow;
 
-                int GroupStartX = Column * GroupWidth + ContentMargin + (i % GroupsPerRow) * HorizontalMarginBetweenGroups;
+                int GroupStartX = Column * GroupWidth + Padding + (i % GroupsPerRow) * HorizontalMarginBetweenGroups;
 
                 Dictionary<ColumnType, Rectangle> GroupSlots = new Dictionary<ColumnType, Rectangle>();
                 for (int j = 0; j < ColumnsPerGroup; j++)
                 {
                     ColumnType ColumnType = (ColumnType)j;
                     int X = GroupStartX + j * SlotSize;
-                    Rectangle Slot = new Rectangle(X, Row * SlotSize + ContentMargin + ColumnHeaderHeight, SlotSize, SlotSize);
+                    Rectangle Slot = new Rectangle(X, Row * SlotSize + Padding + ColumnHeaderHeight, SlotSize, SlotSize);
                     GroupSlots.Add(ColumnType, Slot);
                 }
 
@@ -383,11 +549,11 @@ namespace ItemBags.Menus
             List<Rectangle> ColumnHeaderBounds = new List<Rectangle>();
             for (int i = 0; i < GroupsPerRow; i++)
             {
-                int GroupStartX = i * GroupWidth + ContentMargin + i * HorizontalMarginBetweenGroups;
+                int GroupStartX = i * GroupWidth + Padding + i * HorizontalMarginBetweenGroups;
 
                 for (int j = 0; j < ColumnsPerGroup; j++)
                 {
-                    ColumnHeaderBounds.Add(new Rectangle(GroupStartX + j * SlotSize, ContentMargin, ColumnHeaderHeight, ColumnHeaderHeight));
+                    ColumnHeaderBounds.Add(new Rectangle(GroupStartX + j * SlotSize, Padding, ColumnHeaderHeight, ColumnHeaderHeight));
                 }
             }
             RelativeColumnHeaderBounds = new ReadOnlyCollection<Rectangle>(ColumnHeaderBounds);
@@ -594,8 +760,11 @@ namespace ItemBags.Menus
                     else
                     {
                         Object HoveredItem = Placeholders[ItemId.Value][ConvertColumnTypeToObjectQuality(Column.Value)];
-                        //Rectangle Location = HoveredSlot.Value;
-                        Rectangle Location = new Rectangle(Game1.getMouseX() - 8, Game1.getMouseY() + 36, 8 + 36, 1);
+                        Rectangle Location;
+                        if (IsNavigatingWithGamepad)
+                            Location = HoveredSlot.Value; //new Rectangle(HoveredSlot.Value.Right, HoveredSlot.Value.Bottom, 1, 1);
+                        else
+                            Location = new Rectangle(Game1.getMouseX() - 8, Game1.getMouseY() + 36, 8 + 36, 1);
                         DrawHelpers.DrawToolTipInfo(b, Location, HoveredItem, true, true, true, true, true, true, Bag.MaxStackSize);
                     }
                 }
@@ -635,6 +804,11 @@ namespace ItemBags.Menus
             }
             else
                 return null;
+        }
+
+        public void OnClose()
+        {
+            SetParent(null);
         }
     }
 

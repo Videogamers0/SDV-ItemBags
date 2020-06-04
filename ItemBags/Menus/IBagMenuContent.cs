@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace ItemBags.Menus
 {
-    public interface IBagMenuContent
+    public interface IBagMenuContent : IGamepadControllable
     {
         ItemBagMenu IBM { get; }
         ItemBag Bag { get; }

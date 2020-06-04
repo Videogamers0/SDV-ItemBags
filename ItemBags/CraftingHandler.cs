@@ -25,6 +25,10 @@ namespace ItemBags
 
             Helper.Events.Display.MenuChanged += Display_MenuChanged;
             Helper.Events.GameLoop.UpdateTicked += GameLoop_UpdateTicked;
+
+            //  Possible TODO: Add support for the Cooking menu used by the "Cooking Skill" mod (https://www.nexusmods.com/stardewvalley/mods/522)
+            //  That mod does NOT use a "CraftingPage" as its menu, so it currently isn't detected by Display_MenuChanged event handler.
+            //  I haven't tested it yet, but it might not have a "List<Chest> _materialContainers" field for me to add bag contents to, so might not be feasible.
         }
 
         private static HashSet<ItemBag> BagsInUse = null;

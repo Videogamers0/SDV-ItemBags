@@ -14,12 +14,35 @@ using Object = StardewValley.Object;
 
 namespace ItemBags.Menus
 {
-    public class CustomizeIconMenu
+    public class CustomizeIconMenu// : IBagMenuContent
     {
-        public ItemBagMenu BagMenu { get; }
+        #region Lookup Anything Compatibility
+        /// <summary>
+        /// Warning - do not remove/rename this field. It is used via reflection by Lookup Anything mod.<para/>
+        /// See also: <see cref="https://github.com/Pathoschild/StardewMods/tree/develop/LookupAnything#extensibility-for-modders"/>
+        /// </summary>
+        public Item HoveredItem { get; private set; }
+        public void UpdateHoveredItem(CursorMovedEventArgs e)
+        {
+            if (Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            {
+                HoveredItem = HoveredObject;
+            }
+            else
+            {
+                HoveredItem = null;
+            }
+        }
+        #endregion Lookup Anything Compatibility
+
+        public ItemBagMenu IBM { get; }
         public ItemBag Bag { get; }
         private ItemBag PreviewBag { get; }
         public Rectangle Bounds { get; private set; }
+
+        public Rectangle RelativeBounds => throw new NotImplementedException();
+        public Point TopLeftScreenPosition => throw new NotImplementedException();
+        public void SetTopLeft(Point Point) { throw new NotImplementedException(); }
 
         private Texture2D Texture { get; }
         private Rectangle TextureDestination { get; set; }
@@ -27,7 +50,8 @@ namespace ItemBags.Menus
         private const int TextureHeight = 544;
         private const int SpriteSize = 16;
 
-        private const int Padding = 24;
+        public int Padding { get; }
+
         private const int Spacing = 8;
         private const int ButtonPadding = 6;
         private const int PreviewSize = (int)(BagInventoryMenu.DefaultInventoryIconSize * 1.5);
@@ -84,23 +108,27 @@ namespace ItemBags.Menus
         private Rectangle? HoveredButton { get; set; }
 
         /// <param name="PreviewableCopy">A copy of Parameter=<paramref name="Bag"/>. Changes will be made to this copy while the user is previewing different icons.</param>
-        public CustomizeIconMenu(ItemBagMenu BagMenu, ItemBag Bag, ItemBag PreviewableCopy)
+        public CustomizeIconMenu(ItemBagMenu BagMenu, ItemBag Bag, ItemBag PreviewableCopy, int Padding)
         {
             this.Texture = Game1.objectSpriteSheet;
 
-            this.BagMenu = BagMenu;
+            this.IBM = BagMenu;
             this.Bag = Bag;
+
+            this.Padding = Padding;
 
             this.PreviewBag = PreviewableCopy;
             this.PreviewBag.Icon = this.Texture;
             this.PreviewBag.IconTexturePosition = Bag.IconTexturePosition;
 
-            InitializeLayout();
+            InitializeLayout(1);
         }
 
         private static int Max(params int[] values) { return Enumerable.Max(values); }
 
-        internal void InitializeLayout()
+        public bool CanResize { get; } = false;
+
+        public void InitializeLayout(int ResizeIteration)
         {
             int WindowWidth = Game1.viewport.Size.Width;
             int WindowHeight = Game1.viewport.Size.Height;
@@ -128,7 +156,7 @@ namespace ItemBags.Menus
             this.CloseButtonTextDestination = new Vector2(CloseButtonDestination.X + ButtonPadding * 2, CloseButtonDestination.Y + ButtonPadding + 2);
         }
 
-        internal void OnMouseMoved(CursorMovedEventArgs e)
+        public void OnMouseMoved(CursorMovedEventArgs e)
         {
             Point NewPos = e.NewPosition.ScreenPixels.AsPoint();
             if (TextureDestination.Contains(NewPos))
@@ -152,17 +180,17 @@ namespace ItemBags.Menus
                 this.HoveredButton = null;
         }
 
-        internal void OnMouseButtonPressed(ButtonPressedEventArgs e)
+        public void OnMouseButtonPressed(ButtonPressedEventArgs e)
         {
             if (!Bounds.Contains(e.Cursor.ScreenPixels.AsPoint()))
-                BagMenu.CloseModalMenu();
+                IBM.CloseModalMenu();
             else
             {
                 if (HoveredSprite.HasValue)
                 {
                     Bag.Icon = this.Texture;
                     Bag.IconTexturePosition = HoveredSprite.Value;
-                    BagMenu.CloseModalMenu();
+                    IBM.CloseModalMenu();
                 }
                 else if (HoveredButton.HasValue)
                 {
@@ -170,15 +198,16 @@ namespace ItemBags.Menus
                     {
                         Bag.ResetIcon();
                     }
-                    BagMenu.CloseModalMenu();
+                    IBM.CloseModalMenu();
                 }
             }
         }
 
-        internal void OnMouseButtonReleased(ButtonReleasedEventArgs e) { }
-        internal void Update(UpdateTickedEventArgs e) { }
+        public void OnMouseButtonReleased(ButtonReleasedEventArgs e) { }
 
-        internal void Draw(SpriteBatch b)
+        public void Update(UpdateTickedEventArgs e) { }
+
+        public void Draw(SpriteBatch b)
         {
             Color HighlightColor = Color.Yellow;
             Texture2D Highlight = TextureHelpers.GetSolidColorTexture(Game1.graphics.GraphicsDevice, HighlightColor);
@@ -217,5 +246,9 @@ namespace ItemBags.Menus
                 DrawHelpers.DrawBorder(b, Destination, BorderThickness, HighlightColor);
             }
         }
+
+        public void DrawToolTips(SpriteBatch b) { }
+
+        public void OnClose() { }
     }
 }

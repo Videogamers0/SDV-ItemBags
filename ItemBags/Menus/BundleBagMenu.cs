@@ -144,6 +144,11 @@ namespace ItemBags.Menus
         private BundleTask HoveredBundleTask = null;
         private BundleItem HoveredBundleItem = null;
 
+        private DateTime? SecondaryActionButtonPressedTime = null;
+        private bool IsSecondaryActionButtonHeld { get { return SecondaryActionButtonPressedTime.HasValue; } }
+        private BundleItem SecondaryActionButtonPressedItem = null;
+
+        #region Mouse Handling
         public void OnMouseMoved(CursorMovedEventArgs e)
         {
             if (!IsJojaMember)
@@ -161,8 +166,9 @@ namespace ItemBags.Menus
                             if (Rect.GetOffseted(TopLeftScreenPosition).Contains(e.NewPosition.ScreenPixels.AsPoint()))
                             {
                                 if (PreviouslyHovered != null && PreviouslyHovered != KVP.Key)
-                                    RightButtonPressedItem = null;
+                                    SecondaryActionButtonPressedItem = null;
                                 this.HoveredBundleItem = KVP.Key;
+                                this.IsNavigatingWithGamepad = false;
                                 break;
                             }
                         }
@@ -177,6 +183,7 @@ namespace ItemBags.Menus
                             if (Rect.GetOffseted(TopLeftScreenPosition).Contains(e.NewPosition.ScreenPixels.AsPoint()))
                             {
                                 this.HoveredBundleTask = KVP.Key;
+                                this.IsNavigatingWithGamepad = false;
                                 break;
                             }
                         }
@@ -187,28 +194,20 @@ namespace ItemBags.Menus
             UpdateHoveredItem(e);
         }
 
-        private DateTime? RightButtonPressedTime = null;
-        private bool IsRightButtonHeld { get { return RightButtonPressedTime.HasValue; } }
-        private BundleItem RightButtonPressedItem = null;
-
         public void OnMouseButtonPressed(ButtonPressedEventArgs e)
         {
             if (!IsJojaMember)
             {
-                if (e.Button == SButton.MouseRight)
+                if (e.Button == SButton.MouseLeft)
                 {
-                    RightButtonPressedItem = HoveredBundleItem;
-                    RightButtonPressedTime = DateTime.Now;
+                    HandlePrimaryAction(GetHoveredItem());
                 }
 
-                if (e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
+                if (e.Button == SButton.MouseRight)
                 {
-                    Object PressedObject = GetHoveredItem();
-                    if (PressedObject != null)
-                    {
-                        int Qty = ItemBag.GetQuantityToTransfer(e, PressedObject);
-                        Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, true, IBM.InventorySource, IBM.ActualInventoryCapacity);
-                    }
+                    HandleSecondaryAction(GetHoveredItem());
+                    SecondaryActionButtonPressedItem = HoveredBundleItem;
+                    SecondaryActionButtonPressedTime = DateTime.Now;
                 }
             }
         }
@@ -219,36 +218,206 @@ namespace ItemBags.Menus
             {
                 if (e.Button == SButton.MouseRight)
                 {
-                    RightButtonPressedTime = null;
-                    RightButtonPressedItem = null;
+                    SecondaryActionButtonPressedTime = null;
+                    SecondaryActionButtonPressedItem = null;
                 }
+            }
+        }
+        #endregion Mouse Handling
+
+
+        #region Gamepad support
+        public bool RecentlyGainedFocus { get; private set; }
+
+        private bool _IsGamepadFocused;
+        public bool IsGamepadFocused
+        {
+            get { return _IsGamepadFocused; }
+            set
+            {
+                if (IsGamepadFocused != value)
+                {
+                    _IsGamepadFocused = value;
+                    if (IsGamepadFocused)
+                        GainedGamepadFocus();
+                    else
+                        LostGamepadFocus();
+                }
+            }
+        }
+
+        public void GainedGamepadFocus()
+        {
+            RecentlyGainedFocus = true;
+            //HoveredBundleItem = ItemSlotPositions.First().Key;
+            //HoveredBundleTask = null;
+            HoveredBundleItem = null;
+            HoveredBundleTask = TaskHeaderPositions.First().Key;
+            IsNavigatingWithGamepad = true;
+        }
+
+        public void LostGamepadFocus()
+        {
+            HoveredBundleItem = null;
+            HoveredBundleTask = null;
+            SecondaryActionButtonPressedItem = null;
+            SecondaryActionButtonPressedTime = null;
+        }
+
+        public Dictionary<NavigationDirection, IGamepadControllable> MenuNeighbors { get; private set; } = new Dictionary<NavigationDirection, IGamepadControllable>();
+        public bool TryGetMenuNeighbor(NavigationDirection Direction, out IGamepadControllable Neighbor)
+        {
+            return MenuNeighbors.TryGetValue(Direction, out Neighbor);
+        }
+
+        public bool TryGetSlotNeighbor(Rectangle? ItemSlot, NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping, out Rectangle? Neighbor)
+        {
+            List<Rectangle> AllSlots = TaskHeaderPositions.Select(x => x.Value).Union(ItemSlotPositions.Select(x => x.Value)).Union(LockedSlotPositions)
+                .OrderBy(x => x.Top).ThenBy(x => x.Left).ToList();
+            return GamepadControls.TryGetSlotNeighbor(AllSlots, ItemSlot, ColumnCount, Direction, HorizontalWrapping, VerticalWrapping, out Neighbor);
+        }
+
+        public bool TryNavigate(NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping)
+        {
+            Rectangle? HoveredSlot = null;
+            if (HoveredBundleItem != null)
+                HoveredSlot = ItemSlotPositions[HoveredBundleItem];
+            else if (HoveredBundleTask != null)
+                HoveredSlot = TaskHeaderPositions[HoveredBundleTask];
+
+            if (IsGamepadFocused && HoveredSlot == null)
+            {
+                HoveredBundleItem = ItemSlotPositions.First().Key;
+                IsNavigatingWithGamepad = HoveredBundleItem != null;
+                return HoveredBundleItem != null;
+            }
+            else if (TryGetSlotNeighbor(HoveredSlot, Direction, HorizontalWrapping, VerticalWrapping, out Rectangle? Neighbor))
+            {
+                foreach (KeyValuePair<BundleItem, Rectangle> KVP in ItemSlotPositions)
+                {
+                    if (KVP.Value == Neighbor.Value)
+                    {
+                        HoveredBundleItem = KVP.Key;
+                        HoveredBundleTask = null;
+                        IsNavigatingWithGamepad = true;
+                        return true;
+                    }
+                }
+
+                foreach (KeyValuePair<BundleTask, Rectangle> KVP in TaskHeaderPositions)
+                {
+                    if (KVP.Value == Neighbor.Value)
+                    {
+                        HoveredBundleTask = KVP.Key;
+                        HoveredBundleItem = null;
+                        IsNavigatingWithGamepad = true;
+                        return true;
+                    }
+                }
+
+                HoveredBundleItem = null;
+                HoveredBundleTask = null;
+
+                return false;
+            }
+            else
+                return false;
+        }
+
+        public bool TryNavigateEnter(NavigationDirection StartingSide)
+        {
+            IsGamepadFocused = true;
+            IsNavigatingWithGamepad = true;
+
+            if (StartingSide == NavigationDirection.Right)
+            {
+                while (TryNavigate(NavigationDirection.Right, NavigationWrappingMode.NoWrap, NavigationWrappingMode.NoWrap)) { }
+            }
+            if (StartingSide == NavigationDirection.Down)
+            {
+                while (TryNavigate(NavigationDirection.Down, NavigationWrappingMode.NoWrap, NavigationWrappingMode.NoWrap)) { }
+            }
+
+            return true;
+        }
+
+        public bool IsNavigatingWithGamepad { get; private set; }
+
+        public void OnGamepadButtonsPressed(Buttons GamepadButtons)
+        {
+            if (IsGamepadFocused && !RecentlyGainedFocus)
+            {
+                if (!GamepadControls.HandleNavigationButtons(this, GamepadButtons))
+                    this.IsGamepadFocused = false;
+
+                //  Handle action buttons
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.PrimaryAction))
+                {
+                    HandlePrimaryAction(GetHoveredItem());
+                }
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.SecondaryAction))
+                {
+                    HandleSecondaryAction(GetHoveredItem());
+                    SecondaryActionButtonPressedItem = HoveredBundleItem;
+                    SecondaryActionButtonPressedTime = DateTime.Now;
+                }
+            }
+        }
+
+        public void OnGamepadButtonsReleased(Buttons GamepadButtons)
+        {
+            if (IsGamepadFocused && !RecentlyGainedFocus)
+            {
+                //  Handle action buttons
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.SecondaryAction))
+                {
+                    SecondaryActionButtonPressedItem = null;
+                    SecondaryActionButtonPressedTime = null;
+                }
+            }
+        }
+        #endregion Gamepad support
+
+        private void HandlePrimaryAction(Item TargetItem)
+        {
+            if (TargetItem is Object TargetObject)
+            {
+                int Qty = ItemBag.GetQuantityToTransfer(ItemBag.InputTransferAction.PrimaryActionButtonPressed, TargetObject, IBM.IsTransferMultipleModifierHeld, IBM.IsTransferHalfModifierHeld);
+                Bag.MoveFromBag(TargetObject, Qty, out int MovedQty, true, IBM.InventorySource, IBM.ActualInventoryCapacity);
+            }
+        }
+
+        private void HandleSecondaryAction(Item TargetItem)
+        {
+            if (TargetItem is Object TargetObject)
+            {
+                ItemBag.InputTransferAction TransferAction = IsSecondaryActionButtonHeld ? ItemBag.InputTransferAction.SecondaryActionButtonHeld : ItemBag.InputTransferAction.SecondaryActionButtonPressed;
+                int Qty = ItemBag.GetQuantityToTransfer(TransferAction, TargetObject, IBM.IsTransferMultipleModifierHeld, IBM.IsTransferHalfModifierHeld);
+                Bag.MoveFromBag(TargetObject, Qty, out int MovedQty, true, IBM.InventorySource, IBM.ActualInventoryCapacity);
             }
         }
         #endregion Input Handling
 
         public void Update(UpdateTickedEventArgs e)
         {
+            RecentlyGainedFocus = false;
+
             if (!IsJojaMember)
             {
                 if (e.IsMultipleOf(ItemBagMenu.TransferRepeatFrequency))
                 {
-                    if (IsRightButtonHeld && HoveredBundleItem != null && RightButtonPressedItem != null && HoveredBundleItem == RightButtonPressedItem
-                        && RightButtonPressedTime.HasValue && DateTime.Now.Subtract(RightButtonPressedTime.Value).TotalMilliseconds >= 500)
+                    if (IsSecondaryActionButtonHeld && HoveredBundleItem != null && SecondaryActionButtonPressedItem != null && HoveredBundleItem == SecondaryActionButtonPressedItem
+                        && SecondaryActionButtonPressedTime.HasValue && DateTime.Now.Subtract(SecondaryActionButtonPressedTime.Value).TotalMilliseconds >= 500)
                     {
-                        Object PressedObject = GetHoveredItem();
-                        if (PressedObject != null)
-                        {
-                            KeyboardState KeyState = Game1.GetKeyboardState();
-                            bool IsShiftHeld = KeyState.IsKeyDown(Keys.LeftShift) || KeyState.IsKeyDown(Keys.RightShift);
-                            bool IsControlHeld = KeyState.IsKeyDown(Keys.LeftControl) || KeyState.IsKeyDown(Keys.RightControl);
-                            int Qty = ItemBag.GetQuantityToTransfer(ItemBag.InputTransferAction.RightButtonHeld, PressedObject, IsShiftHeld, IsControlHeld);
-
-                            Bag.MoveFromBag(PressedObject, Qty, out int MovedQty, false, IBM.InventorySource, IBM.ActualInventoryCapacity);
-                            if (MovedQty > 0)
-                                Game1.playSound(ItemBag.MoveContentsSuccessSound);
-                        }
+                        HandleSecondaryAction(GetHoveredItem());
                     }
                 }
+            }
+
+            if (e.IsMultipleOf(GamepadControls.NavigationRepeatFrequency) && IsGamepadFocused && IsNavigatingWithGamepad)
+            {
+                if (!GamepadControls.HandleNavigationButtons(this, null))
+                    this.IsGamepadFocused = false;
             }
         }
 
@@ -269,7 +438,7 @@ namespace ItemBags.Menus
         //  Positions of slots that are associated with a given BundleTask
         public Dictionary<BundleTask, List<Rectangle>> TaskSlotPositions { get; private set; }
         //  Positions of each item slot
-        public Dictionary<BundleItem, Rectangle> ItemSlotPositions { get; private set; }
+        public OrderedDictionary<BundleItem, Rectangle> ItemSlotPositions { get; private set; }
 
         private List<Rectangle> LockedSlotPositions { get; set; }
 
@@ -292,6 +461,11 @@ namespace ItemBags.Menus
             }
             else
             {
+                HoveredBundleTask = null;
+                HoveredBundleItem = null;
+                SecondaryActionButtonPressedTime = null;
+                SecondaryActionButtonPressedItem = null;
+
                 int RoomBottomMargin = 12;
                 int RoomRightMargin = 8;
 
@@ -304,7 +478,7 @@ namespace ItemBags.Menus
                 this.RoomSlotPositions = new Dictionary<BundleRoom, List<Rectangle>>();
                 this.TaskHeaderPositions = new Dictionary<BundleTask, Rectangle>();
                 this.TaskSlotPositions = new Dictionary<BundleTask, List<Rectangle>>();
-                this.ItemSlotPositions = new Dictionary<BundleItem, Rectangle>();
+                this.ItemSlotPositions = new OrderedDictionary<BundleItem, Rectangle>();
                 this.LockedSlotPositions = new List<Rectangle>();
 
                 int RoomNameWidth = CC.Rooms.Select(x => (int)(RoomHeaderFont.MeasureString(x.Name).X * RoomHeaderScale)).DefaultIfEmpty(100).Max() + 32;
@@ -546,10 +720,16 @@ namespace ItemBags.Menus
                 if (HoveredBundleItem != null)
                 {
                     Object HoveredItem = GetHoveredItem();
-                    //Rectangle Location = ItemSlotPositions[HoveredBundleItem].GetOffseted(TopLeftScreenPosition);
-                    Rectangle Location = new Rectangle(Game1.getMouseX() - 8, Game1.getMouseY() + 36, 8 + 36, 1);
-                    DrawHelpers.DrawToolTipInfo(b, Location, HoveredItem, true, true, true, true, true, true, 
-                        HoveredBundleItem.Quantity, !HoveredBundleItem.IsCompleted, Color.White);
+                    if (HoveredItem != null)
+                    {
+                        Rectangle Location;
+                        if (IsNavigatingWithGamepad)
+                            Location =  ItemSlotPositions[HoveredBundleItem].GetOffseted(TopLeftScreenPosition);
+                        else
+                            Location = new Rectangle(Game1.getMouseX() - 8, Game1.getMouseY() + 36, 8 + 36, 1);
+                        DrawHelpers.DrawToolTipInfo(b, Location, HoveredItem, true, true, true, true, true, true,
+                            HoveredBundleItem.Quantity, !HoveredBundleItem.IsCompleted, Color.White);
+                    }
                 }
 
                 if (HoveredBundleTask != null)

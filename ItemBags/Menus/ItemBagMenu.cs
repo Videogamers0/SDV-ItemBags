@@ -16,10 +16,11 @@ using System.Threading.Tasks;
 using Object = StardewValley.Object;
 using static ItemBags.Helpers.DrawHelpers;
 using ItemBags.Persistence;
+using Microsoft.Xna.Framework.Input;
 
 namespace ItemBags.Menus
 {
-    public class ItemBagMenu : IClickableMenu
+    public class ItemBagMenu : IClickableMenu, IGamepadControllable
     {
         #region Lookup Anything Compatibility
         /// <summary>
@@ -35,7 +36,7 @@ namespace ItemBags.Menus
             }
             else if (InventoryMenu.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
             {
-                HoveredItem = InventoryMenu.GetHoveredItem();
+                HoveredItem = InventoryMenu.HoveredItem;
             }
             else if (Content.Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
             {
@@ -72,6 +73,18 @@ namespace ItemBags.Menus
                 {
                     _Content = value;
                     InitializeLayout();
+
+                    if (Content == null)
+                    {
+                        InventoryMenu.MenuNeighbors.Remove(NavigationDirection.Up);
+                    }
+                    else
+                    {
+                        InventoryMenu.MenuNeighbors[NavigationDirection.Up] = Content;
+                        Content.MenuNeighbors[NavigationDirection.Down] = InventoryMenu;
+                        //Content.MenuNeighbors[NavigationDirection.Left] = this;
+                        //Content.MenuNeighbors[NavigationDirection.Right] = this;
+                    }
                 }
             }
         }
@@ -97,8 +110,8 @@ namespace ItemBags.Menus
         private Rectangle HelpInfoBounds { get; set; }
         private Rectangle CustomizeIconBounds { get; set; }
         
-        private IEnumerable<Rectangle> LeftSidebarButtonBounds { get { return new List<Rectangle>() { DepositAllBounds, WithdrawAllBounds, AutolootBounds }; } }
-        private IEnumerable<Rectangle> RightSidebarButtonBounds { get { return new List<Rectangle>() { HelpInfoBounds, CustomizeIconBounds }; } }
+        private List<Rectangle> LeftSidebarButtonBounds { get { return new List<Rectangle>() { DepositAllBounds, WithdrawAllBounds, AutolootBounds }; } }
+        private List<Rectangle> RightSidebarButtonBounds { get { return new List<Rectangle>() { HelpInfoBounds, CustomizeIconBounds }; } }
 
         private Rectangle? HoveredButtonBounds
         {
@@ -124,6 +137,23 @@ namespace ItemBags.Menus
                     return null;
                 }
             }
+            set
+            {
+                if (value == null)
+                    HoveredButton = null;
+                else if (value == DepositAllBounds)
+                    HoveredButton = SidebarButton.DepositAll;
+                else if (value == WithdrawAllBounds)
+                    HoveredButton = SidebarButton.WithdrawAll;
+                else if (value == AutolootBounds)
+                    HoveredButton = SidebarButton.Autoloot;
+                else if (value == HelpInfoBounds)
+                    HoveredButton = SidebarButton.HelpInfo;
+                else if (value == CustomizeIconBounds)
+                    HoveredButton = SidebarButton.CustomizeIcon;
+                else
+                    throw new NotImplementedException();
+            }
         }
         #endregion Sidebar
 
@@ -136,6 +166,7 @@ namespace ItemBags.Menus
         {
             if (IsShowingModalMenu && CustomizeIconMenu != null)
             {
+                CustomizeIconMenu.OnClose();
                 HoveredButton = null;
                 CustomizeIconMenu = null;
             }
@@ -157,7 +188,9 @@ namespace ItemBags.Menus
 
             this.InventorySource = InventorySource;
             this.ActualInventoryCapacity = Math.Max(ActualCapacity, InventorySource.Count);
-            this.InventoryMenu = new BagInventoryMenu(Bag, InventorySource, ActualCapacity, InventoryColumns, InventorySlotSize);
+            this.InventoryMenu = new BagInventoryMenu(this, Bag, InventorySource, ActualCapacity, InventoryColumns, InventorySlotSize);
+            InventoryMenu.MenuNeighbors[NavigationDirection.Left] = this;
+            InventoryMenu.MenuNeighbors[NavigationDirection.Right] = this;
 
             this.exitFunction += () => { Bag.CloseContents(); };
         }
@@ -169,7 +202,7 @@ namespace ItemBags.Menus
         {
             InitializeLayout();
             if (IsShowingModalMenu && CustomizeIconMenu != null)
-                CustomizeIconMenu.InitializeLayout();
+                CustomizeIconMenu.InitializeLayout(1);
         }
 
         private const int InventoryMargin = 12;
@@ -180,7 +213,7 @@ namespace ItemBags.Menus
         public static int ButtonSize { get { return 32; } } //{ get { return Constants.TargetPlatform == GamePlatform.Android ? 48 : 32; } }
 
         private int ResizeIteration { get; set; } = 0;
-        protected void InitializeLayout()
+        private void InitializeLayout()
         {
             ResizeIteration = 0;
             int PreviousWidth = -1;
@@ -204,8 +237,7 @@ namespace ItemBags.Menus
                     SidebarHeight = Math.Max(IsLeftSidebarVisible ? LeftHeight : 0, IsRightSidebarVisible ? RightHeight : 0);
                 }
 
-                InventoryMenu.InitializeLayout();
-                //BagInfo.InitializeLayout();
+                InventoryMenu.InitializeLayout(ResizeIteration);
                 Content.InitializeLayout(ResizeIteration);
 
                 //  Compute size of menu
@@ -257,6 +289,36 @@ namespace ItemBags.Menus
             upperRightCloseButton.bounds.Y = yPositionOnScreen + CloseButtonOffset.Y;
         }
 
+        #region Disable Close Button Focusing
+        //  Override these function to prevent the game from auto-selecting the close button in the top-right any time a gamepad key is pressed
+        public override void automaticSnapBehavior(int direction, int oldRegion, int oldID)
+        {
+            //base.automaticSnapBehavior(direction, oldRegion, oldID);
+        }
+
+        public override void setCurrentlySnappedComponentTo(int id)
+        {
+            //base.setCurrentlySnappedComponentTo(id);
+        }
+
+        public override void applyMovementKey(int direction)
+        {
+            //base.applyMovementKey(direction);
+        }
+        #endregion Disable Close Button Focusing
+
+        /*//  Doesn't work - this is a bug within the game, not my code. Pressing the 'B' button on my Xbox One controller is sending Keys.E to receiveKeyPress. 
+        public override void receiveKeyPress(Keys key)
+        {
+            if (Game1.options.gamepadControls || (key.ToSButton().TryGetController(out Buttons b) && GamepadControls.IsMatch(b, GamepadControls.CloseBag)))
+                return; // Let this button press be handled by our custom OnGamepadButtonsPressed logic
+            else
+                base.receiveKeyPress(key);
+        }*/
+
+        #region Input Handling
+
+        #region Mouse Handling
         public void OnMouseMoved(CursorMovedEventArgs e)
         {
             if (IsShowingModalMenu && CustomizeIconMenu != null)
@@ -295,6 +357,9 @@ namespace ItemBags.Menus
                             this.HoveredButton = SidebarButton.CustomizeIcon;
                         else
                             this.HoveredButton = null;
+
+                        if (HoveredButton != null)
+                            this.IsNavigatingWithGamepad = false;
                     }
                 }
             }
@@ -313,53 +378,10 @@ namespace ItemBags.Menus
                 InventoryMenu.OnMouseButtonPressed(e);
                 Content.OnMouseButtonPressed(e);
 
-                if ((IsLeftSidebarVisible || IsRightSidebarVisible) && HoveredButton.HasValue && e.Button == SButton.MouseLeft)
-                {
-                    if (IsLeftSidebarVisible && HoveredButton.Value == SidebarButton.DepositAll)
-                    {
-                        List<Object> ToDeposit = InventorySource.Where(x => x != null && x is Object Obj && Bag.IsValidBagObject(Obj)).Cast<Object>().ToList();
-                        Bag.MoveToBag(ToDeposit, ToDeposit.Select(x => x.Stack).ToList(), out int TotalMovedQty, true, InventorySource);
-                    }
-                    else if (IsLeftSidebarVisible && HoveredButton.Value == SidebarButton.WithdrawAll)
-                    {
-                        List<Object> ToWithdraw = Bag.Contents.Where(x => x != null).ToList();
-                        Bag.MoveFromBag(ToWithdraw, ToWithdraw.Select(x => x.Stack).ToList(), out int TotalMovedQty, true, InventorySource, ActualInventoryCapacity);
-                    }
-                    else if (IsLeftSidebarVisible && HoveredButton.Value == SidebarButton.Autoloot)
-                    {
-                        if (Bag is BoundedBag BB)
-                            BB.Autofill = !BB.Autofill;
-                        else if (Bag is Rucksack RS)
-                            RS.CycleAutofill();
-                    }
-                    else if (IsRightSidebarVisible && HoveredButton.Value == SidebarButton.HelpInfo)
-                    {
-
-                    }
-                    else if (IsRightSidebarVisible && HoveredButton.Value == SidebarButton.CustomizeIcon && Bag.CanCustomizeIcon())
-                    {
-                        ItemBag Copy;
-                        if (Bag is BoundedBag BB)
-                        {
-                            if (BB is BundleBag)
-                                Copy = new BundleBag(Bag.Size, false);
-                            else
-                                Copy = new BoundedBag(BB.TypeInfo, Bag.Size, false);
-                        }
-                        else if (Bag is Rucksack RS)
-                        {
-                            Copy = new Rucksack(Bag.Size, false);
-                        }
-                        else if (Bag is OmniBag OB)
-                        {
-                            Copy = new OmniBag(Bag.Size);
-                        }
-                        else
-                            throw new NotImplementedException(string.Format("Unexpected Bag Type while creating CustomizeIconMenu: {0}", Bag.GetType().ToString()));
-
-                        CustomizeIconMenu = new CustomizeIconMenu(this, this.Bag, Copy);
-                    }
-                }
+                if (e.Button == SButton.MouseLeft)
+                    HandlePrimaryAction();
+                if (e.Button == SButton.MouseRight)
+                    HandleSecondaryAction();
             }
         }
 
@@ -375,15 +397,334 @@ namespace ItemBags.Menus
                 Content.OnMouseButtonReleased(e);
             }
         }
+        #endregion Mouse Handling
+
+        public bool IsTransferMultipleModifierHeld { get; private set; }
+        public bool IsTransferHalfModifierHeld { get; private set; }
+
+        public void OnModifierKeyPressed(ButtonPressedEventArgs e)
+        {
+            if (e.Button == SButton.LeftShift || e.Button == SButton.RightShift)
+            {
+                IsTransferMultipleModifierHeld = true;
+            }
+            if (e.Button == SButton.LeftControl || e.Button == SButton.RightControl)
+            {
+                IsTransferHalfModifierHeld = true;
+            }
+        }
+
+        public void OnModifierKeyReleased(ButtonReleasedEventArgs e)
+        {
+            if (e.Button == SButton.LeftShift || e.Button == SButton.RightShift)
+            {
+                IsTransferMultipleModifierHeld = false;
+            }
+            if (e.Button == SButton.LeftControl || e.Button == SButton.RightControl)
+            {
+                IsTransferHalfModifierHeld = false;
+            }
+        }
+
+        #region Gamepad support
+        public bool RecentlyGainedFocus { get; private set; }
+
+        private bool _IsGamepadFocused;
+        public bool IsGamepadFocused
+        {
+            get { return _IsGamepadFocused; }
+            set
+            {
+                if (IsGamepadFocused != value)
+                {
+                    _IsGamepadFocused = value;
+                    if (IsGamepadFocused)
+                        GainedGamepadFocus();
+                    else
+                        LostGamepadFocus();
+                }
+            }
+        }
+
+        public void GainedGamepadFocus()
+        {
+            RecentlyGainedFocus = true;
+            IsNavigatingWithGamepad = true;
+        }
+
+        public void LostGamepadFocus()
+        {
+            HoveredButton = null;
+        }
+
+        public Dictionary<NavigationDirection, IGamepadControllable> MenuNeighbors { get; private set; } = new Dictionary<NavigationDirection, IGamepadControllable>();
+        public bool TryGetMenuNeighbor(NavigationDirection Direction, out IGamepadControllable Neighbor)
+        {
+            if (HoveredButton.HasValue)
+            {
+                if (IsLeftSidebarVisible && LeftSidebarButtonBounds.Contains(HoveredButtonBounds.Value) && Direction == NavigationDirection.Right)
+                {
+                    Neighbor = InventoryMenu;
+                    return true;
+                }
+                else if (IsRightSidebarVisible && RightSidebarButtonBounds.Contains(HoveredButtonBounds.Value) && Direction == NavigationDirection.Left)
+                {
+                    Neighbor = InventoryMenu;
+                    return true;
+                }
+            }
+
+            if (Direction == NavigationDirection.Up)
+            {
+                Neighbor = Content;
+                return true;
+            }
+
+            Neighbor = null;
+            return false;
+        }
+
+        public bool TryGetSlotNeighbor(Rectangle? ItemSlot, NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping, out Rectangle? Neighbor)
+        {
+            if (!ItemSlot.HasValue)
+            {
+                Neighbor = null;
+                return false;
+            }
+            else if (IsLeftSidebarVisible && LeftSidebarButtonBounds.Contains(ItemSlot.Value))
+            {
+                if (!GamepadControls.TryGetSlotNeighbor(LeftSidebarButtonBounds, ItemSlot, 1, Direction, HorizontalWrapping, VerticalWrapping, out Neighbor))
+                {
+                    if (InventoryMenu.TryNavigateEnter(NavigationDirection.Left))
+                        IsGamepadFocused = false;
+                    return false;
+                }
+                else
+                    return true;
+            }
+            else if (IsRightSidebarVisible && RightSidebarButtonBounds.Contains(ItemSlot.Value))
+            {
+                if (!GamepadControls.TryGetSlotNeighbor(RightSidebarButtonBounds, ItemSlot, 1, Direction, HorizontalWrapping, VerticalWrapping, out Neighbor))
+                {
+                    if (InventoryMenu.TryNavigateEnter(NavigationDirection.Right))
+                        IsGamepadFocused = false;
+                    return false;
+                }
+                else
+                    return true;
+            }
+            else
+            {
+                Neighbor = null;
+                return false;
+            }
+        }
+
+        public bool TryNavigate(NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping)
+        {
+            if (IsGamepadFocused && HoveredButton == null)
+            {
+                if (IsLeftSidebarVisible)
+                    HoveredButtonBounds = LeftSidebarButtonBounds.First();
+                else if (IsRightSidebarVisible)
+                    HoveredButtonBounds = RightSidebarButtonBounds.First();
+                else
+                    HoveredButtonBounds = null;
+                IsNavigatingWithGamepad = HoveredButton != null;
+                return HoveredButton != null;
+            }
+            else if (TryGetSlotNeighbor(HoveredButtonBounds, Direction, HorizontalWrapping, VerticalWrapping, out Rectangle? Neighbor))
+            {
+                HoveredButtonBounds = Neighbor.Value;
+                IsNavigatingWithGamepad = true;
+                return true;
+            }
+            else
+                return false;
+        }
+
+        public bool TryNavigateEnter(NavigationDirection StartingSide)
+        {
+            if (IsLeftSidebarVisible && StartingSide != NavigationDirection.Left)
+            {
+                IsGamepadFocused = true;
+                IsNavigatingWithGamepad = true;
+                HoveredButtonBounds = LeftSidebarButtonBounds.First();
+                return true;
+            }
+            else if (IsRightSidebarVisible)
+            {
+                IsGamepadFocused = true;
+                IsNavigatingWithGamepad = true;
+                HoveredButtonBounds = RightSidebarButtonBounds.First();
+                return true;
+            }
+            else if (IsLeftSidebarVisible)
+            {
+                IsGamepadFocused = true;
+                IsNavigatingWithGamepad = true;
+                HoveredButtonBounds = LeftSidebarButtonBounds.First();
+                return true;
+            }
+            else
+            {
+                HoveredButtonBounds = null;
+                return false;
+            }
+        }
+
+        public bool IsNavigatingWithGamepad { get; private set; }
+
+        public void OnGamepadButtonsPressed(Buttons GamepadButtons)
+        {
+            //  Handle closing the menu
+            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.CloseBag))
+            {
+                if (IsShowingModalMenu && CustomizeIconBounds != null)
+                    CloseModalMenu();
+                else
+                    Bag.CloseContents();
+                return;
+            }
+
+            //  Handle modifier buttons
+            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.TransferMultipleModifier))
+            {
+                IsTransferMultipleModifierHeld = true;
+            }
+            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.TransferHalfModifier))
+            {
+                IsTransferHalfModifierHeld = true;
+            }
+
+            if (!IsGamepadFocused && !InventoryMenu.IsGamepadFocused && !Content.IsGamepadFocused)
+                InventoryMenu.IsGamepadFocused = true;
+
+            if (IsGamepadFocused && !RecentlyGainedFocus)
+            {
+                if (!GamepadControls.HandleNavigationButtons(this, GamepadButtons))
+                    this.IsGamepadFocused = false;
+
+                //  Handle action buttons
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.PrimaryAction))
+                {
+                    HandlePrimaryAction();
+                }
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.SecondaryAction))
+                {
+                    HandleSecondaryAction();
+                }
+            }
+
+            if (IsShowingModalMenu && CustomizeIconMenu != null)
+            {
+                //TODO
+            }
+
+            InventoryMenu.OnGamepadButtonsPressed(GamepadButtons);
+            Content.OnGamepadButtonsPressed(GamepadButtons);
+        }
+
+        public void OnGamepadButtonsReleased(Buttons GamepadButtons)
+        {
+            //  Handle modifier buttons
+            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.TransferMultipleModifier))
+            {
+                IsTransferMultipleModifierHeld = false;
+            }
+            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.TransferHalfModifier))
+            {
+                IsTransferHalfModifierHeld = false;
+            }
+
+            if (IsShowingModalMenu && CustomizeIconMenu != null)
+            {
+                //TODO
+            }
+
+            if (IsGamepadFocused && !RecentlyGainedFocus)
+            {
+
+            }
+
+            InventoryMenu.OnGamepadButtonsReleased(GamepadButtons);
+            Content.OnGamepadButtonsReleased(GamepadButtons);
+        }
+        #endregion Gamepad support
+
+        private void HandlePrimaryAction()
+        {
+            if ((IsLeftSidebarVisible || IsRightSidebarVisible) && HoveredButton.HasValue)
+            {
+                if (IsLeftSidebarVisible && HoveredButton.Value == SidebarButton.DepositAll)
+                {
+                    List<Object> ToDeposit = InventorySource.Where(x => x != null && x is Object Obj && Bag.IsValidBagObject(Obj)).Cast<Object>().ToList();
+                    Bag.MoveToBag(ToDeposit, ToDeposit.Select(x => x.Stack).ToList(), out int TotalMovedQty, true, InventorySource);
+                }
+                else if (IsLeftSidebarVisible && HoveredButton.Value == SidebarButton.WithdrawAll)
+                {
+                    List<Object> ToWithdraw = Bag.Contents.Where(x => x != null).ToList();
+                    Bag.MoveFromBag(ToWithdraw, ToWithdraw.Select(x => x.Stack).ToList(), out int TotalMovedQty, true, InventorySource, ActualInventoryCapacity);
+                }
+                else if (IsLeftSidebarVisible && HoveredButton.Value == SidebarButton.Autoloot)
+                {
+                    if (Bag is BoundedBag BB)
+                        BB.Autofill = !BB.Autofill;
+                    else if (Bag is Rucksack RS)
+                        RS.CycleAutofill();
+                }
+                else if (IsRightSidebarVisible && HoveredButton.Value == SidebarButton.HelpInfo)
+                {
+
+                }
+                else if (IsRightSidebarVisible && HoveredButton.Value == SidebarButton.CustomizeIcon && Bag.CanCustomizeIcon())
+                {
+                    ItemBag Copy;
+                    if (Bag is BoundedBag BB)
+                    {
+                        if (BB is BundleBag)
+                            Copy = new BundleBag(Bag.Size, false);
+                        else
+                            Copy = new BoundedBag(BB.TypeInfo, Bag.Size, false);
+                    }
+                    else if (Bag is Rucksack RS)
+                    {
+                        Copy = new Rucksack(Bag.Size, false);
+                    }
+                    else if (Bag is OmniBag OB)
+                    {
+                        Copy = new OmniBag(Bag.Size);
+                    }
+                    else
+                        throw new NotImplementedException(string.Format("Unexpected Bag Type while creating CustomizeIconMenu: {0}", Bag.GetType().ToString()));
+
+                    CustomizeIconMenu = new CustomizeIconMenu(this, this.Bag, Copy, 24);
+                }
+            }
+        }
+
+        private void HandleSecondaryAction()
+        {
+
+        }
+        #endregion Input Handling
 
         public void Update(UpdateTickedEventArgs e)
         {
+            RecentlyGainedFocus = false;
+
             if (IsShowingModalMenu && CustomizeIconMenu != null)
             {
                 CustomizeIconMenu.Update(e);
             }
             else
             {
+                if (e.IsMultipleOf(GamepadControls.NavigationRepeatFrequency) && IsGamepadFocused && IsNavigatingWithGamepad)
+                {
+                    if (!GamepadControls.HandleNavigationButtons(this, null))
+                        this.IsGamepadFocused = false;
+                }
+
                 InventoryMenu.Update(e);
                 Content.Update(e);
             }
@@ -575,6 +916,7 @@ namespace ItemBags.Menus
 
         internal void OnClose()
         {
+            InventoryMenu.OnClose();
             Content.OnClose();
         }
     }

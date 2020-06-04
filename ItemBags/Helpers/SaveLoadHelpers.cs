@@ -27,84 +27,84 @@ namespace ItemBags.Helpers
         /// The custom items are saved to a separate file using <see cref="StardewModdingAPI.IDataHelper.WriteSaveData{TModel}(string, TModel)"/></summary>
         internal static void OnSaving()
         {
-            //  This logic is no longer needed now that I'm using PyTK mod to handle saving/loading custom items
-#if NEVER
-            ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnSaving started.", LogLevel.Info);
-
-            int CurrentBagId = 0;
-            List<BagInstance> BagInstances = new List<BagInstance>();
-
-            //  Pre-emptive error-handling - try to find any encoded bags that, for whatever unknown reason, weren't able to be converted back into ItemBags during a Load.
-            //  If any were found, then we need to retain the SaveData's BagInstance associated with that item (and not re-use it's Bag InstanceId when assigning to the bags that didn't have any issues during loading)
-            //  so that the mod can still try again to load that bag during the next load.
-            //  If someone mysteriously loses a bag, I can at least do some manual save editing to restore it, as the data will still be there.
-            List<Item> CorruptedBags = new List<Item>();
-            ReplaceAllInstances(x => IsEncodedCustomItem(x), x =>
+            if (Constants.TargetPlatform == GamePlatform.Android)
             {
-                CorruptedBags.Add(x);
-                return x;
-            });
-            HashSet<int> CorruptedBagIds = new HashSet<int>(CorruptedBags.Select(x => x.ParentSheetIndex - EncodedItemStartIndex));
+                ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnSaving started.", LogLevel.Debug);
 
-            PlayerBags PreviousBagData = null;
-            if (CorruptedBagIds.Any())
-            {
-                PreviousBagData = PlayerBags.DeserializeFromCurrentSaveFile();
-                if (PreviousBagData != null && PreviousBagData.Bags != null)
+                int CurrentBagId = 0;
+                List<BagInstance> BagInstances = new List<BagInstance>();
+
+                //  Pre-emptive error-handling - try to find any encoded bags that, for whatever unknown reason, weren't able to be converted back into ItemBags during a Load.
+                //  If any were found, then we need to retain the SaveData's BagInstance associated with that item (and not re-use it's Bag InstanceId when assigning to the bags that didn't have any issues during loading)
+                //  so that the mod can still try again to load that bag during the next load.
+                //  If someone mysteriously loses a bag, I can at least do some manual save editing to restore it, as the data will still be there.
+                List<Item> CorruptedBags = new List<Item>();
+                ReplaceAllInstances(x => IsEncodedCustomItem(x), x =>
                 {
-                    Dictionary<int, BagInstance> IndexedInstances = new Dictionary<int, BagInstance>();
-                    foreach (BagInstance Instance in PreviousBagData.Bags)
-                    {
-                        if (!IndexedInstances.ContainsKey(Instance.InstanceId))
-                        {
-                            IndexedInstances.Add(Instance.InstanceId, Instance);
-                        }
-                    }
+                    CorruptedBags.Add(x);
+                    return x;
+                });
+                HashSet<int> CorruptedBagIds = new HashSet<int>(CorruptedBags.Select(x => x.ParentSheetIndex - EncodedItemStartIndex));
 
-                    foreach (int CorruptedId in CorruptedBagIds)
+                PlayerBags PreviousBagData = null;
+                if (CorruptedBagIds.Any())
+                {
+                    PreviousBagData = PlayerBags.DeserializeFromCurrentSaveFile();
+                    if (PreviousBagData != null && PreviousBagData.Bags != null)
                     {
-                        if (IndexedInstances.TryGetValue(CorruptedId, out BagInstance CorruptedInstance))
+                        Dictionary<int, BagInstance> IndexedInstances = new Dictionary<int, BagInstance>();
+                        foreach (BagInstance Instance in PreviousBagData.Bags)
                         {
-                            BagInstances.Add(CorruptedInstance);
+                            if (!IndexedInstances.ContainsKey(Instance.InstanceId))
+                            {
+                                IndexedInstances.Add(Instance.InstanceId, Instance);
+                            }
+                        }
+
+                        foreach (int CorruptedId in CorruptedBagIds)
+                        {
+                            if (IndexedInstances.TryGetValue(CorruptedId, out BagInstance CorruptedInstance))
+                            {
+                                BagInstances.Add(CorruptedInstance);
+                            }
                         }
                     }
                 }
-            }
 
-            //  Encode all bags as a regular non-modded item
-            ReplaceAllInstances(IsCustomItem, CustomItem =>
-            {
-                if (CustomItem is ItemBag IB)
+                //  Encode all bags as a regular non-modded item
+                ReplaceAllInstances(IsCustomItem, CustomItem =>
                 {
-                    try
+                    if (CustomItem is ItemBag IB)
                     {
-                        while (CorruptedBagIds.Contains(CurrentBagId))
+                        try
                         {
-                            CurrentBagId++;
-                        }
+                            while (CorruptedBagIds.Contains(CurrentBagId))
+                            {
+                                CurrentBagId++;
+                            }
 
-                        BagInstance Instance = new BagInstance(CurrentBagId, IB);
-                        BagInstances.Add(Instance);
+                            BagInstance Instance = new BagInstance(CurrentBagId, IB);
+                            BagInstances.Add(Instance);
 
                         //  Replace the Bag with an arbitrary low-value/non-stackable item (in this case, a Rusty Sword) and store the bag instance's Id in the replacement item's ParentSheetIndex
                         MeleeWeapon Replacement = new MeleeWeapon(0);
-                        Replacement.ParentSheetIndex = EncodedItemStartIndex + CurrentBagId;
-                        return Replacement;
+                            Replacement.ParentSheetIndex = EncodedItemStartIndex + CurrentBagId;
+                            return Replacement;
+                        }
+                        finally { CurrentBagId++; }
                     }
-                    finally { CurrentBagId++; }
-                }
-                else
-                {
-                    return CustomItem;
-                }
-            });
+                    else
+                    {
+                        return CustomItem;
+                    }
+                });
 
-            PlayerBags OwnedBags = new PlayerBags();
-            OwnedBags.Bags = BagInstances.ToArray();
-            OwnedBags.SerializeToCurrentSaveFile();
+                PlayerBags OwnedBags = new PlayerBags();
+                OwnedBags.Bags = BagInstances.ToArray();
+                OwnedBags.SerializeToCurrentSaveFile();
 
-            ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnSaving finished.", LogLevel.Info);
-#endif
+                ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnSaving finished.", LogLevel.Debug);
+            }
         }
 
         internal static void OnSaved() { LoadCustomItems(); }
@@ -116,27 +116,16 @@ namespace ItemBags.Helpers
             //    ItemBagsMod.ModInstance.Helper.Multiplayer.SendMessage("RequestBagResync", "RequestBagResync", new string[] { ItemBagsMod.ModUniqueId });
 
             try { LoadCustomItems(); }
-            catch (Exception ex) { ItemBagsMod.ModInstance.Monitor.Log("ItemBags error during legacy LoadCustomItems: " + ex.Message, LogLevel.Info); }
+            catch (Exception ex) { ItemBagsMod.ModInstance.Monitor.Log("ItemBags error during LoadCustomItems: " + ex.Message, LogLevel.Error); }
 
             CommunityCenterBundles.Instance = null;
             CommunityCenterBundles.Instance = new CommunityCenterBundles();
 
-#if NEVER //DEBUG
-            //  Add 1 of every OmniBag to inventory for testing purposes
-            foreach (ContainerSize Size in Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>())
-            {
-                if (!Game1.player.isInventoryFull() && !Game1.player.Items.Any(x => x is OmniBag OB && OB.Size == Size))
-                {
-                    Game1.player.addItemToInventory(new OmniBag(Size));
-                }
-            }
-#endif
-
             //ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnLoaded finished.", LogLevel.Info);
         }
 
-        /// <summary>This function is no longer needed now that PyTK is handling saving/loading of custom items. This function is only still here for legacy support of save files from old versions of ItemBags.<para/>
-        /// Restores custom items used by this mod that were modified by <see cref="OnSaving"/>. Intended to be used after the game is saved or a save file is loaded.</summary>
+        /// <summary>Restores custom items used by this mod that were modified by <see cref="OnSaving"/>. Intended to be used after the game is saved or a save file is loaded.<para/>
+        /// (On PC versions of this mod, the bags are saved using PyTK, but PyTK doesn't work with Android)</summary>
         private static void LoadCustomItems()
         {
             PlayerBags OwnedBags = PlayerBags.DeserializeFromCurrentSaveFile();

@@ -14,10 +14,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Object = StardewValley.Object;
 using ItemBags.Persistence;
+using Microsoft.Xna.Framework.Input;
 
 namespace ItemBags.Menus
 {
-    public class OmniBagMenu : IBagMenuContent
+    public class OmniBagMenu : IBagMenuContent, IGamepadControllable
     {
         #region Lookup Anything Compatibility
         /// <summary>
@@ -149,6 +150,7 @@ namespace ItemBags.Menus
         #region Input Handling
         private Rectangle? HoveredSlot = null;
 
+        #region Mouse Handling
         public void OnMouseMoved(CursorMovedEventArgs e)
         {
             if (Bounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
@@ -163,6 +165,7 @@ namespace ItemBags.Menus
                         if (Rect.Contains(e.NewPosition.ScreenPixels.AsPoint()))
                         {
                             this.HoveredSlot = Rect;
+                            this.IsNavigatingWithGamepad = false;
                             break;
                         }
                     }
@@ -174,23 +177,14 @@ namespace ItemBags.Menus
 
         public void OnMouseButtonPressed(ButtonPressedEventArgs e)
         {
-            if (e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
+            if (e.Button == SButton.MouseLeft)
             {
-                ItemBag PressedBag = GetHoveredBag();
-                if (PressedBag != null)
-                {
-                    if (e.Button == SButton.MouseLeft)
-                        OmniBag.MoveFromBag(PressedBag, true, IBM.InventorySource, IBM.ActualInventoryCapacity, true);
-                    else if (e.Button == SButton.MouseRight)
-                    {
-                        //IClickableMenu PreviousMenu = this.Bag.PreviousMenu;
-                        //this.Bag.CloseContents(false, false);
-                        //PressedBag.OpenContents(InventorySource, ActualInventoryCapacity, PreviousMenu);
-                        PressedBag.OpenContents(IBM.InventorySource, IBM.ActualInventoryCapacity, this.Bag.ContentsMenu);
+                HandlePrimaryAction(GetHoveredBag());
+            }
 
-                        this.HoveredSlot = null;
-                    }
-                }
+            if (e.Button == SButton.MouseRight)
+            {
+                HandleSecondaryAction(GetHoveredBag());
             }
         }
 
@@ -198,11 +192,150 @@ namespace ItemBags.Menus
         {
 
         }
+        #endregion Mouse Handling
+
+        #region Gamepad support
+        public bool RecentlyGainedFocus { get; private set; }
+
+        private bool _IsGamepadFocused;
+        public bool IsGamepadFocused
+        {
+            get { return _IsGamepadFocused; }
+            set
+            {
+                if (IsGamepadFocused != value)
+                {
+                    _IsGamepadFocused = value;
+                    if (IsGamepadFocused)
+                        GainedGamepadFocus();
+                    else
+                        LostGamepadFocus();
+                }
+            }
+        }
+
+        public void GainedGamepadFocus()
+        {
+            RecentlyGainedFocus = true;
+            HoveredSlot = SlotBounds.First();
+            IsNavigatingWithGamepad = true;
+        }
+
+        public void LostGamepadFocus()
+        {
+            HoveredSlot = null;
+        }
+
+        public Dictionary<NavigationDirection, IGamepadControllable> MenuNeighbors { get; private set; } = new Dictionary<NavigationDirection, IGamepadControllable>();
+        public bool TryGetMenuNeighbor(NavigationDirection Direction, out IGamepadControllable Neighbor)
+        {
+            return MenuNeighbors.TryGetValue(Direction, out Neighbor);
+        }
+
+        public bool TryGetSlotNeighbor(Rectangle? ItemSlot, NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping, out Rectangle? Neighbor)
+        {
+            return GamepadControls.TryGetSlotNeighbor(SlotBounds, ItemSlot, ColumnCount, Direction, HorizontalWrapping, VerticalWrapping, out Neighbor);
+        }
+
+        public bool TryNavigate(NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping)
+        {
+            if (IsGamepadFocused && HoveredSlot == null)
+            {
+                HoveredSlot = SlotBounds.First();
+                IsNavigatingWithGamepad = HoveredSlot != null;
+                return HoveredSlot != null;
+            }
+            else if (TryGetSlotNeighbor(HoveredSlot, Direction, HorizontalWrapping, VerticalWrapping, out Rectangle? Neighbor))
+            {
+                HoveredSlot = Neighbor.Value;
+                IsNavigatingWithGamepad = true;
+                return true;
+            }
+            else
+                return false;
+        }
+
+        public bool TryNavigateEnter(NavigationDirection StartingSide)
+        {
+            IsGamepadFocused = true;
+            IsNavigatingWithGamepad = true;
+
+            if (StartingSide == NavigationDirection.Right)
+            {
+                while (TryNavigate(NavigationDirection.Right, NavigationWrappingMode.NoWrap, NavigationWrappingMode.NoWrap)) { }
+            }
+            if (StartingSide == NavigationDirection.Down)
+            {
+                while (TryNavigate(NavigationDirection.Down, NavigationWrappingMode.NoWrap, NavigationWrappingMode.NoWrap)) { }
+            }
+
+            return true;
+        }
+
+        public bool IsNavigatingWithGamepad { get; private set; }
+
+        public void OnGamepadButtonsPressed(Buttons GamepadButtons)
+        {
+            if (IsGamepadFocused && !RecentlyGainedFocus)
+            {
+                if (!GamepadControls.HandleNavigationButtons(this, GamepadButtons))
+                    this.IsGamepadFocused = false;
+
+                //  Handle action buttons
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.PrimaryAction))
+                {
+                    HandlePrimaryAction(GetHoveredBag());
+                }
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.SecondaryAction))
+                {
+                    HandleSecondaryAction(GetHoveredBag());
+                }
+            }
+        }
+
+        public void OnGamepadButtonsReleased(Buttons GamepadButtons)
+        {
+            if (IsGamepadFocused && !RecentlyGainedFocus)
+            {
+                //  Handle action buttons
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.SecondaryAction))
+                {
+
+                }
+            }
+        }
+        #endregion Gamepad support
+
+        private void HandlePrimaryAction(Item TargetItem)
+        {
+            if (TargetItem is ItemBag TargetBag)
+                OmniBag.MoveFromBag(TargetBag, true, IBM.InventorySource, IBM.ActualInventoryCapacity, true);
+        }
+
+        private void HandleSecondaryAction(Item TargetItem)
+        {
+            if (TargetItem is ItemBag TargetBag)
+            {
+                //IClickableMenu PreviousMenu = this.Bag.PreviousMenu;
+                //this.Bag.CloseContents(false, false);
+                //TargetBag.OpenContents(InventorySource, ActualInventoryCapacity, PreviousMenu);
+                TargetBag.OpenContents(IBM.InventorySource, IBM.ActualInventoryCapacity, this.Bag.ContentsMenu);
+
+                this.HoveredSlot = null;
+            }
+        }
+
         #endregion Input Handling
 
         public void Update(UpdateTickedEventArgs e)
         {
+            RecentlyGainedFocus = false;
 
+            if (e.IsMultipleOf(GamepadControls.NavigationRepeatFrequency) && IsGamepadFocused && IsNavigatingWithGamepad)
+            {
+                if (!GamepadControls.HandleNavigationButtons(this, null))
+                    this.IsGamepadFocused = false;
+            }
         }
 
         public void OnClose()
@@ -315,8 +448,11 @@ namespace ItemBags.Menus
 
                 if (HoveredBag != null)
                 {
-                    //Rectangle Location = HoveredSlot.Value;
-                    Rectangle Location = new Rectangle(Game1.getMouseX() - 8, Game1.getMouseY() + 36, 8 + 36, 1);
+                    Rectangle Location;
+                    if (IsNavigatingWithGamepad)
+                        Location = HoveredSlot.Value; //new Rectangle(HoveredSlot.Value.Right, HoveredSlot.Value.Bottom, 1, 1);
+                    else
+                        Location = new Rectangle(Game1.getMouseX() - 8, Game1.getMouseY() + 36, 8 + 36, 1);
 
                     //if (HoveredBag is Rucksack RS)
                     //{

@@ -20,7 +20,6 @@ using System.Xml.Serialization;
 using ItemBags.Persistence;
 using System.Runtime.Serialization;
 using Netcode;
-using PyTK.CustomElementHandler;
 
 namespace ItemBags.Bags
 {
@@ -731,30 +730,28 @@ namespace ItemBags.Bags
 
         public enum InputTransferAction
         {
-            LeftButtonPressed,
-            RightButtonPressed,
-            RightButtonHeld
+            PrimaryActionButtonPressed,
+            SecondaryActionButtonPressed,
+            SecondaryActionButtonHeld
         }
 
         /// <summary>Determines how many of the given Objects Stack should be transferred either to or from an ItemBag when the given inputs are used</summary>
-        /// <param name="IsShiftHeld">True if either of the LeftShift or RightShift keys are held.</param>
-        /// <param name="IsControlHeld">True if either of the LeftCtrl or RightCtrl keys are held.</param>
-        public static int GetQuantityToTransfer(InputTransferAction Input, Object PressedObject, bool IsShiftHeld, bool IsControlHeld)
+        public static int GetQuantityToTransfer(InputTransferAction Input, Object PressedObject, bool TransferMultipleModifierPressed, bool TransferHalfModifierPressed)
         {
             if (PressedObject == null)
             {
                 return 0;
             }
-            else if (Input == InputTransferAction.LeftButtonPressed)
+            else if (Input == InputTransferAction.PrimaryActionButtonPressed)
             {
-                if (IsShiftHeld)
+                if (TransferMultipleModifierPressed)
                 {
                     if (PressedObject.Stack > 999)
                         return Math.Min(25, PressedObject.Stack);
                     else
                         return Math.Min(5, PressedObject.Stack);
                 }
-                else if (IsControlHeld)
+                else if (TransferHalfModifierPressed)
                 {
                     return Math.Max(1, PressedObject.Stack / 2);
                 }
@@ -763,16 +760,16 @@ namespace ItemBags.Bags
                     return PressedObject.Stack;
                 }
             }
-            else if (Input == InputTransferAction.RightButtonPressed || Input == InputTransferAction.RightButtonHeld)
+            else if (Input == InputTransferAction.SecondaryActionButtonPressed || Input == InputTransferAction.SecondaryActionButtonHeld)
             {
-                if (IsShiftHeld)
+                if (TransferMultipleModifierPressed)
                 {
                     if (PressedObject.Stack > 999)
                         return Math.Min(25, PressedObject.Stack);
                     else
                         return Math.Min(5, PressedObject.Stack);
                 }
-                else if (IsControlHeld)
+                else if (TransferHalfModifierPressed)
                 {
                     return Math.Max(1, PressedObject.Stack / 2);
                 }
@@ -796,9 +793,9 @@ namespace ItemBags.Bags
             bool IsControlHeld = e.IsDown(SButton.LeftControl) || e.IsDown(SButton.RightControl);
 
             if (e.Button == SButton.MouseLeft)
-                return GetQuantityToTransfer(InputTransferAction.LeftButtonPressed, PressedObject, IsShiftHeld, IsControlHeld);
+                return GetQuantityToTransfer(InputTransferAction.PrimaryActionButtonPressed, PressedObject, IsShiftHeld, IsControlHeld);
             else if (e.Button == SButton.MouseRight)
-                return GetQuantityToTransfer(InputTransferAction.RightButtonPressed, PressedObject, IsShiftHeld, IsControlHeld);
+                return GetQuantityToTransfer(InputTransferAction.SecondaryActionButtonPressed, PressedObject, IsShiftHeld, IsControlHeld);
             else
                 return 0;
         }

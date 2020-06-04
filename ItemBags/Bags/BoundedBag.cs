@@ -78,25 +78,28 @@ namespace ItemBags.Bags
 
         public void ToggleItemAutofill(Object Item)
         {
-            if (Enum.IsDefined(typeof(ObjectQuality), Item.Quality))
+            if (Item != null)
             {
-                ObjectQuality ItemQuality = (ObjectQuality)Item.Quality;
-                if (ExcludedAutofillItems.TryGetValue(Item.DisplayName, out HashSet<ObjectQuality> ExcludedQualities))
+                if (Enum.IsDefined(typeof(ObjectQuality), Item.Quality))
                 {
-                    if (ExcludedQualities.Contains(ItemQuality))
+                    ObjectQuality ItemQuality = (ObjectQuality)Item.Quality;
+                    if (ExcludedAutofillItems.TryGetValue(Item.DisplayName, out HashSet<ObjectQuality> ExcludedQualities))
                     {
-                        ExcludedQualities.Remove(ItemQuality);
-                        if (!ExcludedQualities.Any())
-                            ExcludedAutofillItems.Remove(Item.DisplayName);
+                        if (ExcludedQualities.Contains(ItemQuality))
+                        {
+                            ExcludedQualities.Remove(ItemQuality);
+                            if (!ExcludedQualities.Any())
+                                ExcludedAutofillItems.Remove(Item.DisplayName);
+                        }
+                        else
+                            ExcludedQualities.Add(ItemQuality);
                     }
                     else
+                    {
+                        ExcludedQualities = new HashSet<ObjectQuality>();
                         ExcludedQualities.Add(ItemQuality);
-                }
-                else
-                {
-                    ExcludedQualities = new HashSet<ObjectQuality>();
-                    ExcludedQualities.Add(ItemQuality);
-                    ExcludedAutofillItems.Add(Item.DisplayName, ExcludedQualities);
+                        ExcludedAutofillItems.Add(Item.DisplayName, ExcludedQualities);
+                    }
                 }
             }
         }
