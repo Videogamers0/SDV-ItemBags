@@ -296,6 +296,12 @@ namespace ItemBags.Menus
                 {
                     OB.MoveToBag(IB, true, Source, true);
                 }
+                //  I'm not aware of a way to right-click items on Android, so simulate a right-click if tapping a bag,
+                //  so that the clicked bag will be closed (if currently-opened), or opened (if not currently-opened)
+                else if (Constants.TargetPlatform == GamePlatform.Android && TargetItem is ItemBag TargetBag)
+                {
+                    HandleSecondaryAction(TargetItem);
+                }
                 //  Transfer the object into the bag
                 else if (TargetItem is Object PressedObject && Bag.IsValidBagObject(PressedObject))
                 {

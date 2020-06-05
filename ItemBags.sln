@@ -9,12 +9,15 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+		Release Android|Any CPU = Release Android|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{B788492E-B903-4FFC-9B28-4783892A17C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B788492E-B903-4FFC-9B28-4783892A17C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B788492E-B903-4FFC-9B28-4783892A17C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B788492E-B903-4FFC-9B28-4783892A17C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B788492E-B903-4FFC-9B28-4783892A17C5}.Release Android|Any CPU.ActiveCfg = Release Android|Any CPU
+		{B788492E-B903-4FFC-9B28-4783892A17C5}.Release Android|Any CPU.Build.0 = Release Android|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

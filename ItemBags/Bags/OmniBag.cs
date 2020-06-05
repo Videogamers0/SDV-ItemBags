@@ -3,7 +3,6 @@ using ItemBags.Menus;
 using ItemBags.Persistence;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using PyTK.CustomElementHandler;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Objects;
@@ -14,26 +13,33 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Object = StardewValley.Object;
+#if !ANDROID
+using PyTK.CustomElementHandler;
+#endif
 
 namespace ItemBags.Bags
 {
     /// <summary>A bag that can store other bags inside of it.</summary>
     [XmlRoot(ElementName = "OmniBag", Namespace = "")]
+#if ANDROID
+    public class OmniBag : ItemBag
+#else
     public class OmniBag : ItemBag, ISaveElement
+#endif
     {
         public const string OmniBagTypeId = "6eb4c15d-3ad3-4b47-aab5-eb2f5daa8b3f";
 
         public List<ItemBag> NestedBags { get; }
         public override bool IsEmpty() { return base.IsEmpty() && (NestedBags == null || NestedBags.All(x => x.IsEmpty())); }
 
-        #region Lookup Anything Compatibility
+#region Lookup Anything Compatibility
         /// <summary>
         /// This property is only intended as read-only data, for use with the Lookup Anything mod (See also: https://github.com/Pathoschild/StardewMods/tree/develop/LookupAnything#extensibility-for-modders) 
         /// <para/>If you intend to modify the contents of the chest, use <see cref="MoveToBag(Object, int, out int, bool, IList{Item}, bool, bool)"/> or <see cref="MoveFromBag(Object, int, out int, bool, IList{Item}, int, bool, bool)"/>
         /// </summary>
         [XmlIgnore]
         public override Chest heldObject { get { return new Chest(0, NestedBags.SelectMany(x => x.Contents).Where(x => x != null).Cast<Item>().ToList(), Vector2.Zero); } }
-        #endregion Lookup Anything Compatibility
+#endregion Lookup Anything Compatibility
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         public OmniBag() : base(ItemBagsMod.Translate("OmniBagName"), ItemBagsMod.Translate("OmniBagDescription"), ContainerSize.Small, null, null, new Vector2(16, 16), 0.5f, 1f)
@@ -84,7 +90,7 @@ namespace ItemBags.Bags
             }
         }
 
-        #region PyTK CustomElementHandler
+#region PyTK CustomElementHandler
         public object getReplacement()
         {
             return new Object(171, 1);
@@ -140,7 +146,7 @@ namespace ItemBags.Bags
                 }
             }
         }
-        #endregion PyTK CustomElementHandler
+#endregion PyTK CustomElementHandler
 
         internal override bool OnJsonAssetsItemIdsFixed(IJsonAssetsAPI API, bool AllowResyncing)
         {

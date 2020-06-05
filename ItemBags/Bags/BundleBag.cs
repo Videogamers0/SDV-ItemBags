@@ -4,7 +4,6 @@ using ItemBags.Menus;
 using ItemBags.Persistence;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using PyTK.CustomElementHandler;
 using StardewModdingAPI;
 using StardewValley;
 using System;
@@ -15,12 +14,19 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Object = StardewValley.Object;
+#if !ANDROID
+using PyTK.CustomElementHandler;
+#endif
 
 namespace ItemBags.Bags
 {
     /// <summary>A bag used for storing items required by incomplete Community Center Bundles</summary>
     [XmlRoot(ElementName = "BundleBag", Namespace = "")]
+#if ANDROID
+    public class BundleBag : BoundedBag
+#else
     public class BundleBag : BoundedBag, ISaveElement
+#endif
     {
         public const string BundleBagTypeId = "c3f69b2c-6b21-477c-ad43-ee3b996a96bd";
 
@@ -75,7 +81,7 @@ namespace ItemBags.Bags
             }
         }
 
-        #region PyTK CustomElementHandler
+#region PyTK CustomElementHandler
         public override object getReplacement()
         {
             return new Object(172, 1);
@@ -108,7 +114,7 @@ namespace ItemBags.Bags
                 }
             }
         }
-        #endregion PyTK CustomElementHandler
+#endregion PyTK CustomElementHandler
 
         internal override bool OnJsonAssetsItemIdsFixed(IJsonAssetsAPI API, bool AllowResyncing)
         {

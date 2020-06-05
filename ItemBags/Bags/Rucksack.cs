@@ -11,12 +11,14 @@ using ItemBags.Persistence;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Netcode;
-using PyTK.CustomElementHandler;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Menus;
 using StardewValley.Objects;
 using Object = StardewValley.Object;
+#if !ANDROID
+using PyTK.CustomElementHandler;
+#endif
 
 namespace ItemBags.Bags
 {
@@ -77,7 +79,11 @@ namespace ItemBags.Bags
 
     /// <summary>A bag that can store most stackable objects.</summary>
     [XmlRoot(ElementName = "Rucksack", Namespace = "")]
+#if ANDROID
+    public class Rucksack : ItemBag
+#else
     public class Rucksack : ItemBag, ISaveElement
+#endif
     {
         public const string RucksackTypeId = "a56bbc00-9d89-4216-8e06-5ea0cfa95525";
 
@@ -269,7 +275,7 @@ namespace ItemBags.Bags
             }
         }
 
-        #region PyTK CustomElementHandler
+#region PyTK CustomElementHandler
         public object getReplacement()
         {
             return new Object(169, 1);
@@ -321,7 +327,7 @@ namespace ItemBags.Bags
                 }
             }
         }
-        #endregion PyTK CustomElementHandler
+#endregion PyTK CustomElementHandler
 
         /// <summary>The 13x16 portion of <see cref="CursorsTexture"/> that contains the rucksack icon</summary>
         private static Texture2D OriginalTexture { get; set; }

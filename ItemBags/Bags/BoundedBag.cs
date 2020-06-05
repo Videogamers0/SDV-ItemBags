@@ -19,7 +19,9 @@ using ItemBags.Menus;
 using ItemBags.Persistence;
 using ItemBags.Helpers;
 using System.Runtime.Serialization;
+#if !ANDROID
 using PyTK.CustomElementHandler;
+#endif
 
 namespace ItemBags.Bags
 {
@@ -27,7 +29,11 @@ namespace ItemBags.Bags
     [XmlRoot(ElementName = "BoundedBag", Namespace = "")]
     [KnownType(typeof(BundleBag))]
     [XmlInclude(typeof(BundleBag))]
+#if ANDROID
+    public class BoundedBag : ItemBag
+#else
     public class BoundedBag : ItemBag, ISaveElement
+#endif
     {
         public class AllowedObject
         {
@@ -217,7 +223,7 @@ namespace ItemBags.Bags
             }
         }
 
-        #region PyTK CustomElementHandler
+#region PyTK CustomElementHandler
         public virtual object getReplacement()
         {
             return new Object(168, 1);
@@ -297,7 +303,7 @@ namespace ItemBags.Bags
                 }
             }
         }
-        #endregion PyTK CustomElementHandler
+#endregion PyTK CustomElementHandler
 
         internal override bool OnJsonAssetsItemIdsFixed(IJsonAssetsAPI API, bool AllowResyncing)
         {

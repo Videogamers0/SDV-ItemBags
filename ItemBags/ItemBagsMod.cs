@@ -39,12 +39,11 @@ namespace ItemBags
         //  Minor bugfix for the way HUDMessages of autofilled items are grouped together
         //  Fixed issue with the "generate_modded_bag" console command
         //  Added Gamepad support to most of the menus
+        //  Updated Android version
 
         //Possible TODO 
         //  "Equipment Bag" : subclass of BoundedBag - has a List<Weapon>, List<Hat> etc. List<AllowedHat> AllowedHats List<AllowedWeapon> AllowedWeapons etc
         //      would need to override IsValidBagItem, and the MoveToBag/MoveFromBag needs a new implementation to handle non-Objects. Allow the items to stack even if item.maximumStackSize == 1
-        //  Update Android version: Remove the ISyncableElement interface from BoundedBag, BundleBag, OmniBag, Rucksack. Also need to modify the manifest.json - remove the PyTK dependency,
-        //      and change required SMAPI API version to 3.2.0.3. Would probably need a lot of testing, I doubt all the new changes to this mod would be compatible with Android, especially modded bags.
         //  Gamepad support:
         //      BundleBagMenu - Allow navigating to empty slots? Store a HoveredSlot rectangle and use that when calling TryNavigate
         //      Make CustomizeIconMenu implement IGamepadControllable
