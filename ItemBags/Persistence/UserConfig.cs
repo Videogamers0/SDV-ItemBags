@@ -71,6 +71,9 @@ namespace ItemBags.Persistence
         [XmlElement("AllowAutofillInsideChest")]
         public bool AllowAutofillInsideChest { get; set; }
 
+        [XmlElement("GamepadSettings")]
+        public GamepadControls GamepadSettings { get; set; }
+
         public UserConfig()
         {
             InitializeDefaults();
@@ -125,6 +128,8 @@ namespace ItemBags.Persistence
             this.MonsterLootSettings = new MonsterLootSettings();
 
             this.AllowAutofillInsideChest = true;
+
+            this.GamepadSettings = new GamepadControls();
         }
 
         public bool AllowDowngradeBundleItemQuality(ContainerSize Size)

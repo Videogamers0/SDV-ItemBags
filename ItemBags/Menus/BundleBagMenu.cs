@@ -277,14 +277,30 @@ namespace ItemBags.Menus
             return GamepadControls.TryGetSlotNeighbor(AllSlots, ItemSlot, ColumnCount, Direction, HorizontalWrapping, VerticalWrapping, out Neighbor);
         }
 
+        /// <param name="RelativeToScreen">If false, the returned rectangle will use <see cref="TopLeftScreenPosition"/> as the Origin.</param>
+        private Rectangle? GetHoveredSlot(bool RelativeToScreen)
+        {
+            if (HoveredBundleItem != null)
+            {
+                Rectangle Result = ItemSlotPositions[HoveredBundleItem];
+                if (RelativeToScreen)
+                    Result = Result.GetOffseted(TopLeftScreenPosition);
+                return Result;
+            }
+            else if (HoveredBundleTask != null)
+            {
+                Rectangle Result = TaskHeaderPositions[HoveredBundleTask];
+                if (RelativeToScreen)
+                    Result = Result.GetOffseted(TopLeftScreenPosition);
+                return Result;
+            }
+            else
+                return null;
+        }
+
         public bool TryNavigate(NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping)
         {
-            Rectangle? HoveredSlot = null;
-            if (HoveredBundleItem != null)
-                HoveredSlot = ItemSlotPositions[HoveredBundleItem];
-            else if (HoveredBundleTask != null)
-                HoveredSlot = TaskHeaderPositions[HoveredBundleTask];
-
+            Rectangle? HoveredSlot = GetHoveredSlot(false);
             if (IsGamepadFocused && HoveredSlot == null)
             {
                 HoveredBundleItem = ItemSlotPositions.First().Key;
@@ -324,10 +340,36 @@ namespace ItemBags.Menus
                 return false;
         }
 
-        public bool TryNavigateEnter(NavigationDirection StartingSide)
+        public bool TryNavigateEnter(NavigationDirection StartingSide, Rectangle? ClosestTo)
         {
             IsGamepadFocused = true;
             IsNavigatingWithGamepad = true;
+
+            if (ClosestTo.HasValue)
+            {
+                List<Rectangle> AllSlots = TaskHeaderPositions.Select(x => x.Value).Union(ItemSlotPositions.Select(x => x.Value)).ToList();
+                Rectangle ToSelect = AllSlots.OrderBy(x => x.GetOffseted(TopLeftScreenPosition).SquaredDistanceBetweenCenters(ClosestTo.Value)).First();
+
+                foreach (KeyValuePair<BundleItem, Rectangle> KVP in ItemSlotPositions)
+                {
+                    if (KVP.Value == ToSelect)
+                    {
+                        HoveredBundleItem = KVP.Key;
+                        HoveredBundleTask = null;
+                        return true;
+                    }
+                }
+
+                foreach (KeyValuePair<BundleTask, Rectangle> KVP in TaskHeaderPositions)
+                {
+                    if (KVP.Value == ToSelect)
+                    {
+                        HoveredBundleTask = KVP.Key;
+                        HoveredBundleItem = null;
+                        return true;
+                    }
+                }
+            }
 
             if (StartingSide == NavigationDirection.Right)
             {
@@ -347,15 +389,15 @@ namespace ItemBags.Menus
         {
             if (IsGamepadFocused && !RecentlyGainedFocus)
             {
-                if (!GamepadControls.HandleNavigationButtons(this, GamepadButtons))
+                if (!GamepadControls.HandleNavigationButtons(this, GamepadButtons, GetHoveredSlot(true)))
                     this.IsGamepadFocused = false;
 
                 //  Handle action buttons
-                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.PrimaryAction))
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.PrimaryAction))
                 {
                     HandlePrimaryAction(GetHoveredItem());
                 }
-                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.SecondaryAction))
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.SecondaryAction))
                 {
                     HandleSecondaryAction(GetHoveredItem());
                     SecondaryActionButtonPressedItem = HoveredBundleItem;
@@ -369,7 +411,7 @@ namespace ItemBags.Menus
             if (IsGamepadFocused && !RecentlyGainedFocus)
             {
                 //  Handle action buttons
-                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.SecondaryAction))
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.SecondaryAction))
                 {
                     SecondaryActionButtonPressedItem = null;
                     SecondaryActionButtonPressedTime = null;
@@ -414,9 +456,9 @@ namespace ItemBags.Menus
                 }
             }
 
-            if (e.IsMultipleOf(GamepadControls.NavigationRepeatFrequency) && IsGamepadFocused && IsNavigatingWithGamepad)
+            if (e.IsMultipleOf(GamepadControls.Current.NavigationRepeatFrequency) && IsGamepadFocused && IsNavigatingWithGamepad)
             {
-                if (!GamepadControls.HandleNavigationButtons(this, null))
+                if (!GamepadControls.HandleNavigationButtons(this, null, GetHoveredSlot(true)))
                     this.IsGamepadFocused = false;
             }
         }

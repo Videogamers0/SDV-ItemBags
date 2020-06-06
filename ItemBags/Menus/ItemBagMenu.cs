@@ -493,25 +493,11 @@ namespace ItemBags.Menus
             }
             else if (IsLeftSidebarVisible && LeftSidebarButtonBounds.Contains(ItemSlot.Value))
             {
-                if (!GamepadControls.TryGetSlotNeighbor(LeftSidebarButtonBounds, ItemSlot, 1, Direction, HorizontalWrapping, VerticalWrapping, out Neighbor))
-                {
-                    if (InventoryMenu.TryNavigateEnter(NavigationDirection.Left))
-                        IsGamepadFocused = false;
-                    return false;
-                }
-                else
-                    return true;
+                return GamepadControls.TryGetSlotNeighbor(LeftSidebarButtonBounds, ItemSlot, 1, Direction, HorizontalWrapping, VerticalWrapping, out Neighbor);
             }
             else if (IsRightSidebarVisible && RightSidebarButtonBounds.Contains(ItemSlot.Value))
             {
-                if (!GamepadControls.TryGetSlotNeighbor(RightSidebarButtonBounds, ItemSlot, 1, Direction, HorizontalWrapping, VerticalWrapping, out Neighbor))
-                {
-                    if (InventoryMenu.TryNavigateEnter(NavigationDirection.Right))
-                        IsGamepadFocused = false;
-                    return false;
-                }
-                else
-                    return true;
+                return GamepadControls.TryGetSlotNeighbor(RightSidebarButtonBounds, ItemSlot, 1, Direction, HorizontalWrapping, VerticalWrapping, out Neighbor);
             }
             else
             {
@@ -543,27 +529,36 @@ namespace ItemBags.Menus
                 return false;
         }
 
-        public bool TryNavigateEnter(NavigationDirection StartingSide)
+        public bool TryNavigateEnter(NavigationDirection StartingSide, Rectangle? ClosestTo)
         {
             if (IsLeftSidebarVisible && StartingSide != NavigationDirection.Left)
             {
                 IsGamepadFocused = true;
                 IsNavigatingWithGamepad = true;
-                HoveredButtonBounds = LeftSidebarButtonBounds.First();
+                if (ClosestTo.HasValue)
+                    HoveredButtonBounds = LeftSidebarButtonBounds.OrderBy(x => x.SquaredDistanceBetweenCenters(ClosestTo.Value)).First();
+                else
+                    HoveredButtonBounds = LeftSidebarButtonBounds.First();
                 return true;
             }
             else if (IsRightSidebarVisible)
             {
                 IsGamepadFocused = true;
                 IsNavigatingWithGamepad = true;
-                HoveredButtonBounds = RightSidebarButtonBounds.First();
+                if (ClosestTo.HasValue)
+                    HoveredButtonBounds = RightSidebarButtonBounds.OrderBy(x => x.SquaredDistanceBetweenCenters(ClosestTo.Value)).First();
+                else
+                    HoveredButtonBounds = RightSidebarButtonBounds.First();
                 return true;
             }
             else if (IsLeftSidebarVisible)
             {
                 IsGamepadFocused = true;
                 IsNavigatingWithGamepad = true;
-                HoveredButtonBounds = LeftSidebarButtonBounds.First();
+                if (ClosestTo.HasValue)
+                    HoveredButtonBounds = LeftSidebarButtonBounds.OrderBy(x => x.SquaredDistanceBetweenCenters(ClosestTo.Value)).First();
+                else
+                    HoveredButtonBounds = LeftSidebarButtonBounds.First();
                 return true;
             }
             else
@@ -578,7 +573,7 @@ namespace ItemBags.Menus
         public void OnGamepadButtonsPressed(Buttons GamepadButtons)
         {
             //  Handle closing the menu
-            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.CloseBag))
+            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.CloseBag))
             {
                 if (IsShowingModalMenu && CustomizeIconBounds != null)
                     CloseModalMenu();
@@ -588,11 +583,11 @@ namespace ItemBags.Menus
             }
 
             //  Handle modifier buttons
-            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.TransferMultipleModifier))
+            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.TransferMultipleModifier))
             {
                 IsTransferMultipleModifierHeld = true;
             }
-            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.TransferHalfModifier))
+            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.TransferHalfModifier))
             {
                 IsTransferHalfModifierHeld = true;
             }
@@ -602,15 +597,15 @@ namespace ItemBags.Menus
 
             if (IsGamepadFocused && !RecentlyGainedFocus)
             {
-                if (!GamepadControls.HandleNavigationButtons(this, GamepadButtons))
+                if (!GamepadControls.HandleNavigationButtons(this, GamepadButtons, HoveredButtonBounds))
                     this.IsGamepadFocused = false;
 
                 //  Handle action buttons
-                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.PrimaryAction))
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.PrimaryAction))
                 {
                     HandlePrimaryAction();
                 }
-                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.SecondaryAction))
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.SecondaryAction))
                 {
                     HandleSecondaryAction();
                 }
@@ -628,11 +623,11 @@ namespace ItemBags.Menus
         public void OnGamepadButtonsReleased(Buttons GamepadButtons)
         {
             //  Handle modifier buttons
-            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.TransferMultipleModifier))
+            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.TransferMultipleModifier))
             {
                 IsTransferMultipleModifierHeld = false;
             }
-            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.TransferHalfModifier))
+            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.TransferHalfModifier))
             {
                 IsTransferHalfModifierHeld = false;
             }
@@ -719,9 +714,9 @@ namespace ItemBags.Menus
             }
             else
             {
-                if (e.IsMultipleOf(GamepadControls.NavigationRepeatFrequency) && IsGamepadFocused && IsNavigatingWithGamepad)
+                if (e.IsMultipleOf(GamepadControls.Current.NavigationRepeatFrequency) && IsGamepadFocused && IsNavigatingWithGamepad)
                 {
-                    if (!GamepadControls.HandleNavigationButtons(this, null))
+                    if (!GamepadControls.HandleNavigationButtons(this, null, HoveredButtonBounds))
                         this.IsGamepadFocused = false;
                 }
 

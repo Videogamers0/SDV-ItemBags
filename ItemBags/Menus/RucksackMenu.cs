@@ -390,18 +390,25 @@ namespace ItemBags.Menus
                 return false;
         }
 
-        public bool TryNavigateEnter(NavigationDirection StartingSide)
+        public bool TryNavigateEnter(NavigationDirection StartingSide, Rectangle? ClosestTo)
         {
             IsGamepadFocused = true;
             IsNavigatingWithGamepad = true;
 
-            if (StartingSide == NavigationDirection.Right)
+            if (ClosestTo.HasValue)
             {
-                while (TryNavigate(NavigationDirection.Right, NavigationWrappingMode.NoWrap, NavigationWrappingMode.NoWrap)) { }
+                HoveredSlot = SlotBounds.OrderBy(x => x.SquaredDistanceBetweenCenters(ClosestTo.Value)).First();
             }
-            if (StartingSide == NavigationDirection.Down)
+            else
             {
-                while (TryNavigate(NavigationDirection.Down, NavigationWrappingMode.NoWrap, NavigationWrappingMode.NoWrap)) { }
+                if (StartingSide == NavigationDirection.Right)
+                {
+                    while (TryNavigate(NavigationDirection.Right, NavigationWrappingMode.NoWrap, NavigationWrappingMode.NoWrap)) { }
+                }
+                if (StartingSide == NavigationDirection.Down)
+                {
+                    while (TryNavigate(NavigationDirection.Down, NavigationWrappingMode.NoWrap, NavigationWrappingMode.NoWrap)) { }
+                }
             }
 
             return true;
@@ -413,24 +420,24 @@ namespace ItemBags.Menus
         {
             if (IsGamepadFocused && !RecentlyGainedFocus)
             {
-                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.RucksackCycleSortOrder))
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.RucksackCycleSortOrder))
                 {
                     CycleSortOrder();
                 }
-                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.RucksackCycleSortProperty))
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.RucksackCycleSortProperty))
                 {
                     CycleSortProperty();
                 }
 
-                if (!GamepadControls.HandleNavigationButtons(this, GamepadButtons))
+                if (!GamepadControls.HandleNavigationButtons(this, GamepadButtons, HoveredSlot))
                     this.IsGamepadFocused = false;
 
                 //  Handle action buttons
-                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.PrimaryAction))
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.PrimaryAction))
                 {
                     HandlePrimaryAction(GetHoveredItem());
                 }
-                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.SecondaryAction))
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.SecondaryAction))
                 {
                     HandleSecondaryAction(GetHoveredItem());
                     SecondaryActionButtonPressedLocation = HoveredSlot;
@@ -444,7 +451,7 @@ namespace ItemBags.Menus
             if (IsGamepadFocused && !RecentlyGainedFocus)
             {
                 //  Handle action buttons
-                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.SecondaryAction))
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.SecondaryAction))
                 {
                     SecondaryActionButtonPressedLocation = null;
                     SecondaryActionButtonPressedTime = null;
@@ -502,9 +509,9 @@ namespace ItemBags.Menus
                 }
             }
 
-            if (e.IsMultipleOf(GamepadControls.NavigationRepeatFrequency) && IsGamepadFocused && IsNavigatingWithGamepad)
+            if (e.IsMultipleOf(GamepadControls.Current.NavigationRepeatFrequency) && IsGamepadFocused && IsNavigatingWithGamepad)
             {
-                if (!GamepadControls.HandleNavigationButtons(this, null))
+                if (!GamepadControls.HandleNavigationButtons(this, null, HoveredSlot))
                     this.IsGamepadFocused = false;
             }
         }

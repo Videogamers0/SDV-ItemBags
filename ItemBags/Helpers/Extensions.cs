@@ -57,6 +57,17 @@ namespace ItemBags.Helpers
             }
         }
 
+        public static double SquaredDistanceBetweenCenters(this Rectangle value, Rectangle other)
+        {
+            Point c1 = value.Center;
+            Point c2 = other.Center;
+
+            double XDifference = c1.X - c2.X;
+            double YDifference = c1.Y - c2.Y;
+
+            return XDifference * XDifference + YDifference * YDifference;
+        }
+
         #region Split List
         //Taken from: https://stackoverflow.com/questions/3514740/how-to-split-an-array-into-a-group-of-n-elements-each
         private static IEnumerable<TList> Split<TList, T>(this TList value, int countOfEachPart) where TList : IEnumerable<T>

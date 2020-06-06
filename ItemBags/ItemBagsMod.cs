@@ -29,26 +29,13 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 4, 9); // Last updated 6/3/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 5, 0); // Last updated 6/5/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
-
-        //Unreleased changes:
-        //  Minor bugfix with menu handling for Alex's ice cream shop
-        //  Items added to a chest can now be autofilled into bags inside of the chest
-        //  Minor bugfix for the way HUDMessages of autofilled items are grouped together
-        //  Fixed issue with the "generate_modded_bag" console command
-        //  Added Gamepad support to most of the menus
-        //  Updated Android version
 
         //Possible TODO 
         //  "Equipment Bag" : subclass of BoundedBag - has a List<Weapon>, List<Hat> etc. List<AllowedHat> AllowedHats List<AllowedWeapon> AllowedWeapons etc
         //      would need to override IsValidBagItem, and the MoveToBag/MoveFromBag needs a new implementation to handle non-Objects. Allow the items to stack even if item.maximumStackSize == 1
-        //  Gamepad support:
-        //      BundleBagMenu - Allow navigating to empty slots? Store a HoveredSlot rectangle and use that when calling TryNavigate
-        //      Make CustomizeIconMenu implement IGamepadControllable
-        //      Make Gamepad keybinds configurable (The consts in GamepadControls.cs)
-        //      When calling TryNavigateEnter, pass in a nullable Rectangle of the last hovered screen position. Try to find closest selectable rectangle when navigating into neighbor.
 
         internal static ItemBagsMod ModInstance { get; private set; }
         internal static string Translate(string Key, Dictionary<string, string> Parameters = null)
@@ -147,6 +134,12 @@ namespace ItemBags
                     GlobalUserConfig.MonsterLootSettings = new MonsterLootSettings();
                     RewriteConfig = true;
                 }
+                //  Update config file with settings for gamepad controls (Added in v1.4.9)
+                if (GlobalUserConfig.CreatedByVersion == null || GlobalUserConfig.CreatedByVersion < new Version(1, 5, 0))
+                {
+                    GlobalUserConfig.GamepadSettings = new GamepadControls();
+                    RewriteConfig = true;
+                }
 
                 if (RewriteConfig)
                 {
@@ -157,9 +150,10 @@ namespace ItemBags
             else
             {
                 GlobalUserConfig = new UserConfig() { CreatedByVersion = CurrentVersion };
-                ModInstance.Helper.Data.WriteJsonFile<UserConfig>(UserConfigFilename, GlobalUserConfig);
+                ModInstance.Helper.Data.WriteJsonFile(UserConfigFilename, GlobalUserConfig);
             }
             UserConfig = GlobalUserConfig;
+            GamepadControls.Current = UserConfig.GamepadSettings;
         }
 
         private static void LoadGlobalConfig()

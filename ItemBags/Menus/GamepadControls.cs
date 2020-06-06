@@ -7,83 +7,154 @@ using System.Threading.Tasks;
 using StardewValley;
 using ItemBags.Bags;
 using Microsoft.Xna.Framework;
+using Newtonsoft.Json;
+using System.Runtime.Serialization;
 
 namespace ItemBags.Menus
 {
-    public static class GamepadControls
+    [JsonObject(Title = "GamepadSettings")]
+    [DataContract(Name = "GamepadSettings", Namespace = "")]
+    public sealed class GamepadControls
     {
+        private static GamepadControls _Current;
+        /// <summary>The current gamepad control settings</summary>
+        public static GamepadControls Current
+        {
+            get { return _Current; }
+            set
+            {
+                _Current = value;
+                NavigateSingleButtons = new Dictionary<NavigationDirection, Buttons>()
+                {
+                    { NavigationDirection.Left, Current.NavigateSingleLeft },
+                    { NavigationDirection.Up, Current.NavigateSingleUp },
+                    { NavigationDirection.Right, Current.NavigateSingleRight },
+                    { NavigationDirection.Down, Current.NavigateSingleDown }
+                };
+                NavigateMultipleButtons = new Dictionary<NavigationDirection, Buttons>()
+                {
+                    { NavigationDirection.Left, Current.NavigateMultipleLeft },
+                    { NavigationDirection.Up, Current.NavigateMultipleUp },
+                    { NavigationDirection.Right, Current.NavigateMultipleRight },
+                    { NavigationDirection.Down, Current.NavigateMultipleDown }
+                };
+            }
+        }
+
         /// <summary>Opens the selected bag, if the bag is selected from the Inventory tab of the main <see cref="StardewValley.Menus.GameMenu"/></summary>
-        public const Buttons OpenBagFromInventory = Buttons.Start | Buttons.B | Buttons.X;
+        [JsonProperty("OpenBagFromInventory")]
+        public Buttons OpenBagFromInventory { get; set; } = Buttons.Start | Buttons.B | Buttons.X;
         /// <summary>Opens the selected bag, if the bag is selected from a <see cref="StardewValley.Menus.ItemGrabMenu"/> whose <see cref="StardewValley.Menus.ItemGrabMenu.context"/> is a <see cref="StardewValley.Objects.Chest"/></summary>
-        public const Buttons OpenBagFromChest = Buttons.Start | Buttons.B | Buttons.X;
+        [JsonProperty("OpenBagFromChest")]
+        public Buttons OpenBagFromChest { get; set; } = Buttons.Start | Buttons.B | Buttons.X;
         /// <summary>Opens the selected bag, if the bag is selected from the main <see cref="StardewValley.Menus.Toolbar"/>, and no other menus are currently active.</summary>
-        public const Buttons OpenBagFromToolbar = Buttons.X;
+        [JsonProperty("OpenBagFromToolbar")]
+        public Buttons OpenBagFromToolbar { get; set; } = Buttons.X;
         /// <summary>Closes the current bag menu.</summary>
-        public const Buttons CloseBag = Buttons.B | Buttons.Y | Buttons.Start;
+        [JsonProperty("CloseBag")]
+        public Buttons CloseBag { get; set; } = Buttons.B | Buttons.Y | Buttons.Start;
 
         /// <summary>The # of frames to wait before continuing to navigate 1 item slot in the held direction.<para/>
         /// For example, if <see cref="NavigationRepeatFrequency"/>=10, then holding the thumbstick to the right will navigate at ~60/10=6 slots per second.</summary>
-        public const int NavigationRepeatFrequency = 5;
+        [JsonProperty("NavigationRepeatFrequency")]
+        public uint NavigationRepeatFrequency { get; set; } = 5;
         /// <summary>The # of milliseconds to wait after a gamepad navigation button is pressed, before that navigation action can be repeated while the button remains pressed.</summary>
-        public const int NavigationRepeatInitialDelay = 180;
+        [JsonProperty("NavigationRepeatInitialDelay")]
+        public uint NavigationRepeatInitialDelay { get; set; } = 180;
 
         /// <summary>Moves cursor left by 1 slot.</summary>
-        public const Buttons NavigateSingleLeft = Buttons.DPadLeft | Buttons.LeftThumbstickLeft;
+        [JsonProperty("NavigateSingleLeft")]
+        public Buttons NavigateSingleLeft { get; set; } = Buttons.DPadLeft | Buttons.LeftThumbstickLeft;
         /// <summary>Moves cursor up by 1 slot.</summary>
-        public const Buttons NavigateSingleUp = Buttons.DPadUp | Buttons.LeftThumbstickUp;
+        [JsonProperty("NavigateSingleUp")]
+        public Buttons NavigateSingleUp { get; set; } = Buttons.DPadUp | Buttons.LeftThumbstickUp;
         /// <summary>Moves cursor right by 1 slot.</summary>
-        public const Buttons NavigateSingleRight = Buttons.DPadRight | Buttons.LeftThumbstickRight;
+        [JsonProperty("NavigateSingleRight")]
+        public Buttons NavigateSingleRight { get; set; } = Buttons.DPadRight | Buttons.LeftThumbstickRight;
         /// <summary>Moves cursor down by 1 slot.</summary>
-        public const Buttons NavigateSingleDown = Buttons.DPadDown | Buttons.LeftThumbstickDown;
+        [JsonProperty("NavigateSingleDown")]
+        public Buttons NavigateSingleDown { get; set; } = Buttons.DPadDown | Buttons.LeftThumbstickDown;
 
-        public static readonly Dictionary<NavigationDirection, Buttons> NavigateSingleButtons = new Dictionary<NavigationDirection, Buttons>()
-        {
-            { NavigationDirection.Left, NavigateSingleLeft },
-            { NavigationDirection.Up, NavigateSingleUp },
-            { NavigationDirection.Right, NavigateSingleRight },
-            { NavigationDirection.Down, NavigateSingleDown }
-        };
+        public static Dictionary<NavigationDirection, Buttons> NavigateSingleButtons { get; private set; }
 
-        /// <summary>Moves cursor left by multiple slots, typically to the start of a row.</summary>
-        public const Buttons NavigateMultipleLeft = Buttons.RightThumbstickLeft;
-        /// <summary>Moves cursor up by multiple slots, typically to the start of a column.</summary>
-        public const Buttons NavigateMultipleUp = Buttons.RightThumbstickUp;
-        /// <summary>Moves cursor right by multiple slots, typically to the end of a row.</summary>
-        public const Buttons NavigateMultipleRight = Buttons.RightThumbstickRight;
-        /// <summary>Moves cursor down by multiple slots, typically to the end of a column.</summary>
-        public const Buttons NavigateMultipleDown = Buttons.RightThumbstickDown;
+        /// <summary>Moves cursor left by multiple slots, typically to the start of a row, or to a neighboring UI element.</summary>
+        [JsonProperty("NavigateMultipleLeft")]
+        public Buttons NavigateMultipleLeft { get; set; } = Buttons.RightThumbstickLeft;
+        /// <summary>Moves cursor up by multiple slots, typically to the start of a column, or to a neighboring UI element.</summary>
+        [JsonProperty("NavigateMultipleUp")]
+        public Buttons NavigateMultipleUp { get; set; } = Buttons.RightThumbstickUp;
+        /// <summary>Moves cursor right by multiple slots, typically to the end of a row, or to a neighboring UI element.</summary>
+        [JsonProperty("NavigateMultipleRight")]
+        public Buttons NavigateMultipleRight { get; set; } = Buttons.RightThumbstickRight;
+        /// <summary>Moves cursor down by multiple slots, typically to the end of a column, or to a neighboring UI element.</summary>
+        [JsonProperty("NavigateMultipleDown")]
+        public Buttons NavigateMultipleDown { get; set; } = Buttons.RightThumbstickDown;
 
-        public static readonly Dictionary<NavigationDirection, Buttons> NavigateMultipleButtons = new Dictionary<NavigationDirection, Buttons>()
-        {
-            { NavigationDirection.Left, NavigateMultipleLeft },
-            { NavigationDirection.Up, NavigateMultipleUp },
-            { NavigationDirection.Right, NavigateMultipleRight },
-            { NavigationDirection.Down, NavigateMultipleDown }
-        };
+        public static Dictionary<NavigationDirection, Buttons> NavigateMultipleButtons { get; private set; }
 
         /// <summary>A modifier key which, if held, causes the primary transfer action to transfer several quantity of the hovered item slot.</summary>
-        public const Buttons TransferMultipleModifier = Buttons.LeftTrigger;
+        [JsonProperty("TransferMultipleModifier")]
+        public Buttons TransferMultipleModifier { get; set; } = Buttons.LeftTrigger;
         /// <summary>A modifier key which, if held, causes the primary transfer action to transfer half of the quantity of the hovered item slot.</summary>
-        public const Buttons TransferHalfModifier = Buttons.RightTrigger;
+        [JsonProperty("TransferHalfModifier")]
+        public Buttons TransferHalfModifier { get; set; } = Buttons.RightTrigger;
 
         /// <summary>The primary action key, typically used to click buttons or item slots, invoking their primary actions.</summary>
-        public const Buttons PrimaryAction = Buttons.A;
+        [JsonProperty("PrimaryAction")]
+        public Buttons PrimaryAction { get; set; } = Buttons.A;
         /// <summary>The secondary action key, typically used to click buttons or item slots, invoking their secondary actions (such as transferring a single item at a time).</summary>
-        public const Buttons SecondaryAction = Buttons.X;
+        [JsonProperty("SecondaryAction")]
+        public Buttons SecondaryAction { get; set; } = Buttons.X;
 
         /// <summary>If a <see cref="RucksackMenu"/> is currently open, this key cycles the <see cref="Rucksack.SortProperty"/></summary>
-        public const Buttons RucksackCycleSortProperty = Buttons.LeftShoulder;
+        [JsonProperty("RucksackCycleSortProperty")]
+        public Buttons RucksackCycleSortProperty { get; set; } = Buttons.LeftShoulder;
         /// <summary>If a <see cref="RucksackMenu"/> is currently open, this key cycles the <see cref="Rucksack.SortOrder"/></summary>
-        public const Buttons RucksackCycleSortOrder = Buttons.RightShoulder;
+        [JsonProperty("RucksackCycleSortOrder")]
+        public Buttons RucksackCycleSortOrder { get; set; } = Buttons.RightShoulder;
         /// <summary>If a <see cref="BoundedBagMenu"/> is currently open, this key toggles Autofill on the hovered item slot.</summary>
-        public const Buttons BoundedBagToggleAutofill = Buttons.LeftShoulder | Buttons.RightShoulder;
+        [JsonProperty("BoundedBagToggleAutofill")]
+        public Buttons BoundedBagToggleAutofill { get; set; } = Buttons.LeftShoulder | Buttons.RightShoulder;
+
+        public GamepadControls()
+        {
+            InitializeDefaults();
+        }
+
+        private void InitializeDefaults()
+        {
+
+        }
+
+        [OnSerializing]
+        private void OnSerializing(StreamingContext sc) { }
+        [OnSerialized]
+        private void OnSerialized(StreamingContext sc) { }
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext sc) { InitializeDefaults(); }
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext sc) { }
 
         public static bool IsMatch(Buttons Input1, Buttons Input2)
         {
             return (Input1 & Input2) != 0;
         }
 
-        internal static bool HandleNavigationButtons(IGamepadControllable Instance, Buttons? PressedButtons)
+        private static NavigationDirection GetOppositeDirection(NavigationDirection Direction)
+        {
+            if (Direction == NavigationDirection.Left)
+                return NavigationDirection.Right;
+            else if (Direction == NavigationDirection.Right)
+                return NavigationDirection.Left;
+            else if (Direction == NavigationDirection.Up)
+                return NavigationDirection.Down;
+            else if (Direction == NavigationDirection.Down)
+                return NavigationDirection.Up;
+            else
+                throw new NotImplementedException(string.Format("Unexpected Navigation Direction: {0}", Direction.ToString()));
+        }
+
+        internal static bool HandleNavigationButtons(IGamepadControllable Instance, Buttons? PressedButtons, Rectangle? CurrentSlotPosition)
         {
             bool IsFocused = true;
 
@@ -94,7 +165,7 @@ namespace ItemBags.Menus
                 if (PressedButtons.HasValue)
                     HandleSingleSlotNavigation = IsMatch(PressedButtons.Value, NavigateSingleButtons[Direction]);
                 else
-                    HandleSingleSlotNavigation = InputHandler.IsNavigationButtonPressed(Direction) && DateTime.Now.Subtract(InputHandler.NavigationButtonsPressedTime[Direction]).TotalMilliseconds >= NavigationRepeatInitialDelay;
+                    HandleSingleSlotNavigation = InputHandler.IsNavigationButtonPressed(Direction) && DateTime.Now.Subtract(InputHandler.NavigationButtonsPressedTime[Direction]).TotalMilliseconds >= Current.NavigationRepeatInitialDelay;
                 if (HandleSingleSlotNavigation)
                 {
                     NavigationWrappingMode HorizontalWrapping = NavigationWrappingMode.AllowWrapToSame;
@@ -115,28 +186,35 @@ namespace ItemBags.Menus
                         //  then focus the gamepad controls on the appropriate neighboring UI element
                         if (HasNeighbor)
                         {
-                            NavigationDirection StartingSide;
-                            if (Direction == NavigationDirection.Left)
-                                StartingSide = NavigationDirection.Right;
-                            else if (Direction == NavigationDirection.Right)
-                                StartingSide = NavigationDirection.Left;
-                            else if (Direction == NavigationDirection.Up)
-                                StartingSide = NavigationDirection.Down;
-                            else if (Direction == NavigationDirection.Down)
-                                StartingSide = NavigationDirection.Up;
-                            else
-                                throw new NotImplementedException(string.Format("Unexpected Navigation Direction: {0}", Direction.ToString()));
-
-                            if (Neighbor.TryNavigateEnter(StartingSide))
+                            NavigationDirection StartingSide = GetOppositeDirection(Direction);
+                            if (Neighbor.TryNavigateEnter(StartingSide, CurrentSlotPosition))
                                 IsFocused = false;
                         }
                     }
                 }
 
-                //  Handle navigating an entire row/column
+                //  Handle navigating across an entire UI element, or to the end of the current element's boundary
                 if (PressedButtons.HasValue && IsMatch(PressedButtons.Value, NavigateMultipleButtons[Direction]))
                 {
-                    while (Instance.TryNavigate(Direction, NavigationWrappingMode.NoWrap, NavigationWrappingMode.NoWrap)) { }
+                    bool Handled = false;
+
+                    //  Try to change focus to the neighboring UI element in this direction
+                    bool HasNeighbor = Instance.TryGetMenuNeighbor(Direction, out IGamepadControllable Neighbor);
+                    if (HasNeighbor)
+                    {
+                        NavigationDirection StartingSide = GetOppositeDirection(Direction);
+                        if (Neighbor.TryNavigateEnter(StartingSide, CurrentSlotPosition))
+                        {
+                            Handled = true;
+                            IsFocused = false;
+                        }
+                    }
+
+                    //  Navigate to the end of this element's boundary
+                    if (!Handled)
+                    {
+                        while (Instance.TryNavigate(Direction, NavigationWrappingMode.NoWrap, NavigationWrappingMode.NoWrap)) { }
+                    }
                 }
             }
 
@@ -323,7 +401,7 @@ namespace ItemBags.Menus
         bool TryGetMenuNeighbor(NavigationDirection Direction, out IGamepadControllable Neighbor);
         bool TryGetSlotNeighbor(Rectangle? ItemSlot, NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping, out Rectangle? Neighbor);
         bool TryNavigate(NavigationDirection Direction, NavigationWrappingMode HorizontalWrapping, NavigationWrappingMode VerticalWrapping);
-        bool TryNavigateEnter(NavigationDirection StartingSide);
+        bool TryNavigateEnter(NavigationDirection StartingSide, Rectangle? ClosestTo);
 
         bool IsNavigatingWithGamepad { get; }
 

@@ -230,20 +230,20 @@ namespace ItemBags.Menus
             return false;
         }
 
-        public bool TryNavigateEnter(NavigationDirection StartingSide)
+        public bool TryNavigateEnter(NavigationDirection StartingSide, Rectangle? ClosestTo)
         {
             if (!GroupedOptions.IsEmptyMenu && !UngroupedOptions.IsEmptyMenu)
             {
                 if (StartingSide == NavigationDirection.Down)
-                    return UngroupedOptions.TryNavigateEnter(StartingSide);
+                    return UngroupedOptions.TryNavigateEnter(StartingSide, ClosestTo);
                 else if (StartingSide == NavigationDirection.Up)
-                    return GroupedOptions.TryNavigateEnter(StartingSide);
+                    return GroupedOptions.TryNavigateEnter(StartingSide, ClosestTo);
             }
 
             if (!GroupedOptions.IsEmptyMenu)
-                return GroupedOptions.TryNavigateEnter(StartingSide);
+                return GroupedOptions.TryNavigateEnter(StartingSide, ClosestTo);
             else if (!UngroupedOptions.IsEmptyMenu)
-                return UngroupedOptions.TryNavigateEnter(StartingSide);
+                return UngroupedOptions.TryNavigateEnter(StartingSide, ClosestTo);
             else
                 return false;
         }
@@ -254,7 +254,7 @@ namespace ItemBags.Menus
         {
             if (IsGamepadFocused && !RecentlyGainedFocus)
             {
-                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.BoundedBagToggleAutofill))
+                if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.BoundedBagToggleAutofill))
                     TryHandlePrimaryAction(false);
 
                 if (!GroupedOptions.IsEmptyMenu)

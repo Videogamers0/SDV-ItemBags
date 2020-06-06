@@ -191,7 +191,7 @@ namespace ItemBags
                             }
                         }
                         //  Right-click an ItemBag to open it
-                        else if ((e.Button == SButton.MouseRight || (IsGamepadInput && GamepadControls.IsMatch(GamepadButtons, GamepadControls.OpenBagFromInventory)))
+                        else if ((e.Button == SButton.MouseRight || (IsGamepadInput && GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.OpenBagFromInventory)))
                             && ClickedItem is ItemBag ClickedBag && Game1.player.CursorSlotItem == null)
                         {
                             ClickedBag.OpenContents(Game1.player.Items, Game1.player.MaxItems);
@@ -217,7 +217,7 @@ namespace ItemBags
                     }
                 }
                 else if (Game1.activeClickableMenu == null && 
-                    (e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight || (IsGamepadInput && GamepadControls.IsMatch(GamepadButtons, GamepadControls.OpenBagFromToolbar))))
+                    (e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight || (IsGamepadInput && GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.OpenBagFromToolbar))))
                 {
                     //  Check if they clicked a bag on the toolbar, open the bag if so
                     Toolbar toolbar = Game1.onScreenMenus.FirstOrDefault(x => x is Toolbar) as Toolbar;
@@ -259,7 +259,7 @@ namespace ItemBags
                     }
                 }
                 else if (Game1.activeClickableMenu is ItemGrabMenu IGM && IGM.context is Chest ChestSource && 
-                    (e.Button == SButton.MouseRight || e.Button == SButton.MouseMiddle || (IsGamepadInput && GamepadControls.IsMatch(GamepadButtons, GamepadControls.OpenBagFromChest))))
+                    (e.Button == SButton.MouseRight || e.Button == SButton.MouseMiddle || (IsGamepadInput && GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.OpenBagFromChest))))
                 {
                     //  Check if they clicked a Bag in the inventory part of the chest interface
                     bool Handled = false;
