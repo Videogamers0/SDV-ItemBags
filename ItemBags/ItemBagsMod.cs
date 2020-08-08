@@ -1,35 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Xna.Framework;
-using StardewValley;
-using StardewModdingAPI;
-using StardewModdingAPI.Events;
-using StardewModdingAPI.Utilities;
-using StardewValley.Menus;
-using StardewValley.Tools;
-using Microsoft.Xna.Framework.Graphics;
-using System.Xml.Serialization;
-using StardewValley.Objects;
+﻿using ItemBags.Bags;
+using ItemBags.Community_Center;
 using ItemBags.Helpers;
 using ItemBags.Menus;
-using ItemBags.Bags;
-using Object = StardewValley.Object;
-using Microsoft.Xna.Framework.Input;
 using ItemBags.Persistence;
-using System.Reflection;
-using StardewValley.Locations;
-using ItemBags.Community_Center;
-using static ItemBags.Persistence.BagSizeConfig;
+using StardewModdingAPI;
+using StardewModdingAPI.Events;
+using StardewValley;
+using StardewValley.Menus;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using static ItemBags.Persistence.BagSizeConfig;
+using Object = StardewValley.Object;
 
 namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 5, 0); // Last updated 6/5/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 5, 1); // Last updated 8/7/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
 

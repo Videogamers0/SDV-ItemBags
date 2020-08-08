@@ -16,16 +16,24 @@ namespace ItemBags.Community_Center
         public BundleTask Task { get; }
         public int Id { get; }
         public int Quantity { get; }
-        public bool IsBigCraftable { get; }
-        public bool IsRing { get; }
-        public bool IsWeapon { get; }
+
+        private BundleRewardType RewardType { get; }
+        public bool IsBigCraftable { get { return RewardType == BundleRewardType.BigCraftable; } }
+        public bool IsRing { get { return RewardType == BundleRewardType.Ring; } }
+        public bool IsWeapon { get { return RewardType == BundleRewardType.Weapon; } }
+        public bool IsHat { get { return RewardType == BundleRewardType.Hat; } }
+        public bool IsClothing { get { return RewardType == BundleRewardType.Clothing; } }
+        public bool IsFurniture { get { return RewardType == BundleRewardType.Furniture; } }
 
         public enum BundleRewardType
         {
             Object,
             BigCraftable,
             Ring,
-            Weapon
+            Weapon,
+            Hat,
+            Clothing,
+            Furniture
         }
 
         public BundleReward(BundleTask Task, int Id, int Quantity, BundleRewardType Type)
@@ -33,9 +41,7 @@ namespace ItemBags.Community_Center
             this.Task = Task;
             this.Id = Id;
             this.Quantity = Quantity;
-            this.IsBigCraftable = Type == BundleRewardType.BigCraftable;
-            this.IsRing = Type == BundleRewardType.Ring;
-            this.IsWeapon = Type == BundleRewardType.Weapon;
+            this.RewardType = Type;
         }
 
         /// <param name="RawData">The raw data string from the game's bundle content. EX: "O 495 30".<para/>
@@ -45,42 +51,45 @@ namespace ItemBags.Community_Center
             this.Task = Task;
 
             List<string> Entries = RawData.Split(' ').ToList();
-            BundleRewardType RewardType;
             if (Entries[0].Equals("O", StringComparison.CurrentCultureIgnoreCase))
-                RewardType = BundleRewardType.Object;
+                this.RewardType = BundleRewardType.Object;
             else if (Entries[0].Equals("BO", StringComparison.CurrentCultureIgnoreCase))
-                RewardType = BundleRewardType.BigCraftable;
+                this.RewardType = BundleRewardType.BigCraftable;
             else if (Entries[0].Equals("R", StringComparison.CurrentCultureIgnoreCase))
-                RewardType = BundleRewardType.Ring;
+                this.RewardType = BundleRewardType.Ring;
             else if (Entries[0].Equals("W", StringComparison.CurrentCultureIgnoreCase))
-                RewardType = BundleRewardType.Weapon;
+                this.RewardType = BundleRewardType.Weapon;
+            else if (Entries[0].Equals("H", StringComparison.CurrentCultureIgnoreCase))
+                this.RewardType = BundleRewardType.Hat;
+            else if (Entries[0].Equals("C", StringComparison.CurrentCultureIgnoreCase))
+                this.RewardType = BundleRewardType.Clothing;
+            else if (Entries[0].Equals("F", StringComparison.CurrentCultureIgnoreCase))
+                this.RewardType = BundleRewardType.Furniture;
             else
                 throw new NotImplementedException(string.Format("Unrecognized Bundle Reward Type: {0}", Entries[0]));
 
             this.Id = int.Parse(Entries[1]);
             this.Quantity = int.Parse(Entries[2]);
-            this.IsBigCraftable = RewardType == BundleRewardType.BigCraftable;
-            this.IsRing = RewardType == BundleRewardType.Ring;
-            this.IsWeapon = RewardType == BundleRewardType.Weapon;
         }
 
         public Item ToItem()
         {
-            if (IsBigCraftable)
+            switch (RewardType)
             {
-                return new Object(Vector2.Zero, Id, false);
-            }
-            else if (IsRing)
-            {
-                return new Ring(Id);
-            }
-            else if (IsWeapon)
-            {
-                return new MeleeWeapon(Id);
-            }
-            else
-            {
-                return new Object(Id, Quantity, false, -1, 0);
+                case BundleRewardType.BigCraftable:
+                    return new Object(Vector2.Zero, Id, false);
+                case BundleRewardType.Ring:
+                    return new Ring(Id);
+                case BundleRewardType.Weapon:
+                    return new MeleeWeapon(Id);
+                case BundleRewardType.Hat:
+                    return new Hat(Id);
+                case BundleRewardType.Clothing:
+                    return new Clothing(Id);
+                case BundleRewardType.Furniture:
+                    return new Furniture(Id, Vector2.Zero);
+                default:
+                    return new Object(Id, Quantity, false, -1, 0);
             }
         }
     }
