@@ -356,18 +356,22 @@ namespace ItemBags.Persistence
                                 foreach (ModdedItem Item in BagAddon.Items)
                                 {
                                     int Id = -1;
-                                    if ((Item.IsBigCraftable && !JABigCraftableIds.TryGetValue(Item.Name, out Id) && !AllBigCraftableIds.TryGetValue(Item.Name, out Id)) || 
-                                        (!Item.IsBigCraftable && !JAObjectIds.TryGetValue(Item.Name, out Id) && !AllObjectIds.TryGetValue(Item.Name, out Id)))
-                                    {
-                                        string Message = string.Format("Warning - no item with Name = '{0}' was found. This item will not be imported to Bag '{1}'.", Item.Name, BagAddon.Name);
-                                        ItemBagsMod.ModInstance.Monitor.Log(Message, LogLevel.Warn);
-                                    }
+                                    if (Item.ObjectId.HasValue)
+                                        Id = Item.ObjectId.Value;
                                     else
                                     {
-                                        foreach (BagSizeConfig SizeConfig in TargetType.SizeSettings.Where(x => x.Size >= Item.Size))
+                                        if ((Item.IsBigCraftable && !JABigCraftableIds.TryGetValue(Item.Name, out Id) && !AllBigCraftableIds.TryGetValue(Item.Name, out Id)) ||
+                                            (!Item.IsBigCraftable && !JAObjectIds.TryGetValue(Item.Name, out Id) && !AllObjectIds.TryGetValue(Item.Name, out Id)))
                                         {
-                                            SizeConfig.Items.Add(new StoreableBagItem(Id, Item.HasQualities, null, Item.IsBigCraftable));
+                                            string Message = string.Format("Warning - no item with Name = '{0}' was found. This item will not be imported to Bag '{1}'.", Item.Name, BagAddon.Name);
+                                            ItemBagsMod.ModInstance.Monitor.Log(Message, LogLevel.Warn);
+                                            continue;
                                         }
+                                    }
+
+                                    foreach (BagSizeConfig SizeConfig in TargetType.SizeSettings.Where(x => x.Size >= Item.Size))
+                                    {
+                                        SizeConfig.Items.Add(new StoreableBagItem(Id, Item.HasQualities, null, Item.IsBigCraftable));
                                     }
                                 }
                             }
@@ -421,6 +425,10 @@ namespace ItemBags.Persistence
         /// <summary>The minimum size of the bag that is required to store this Object.</summary>
         [JsonProperty("RequiredSize")]
         public string SizeString { get; set; } = ContainerSize.Small.ToString();
+        /// <summary>Optional. You only need to specify either <see cref="Name"/> or <see cref="ObjectId"/>, not both.<para/>
+        /// Do not use <see cref="ObjectId"/> if the item does not have a static item id (such as a JsonAssets modded item).</summary>
+        [JsonProperty("ObjectId")]
+        public int? ObjectId { get; set; } = null;
 
         public ModdedItem()
         {
@@ -428,6 +436,7 @@ namespace ItemBags.Persistence
             this.IsBigCraftable = false;
             this.HasQualities = false;
             this.SizeString = ContainerSize.Small.ToString();
+            this.ObjectId = null;
         }
 
         public ModdedItem(string Name, bool IsBigCraftable, bool HasQualities, ContainerSize Size)
@@ -436,6 +445,7 @@ namespace ItemBags.Persistence
             this.IsBigCraftable = IsBigCraftable;
             this.HasQualities = HasQualities;
             this.SizeString = Size.ToString();
+            this.ObjectId = null;
         }
 
         [JsonIgnore]
@@ -445,7 +455,11 @@ namespace ItemBags.Persistence
         /// <param name="JAObjectIds">Ids of Objects added through JsonAssets. See also: <see cref="IJsonAssetsAPI.GetAllObjectIds"/></param>
         public StoreableBagItem ToStoreableBagItem(IDictionary<string, int> JABigCraftableIds, IDictionary<string, int> JAObjectIds, IDictionary<string, int> AllBigCraftableIds, IDictionary<string, int> AllObjectIds)
         {
-            if (IsBigCraftable)
+            if (ObjectId.HasValue)
+            {
+                return new StoreableBagItem(ObjectId.Value, HasQualities, null, IsBigCraftable);
+            }
+            else if (IsBigCraftable)
             {
                 if (JABigCraftableIds.TryGetValue(Name, out int JAId))
                     return new StoreableBagItem(JAId, HasQualities, null, IsBigCraftable);
