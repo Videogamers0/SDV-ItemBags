@@ -898,7 +898,7 @@ namespace ItemBags.Menus
 
                 upperRightCloseButton.draw(b);
 
-                if (!Game1.options.hardwareCursor)
+                if (!Game1.options.hardwareCursor && !Game1.options.gamepadControls)
                 {
                     drawMouse(b);
                 }
