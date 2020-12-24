@@ -20,6 +20,7 @@ using PyTK.CustomElementHandler;
 namespace ItemBags.Bags
 {
     /// <summary>A bag that can store other bags inside of it.</summary>
+    //[XmlType("Mods_OmniBag")]
     [XmlRoot(ElementName = "OmniBag", Namespace = "")]
 #if ANDROID
     public class OmniBag : ItemBag
@@ -29,6 +30,7 @@ namespace ItemBags.Bags
     {
         public const string OmniBagTypeId = "6eb4c15d-3ad3-4b47-aab5-eb2f5daa8b3f";
 
+        [XmlIgnore]
         public List<ItemBag> NestedBags { get; }
         public override bool IsEmpty() { return base.IsEmpty() && (NestedBags == null || NestedBags.All(x => x.IsEmpty())); }
 
@@ -166,8 +168,10 @@ namespace ItemBags.Bags
         }
 
         /// <summary>The 16x16 portion of <see cref="CursorsTexture"/> that contains the omnibag icon</summary>
+        [XmlIgnore]
         private static Texture2D OriginalTexture { get; set; }
         /// <summary><see cref="OriginalTexture"/>, converted to Grayscale</summary>
+        [XmlIgnore]
         private static Texture2D GrayscaleTexture { get; set; }
 
         private void LoadTextures()
@@ -204,6 +208,7 @@ namespace ItemBags.Bags
         public override string GetTypeId() { return OmniBagTypeId; }
         public override bool IsFull(Object Item) { return true; }
         protected override int GetMaxStackSize(Object Item) { return 0; }
+        [XmlIgnore]
         public override int MaxStackSize { get { return 1; } }
 
         protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity)
