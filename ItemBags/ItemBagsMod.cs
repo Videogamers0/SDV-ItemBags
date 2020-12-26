@@ -56,15 +56,18 @@ namespace ItemBags
         {
             ModInstance = this;
 
-            //  SpaceCore v1.5.0 introduced a breaking change to the game's saving/loading logic that is not compatible with my custom items
-            if (Helper.ModRegistry.IsLoaded(SpaceCoreUniqueId))
+            if (Constants.TargetPlatform != GamePlatform.Android) // Android version saves items without the use of PyTK. See Helpers\SaveLoadHelpers.cs
             {
-                IModInfo SpaceCoreInfo = Helper.ModRegistry.Get(SpaceCoreUniqueId);
-                if (SpaceCoreInfo.Manifest.Version.IsNewerThan("1.4.1"))
+                //  SpaceCore v1.5.0 introduced a breaking change to the game's saving/loading logic that is not compatible with my custom items
+                if (Helper.ModRegistry.IsLoaded(SpaceCoreUniqueId))
                 {
-                    throw new InvalidOperationException("This mod is not compatible with SpaceCore v1.5.0 due to the changes SpaceCore makes to the game's save serializer, " +
-                        "which are not compatible with PyTK's CustomElementHandler.ISaveElement that this mod utilizes. " +
-                        "To use Item Bags, consider downgrading to an earlier version of SpaceCore such as v1.3.5.");
+                    IModInfo SpaceCoreInfo = Helper.ModRegistry.Get(SpaceCoreUniqueId);
+                    if (SpaceCoreInfo.Manifest.Version.IsNewerThan("1.4.1"))
+                    {
+                        throw new InvalidOperationException("This mod is not compatible with SpaceCore v1.5.0 due to the changes SpaceCore makes to the game's save serializer, " +
+                            "which are not compatible with PyTK's CustomElementHandler.ISaveElement that this mod utilizes. " +
+                            "To use Item Bags, consider downgrading to an earlier version of SpaceCore such as v1.3.5.");
+                    }
                 }
             }
 

@@ -16,6 +16,9 @@ namespace ItemBags
 {
     public static class CraftingHandler
     {
+        private const string CookingSkillModUniqueId = "spacechase0.CookingSkill";
+        private static bool IsCookingSkillModCompatible;
+
         private static IModHelper Helper { get; set; }
 
         /// <summary>Adds functionality that allows you to use items within your bags as input materials for crafting from the main GameMenu's CraftingPage, or from a cooking CraftingPage.</summary>
@@ -26,9 +29,8 @@ namespace ItemBags
             Helper.Events.Display.MenuChanged += Display_MenuChanged;
             Helper.Events.GameLoop.UpdateTicked += GameLoop_UpdateTicked;
 
-            //  Possible TODO: Add support for the Cooking menu used by the "Cooking Skill" mod (https://www.nexusmods.com/stardewvalley/mods/522)
-            //  That mod does NOT use a "CraftingPage" as its menu, so it currently isn't detected by Display_MenuChanged event handler.
-            //  I haven't tested it yet, but it might not have a "List<Chest> _materialContainers" field for me to add bag contents to, so might not be feasible.
+            IsCookingSkillModCompatible = Helper.ModRegistry.IsLoaded(CookingSkillModUniqueId) && 
+                Helper.ModRegistry.Get(CookingSkillModUniqueId).Manifest.Version.IsNewerThan("1.1.4"); // "_materialContainers" field was added to CookingSkill.NewCraftingPage in version 1.1.5
         }
 
         private static HashSet<ItemBag> BagsInUse = null;
@@ -36,7 +38,7 @@ namespace ItemBags
         private static Dictionary<Object, List<Object>> SplitStacks = null;
 
         /// <summary>Initializes extra data for the Crafting Page so it can search for and use materials within bags in your inventory.</summary>
-        private static void OnCraftingPageActivated(CraftingPage CraftingMenu)
+        private static void OnCraftingPageActivated(IClickableMenu CraftingMenu)
         {
             //  Allow the CraftingPage to search for and use items inside of bags
             bool AllowUsingBundleBagItemsForCrafting = false;
@@ -206,7 +208,6 @@ namespace ItemBags
                 {
                     OnCraftingPageDeactivated();
                 }
-
             }
             finally { PreviousGameMenuTab = CurrentTab; }
         }
@@ -237,14 +238,20 @@ namespace ItemBags
                 OnGameMenuClosed();
             }
 
-            if (e.NewMenu is CraftingPage CP)
+            if (IsCompatibleCraftingPage(e.NewMenu))
             {
-                OnCraftingPageActivated(CP);
+                OnCraftingPageActivated(e.NewMenu);
             }
-            else if (e.OldMenu is CraftingPage)
+            else if (IsCompatibleCraftingPage(e.OldMenu))
             {
                 OnCraftingPageDeactivated();
             }
+        }
+
+        private static bool IsCompatibleCraftingPage(IClickableMenu Menu)
+        {
+            return Menu is CraftingPage || 
+                (Menu?.GetType().FullName == "CookingSkill.NewCraftingPage" && IsCookingSkillModCompatible); // CookingSkill.NewCraftingPage is a menu defined in the "Cooking Skill" mod
         }
     }
 }
