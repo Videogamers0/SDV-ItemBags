@@ -42,14 +42,22 @@ namespace ItemBags
         {
             //  Allow the CraftingPage to search for and use items inside of bags
             bool AllowUsingBundleBagItemsForCrafting = false;
-            List<ItemBag> BagsInInventory = Game1.player.Items.Where(x => x != null && x is ItemBag).Cast<ItemBag>().ToList();
-            if (BagsInInventory.Any())
-            {
-                BagsInUse = new HashSet<ItemBag>(BagsInInventory);
 
-                //  Get the "_materialContainers" protected field that defines additional item containers to search for when using up materials during crafting
-                IReflectedField<List<Chest>> ReflectionResult = Helper.Reflection.GetField<List<Chest>>(CraftingMenu, "_materialContainers", true);
-                List<Chest> MaterialContainers = ReflectionResult.GetValue();
+            List<ItemBag> BagsInInventory = Game1.player.Items.Where(x => x != null && x is ItemBag).Cast<ItemBag>().ToList();
+            List<ItemBag> SearchedBags = BagsInInventory.ToList();
+
+            //  Get the "_materialContainers" protected field that defines additional item containers to search for when using up materials during crafting
+            IReflectedField<List<Chest>> ReflectionResult = Helper.Reflection.GetField<List<Chest>>(CraftingMenu, "_materialContainers", true);
+            List<Chest> MaterialContainers = ReflectionResult.GetValue();
+            if (MaterialContainers != null)
+            {
+                SearchedBags.AddRange(MaterialContainers.SelectMany(x => x.items).Where(x => x != null && x is ItemBag).Cast<ItemBag>());
+            }
+
+            if (SearchedBags.Any())
+            {
+                BagsInUse = new HashSet<ItemBag>(SearchedBags);
+
                 if (MaterialContainers == null)
                 {
                     MaterialContainers = new List<Chest>();
@@ -57,7 +65,7 @@ namespace ItemBags
                 }
 
                 //  Create a temporary chest from the items of each bag, and add the chest to _materialContainers
-                foreach (ItemBag IB in BagsInInventory.Where(x => AllowUsingBundleBagItemsForCrafting || !(x is BundleBag)))
+                foreach (ItemBag IB in SearchedBags.Where(x => AllowUsingBundleBagItemsForCrafting || !(x is BundleBag)))
                 {
                     //  Note that if the item inside the bag has Stack > 999, it must be split up into chunks with Stacks <= 999
                     //  Because the Game truncates the actual stack down to 999 anytime it modifies a stack value
