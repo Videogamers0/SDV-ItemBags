@@ -25,7 +25,7 @@ namespace ItemBags.Menus
         public Item HoveredItem { get; private set; }
         public void UpdateHoveredItem(CursorMovedEventArgs e)
         {
-            if (Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            if (Bounds.Contains(e.NewPosition.LegacyScreenPixels().AsPoint()))
             {
                 HoveredItem = GetHoveredItem();
             }
@@ -129,7 +129,7 @@ namespace ItemBags.Menus
             {
                 foreach (Rectangle Rect in InventorySlotBounds)
                 {
-                    if (Rect.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+                    if (Rect.Contains(e.NewPosition.LegacyScreenPixels().AsPoint()))
                     {
                         if (PreviouslyHovered.HasValue && Rect != PreviouslyHovered.Value)
                             SecondaryActionButtonPressedLocation = null;

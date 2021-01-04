@@ -26,7 +26,7 @@ namespace ItemBags.Menus
         public Item HoveredItem { get; private set; }
         public void UpdateHoveredItem(CursorMovedEventArgs e)
         {
-            if (Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            if (Bounds.Contains(e.NewPosition.LegacyScreenPixels().AsPoint()))
             {
                 HoveredItem = GetHoveredItem();
             }
@@ -240,7 +240,7 @@ namespace ItemBags.Menus
         #region Mouse Handling
         public void OnMouseMoved(CursorMovedEventArgs e)
         {
-            if (Bounds.Contains(e.OldPosition.ScreenPixels.AsPoint()) || Bounds.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+            if (Bounds.Contains(e.OldPosition.LegacyScreenPixels().AsPoint()) || Bounds.Contains(e.NewPosition.LegacyScreenPixels().AsPoint()))
             {
                 Rectangle? PreviouslyHovered = HoveredSlot;
 
@@ -249,7 +249,7 @@ namespace ItemBags.Menus
                 {
                     foreach (Rectangle Rect in SlotBounds)
                     {
-                        if (Rect.Contains(e.NewPosition.ScreenPixels.AsPoint()))
+                        if (Rect.Contains(e.NewPosition.LegacyScreenPixels().AsPoint()))
                         {
                             if (PreviouslyHovered.HasValue && Rect != PreviouslyHovered.Value)
                                 SecondaryActionButtonPressedLocation = null;
@@ -263,8 +263,8 @@ namespace ItemBags.Menus
 
             if (IsRightSidebarVisible)
             {
-                Point OldPos = e.OldPosition.ScreenPixels.AsPoint();
-                Point NewPos = e.NewPosition.ScreenPixels.AsPoint();
+                Point OldPos = e.OldPosition.LegacyScreenPixels().AsPoint();
+                Point NewPos = e.NewPosition.LegacyScreenPixels().AsPoint();
 
                 if (ContentsRightSidebarButtonBounds.Any(x => x.Contains(OldPos) || x.Contains(NewPos)))
                 {
