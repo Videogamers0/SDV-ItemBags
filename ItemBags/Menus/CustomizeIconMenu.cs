@@ -82,7 +82,7 @@ namespace ItemBags.Menus
                 {
                     _HoveredSprite = value;
                     if (HoveredSprite.HasValue)
-                        this.PreviewBag.IconTexturePosition = HoveredSprite.Value;
+                        this.PreviewBag.CustomIconTexturePosition = HoveredSprite.Value;
                 }
             }
         }
@@ -118,8 +118,8 @@ namespace ItemBags.Menus
             this.Padding = Padding;
 
             this.PreviewBag = PreviewableCopy;
-            this.PreviewBag.Icon = this.Texture;
-            this.PreviewBag.IconTexturePosition = Bag.IconTexturePosition;
+            this.PreviewBag.CustomIconSourceTexture = BagType.SourceTexture.SpringObjects;
+            this.PreviewBag.CustomIconTexturePosition = Bag.CustomIconTexturePosition;
 
             InitializeLayout(1);
         }
@@ -188,8 +188,8 @@ namespace ItemBags.Menus
             {
                 if (HoveredSprite.HasValue)
                 {
-                    Bag.Icon = this.Texture;
-                    Bag.IconTexturePosition = HoveredSprite.Value;
+                    Bag.CustomIconSourceTexture = BagType.SourceTexture.SpringObjects;
+                    Bag.CustomIconTexturePosition = HoveredSprite.Value;
                     IBM.CloseModalMenu();
                 }
                 else if (HoveredButton.HasValue)

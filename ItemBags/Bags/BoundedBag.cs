@@ -26,7 +26,7 @@ using PyTK.CustomElementHandler;
 namespace ItemBags.Bags
 {
     /// <summary>Represents an <see cref="ItemBag"/> that can only store certain, pre-defined Items in it.</summary>
-    //[XmlType("Mods_BoundedBag")]
+    [XmlType("Mods_BoundedBag")]
     [XmlRoot(ElementName = "BoundedBag", Namespace = "")]
     [KnownType(typeof(BundleBag))]
     [XmlInclude(typeof(BundleBag))]
@@ -78,12 +78,34 @@ namespace ItemBags.Bags
 
         /// <summary>If true, then when the player picks up an item that can be stored in this bag, it will automatically be stored if there is space for it.<para/>
         /// If multiple <see cref="BoundedBag"/> objects can store the item and have <see cref="Autofill"/>=true, then the item will be stored in the first one we can find that already has a stack of that item in it.</summary>
-        [XmlIgnore]
+        [XmlElement("Autofill")]
         public bool Autofill { get; set; }
 
         /// <summary>Key = the DisplayName of an item that is skipped when autofilling. Value = the Qualities of that item to skip.</summary>
         [XmlIgnore]
         public Dictionary<string, HashSet<ObjectQuality>> ExcludedAutofillItems { get; private set; }
+
+        [XmlIgnore]
+        [XmlArray("ExcludedAutofillItems")]
+        [XmlArrayItem("Item")]
+        public List<Tuple<string, List<ObjectQuality>>> SerializableExcludedAutofillItems
+        {
+            get
+            {
+                return ExcludedAutofillItems.Select(x => Tuple.Create(x.Key, x.Value.ToList())).ToList();
+            }
+            set
+            {
+                ExcludedAutofillItems = new Dictionary<string, HashSet<ObjectQuality>>();
+                if (value != null)
+                {
+                    foreach (var Tuple in value)
+                    {
+                        ExcludedAutofillItems[Tuple.Item1] = new HashSet<ObjectQuality>(Tuple.Item2);
+                    }
+                }
+            }
+        } 
 
         public void ToggleItemAutofill(Object Item)
         {
@@ -132,13 +154,73 @@ namespace ItemBags.Bags
         [XmlIgnore]
         public ReadOnlyCollection<AllowedObject> AllowedObjects { get; protected set; }
 
+        [XmlIgnore]
+        private BagType _TypeInfo { get; set; }
         /// <summary>The type that this Bag instance is using. The <see cref="BagType"/> defines things like the name, description, what kinds of items can be stored etc. 
         /// A <see cref="BagType"/> is unique, but there can be multiple <see cref="BoundedBag"/> instances that are using the same type's metadata.</summary>
         [XmlIgnore]
-        public BagType TypeInfo { get; protected set; }
+        public BagType TypeInfo
+        {
+            get { return _TypeInfo; }
+            protected set
+            {
+                if (TypeInfo != value)
+                {
+                    _TypeInfo = value;
+
+                    if (TypeInfo == null)
+                    {
+                        SizeInfo = null;
+                    }
+                    else
+                    {
+                        DefaultIconTexture = TypeInfo.GetIconTexture();
+                        DefaultIconTexturePosition = TypeInfo.IconSourceRect;
+
+                        SizeInfo = TypeInfo.SizeSettings.FirstOrDefault(x => x.Size == this.Size);
+                        if (SizeInfo == null) // This should never happen but just in case...
+                            SizeInfo = TypeInfo.SizeSettings.First();
+
+                        _MaxStackSize = ItemBagsMod.UserConfig.GetStandardBagCapacity(Size, TypeInfo);
+
+                        BaseName = BagType.GetTranslatedName(TypeInfo);
+                        DescriptionAlias = string.Format("{0}\n({1})",
+                            BagType.GetTranslatedDescription(TypeInfo),
+                            ItemBagsMod.Translate("CapacityDescription", new Dictionary<string, string>() { { "count", MaxStackSize.ToString() } }));
+
+                        if (SizeInfo.Size != Size)
+                            this.AllowedObjects = new List<AllowedObject>().AsReadOnly();
+                        else
+                            this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(SizeInfo.Items.Select(x => new AllowedObject(x)).ToList());
+                    }
+                }
+            }
+        }
+
+        [XmlElement("BagTypeId")]
+        public string TypeId
+        {
+            get { return TypeInfo?.Id ?? ""; }
+            set
+            {
+                if (string.IsNullOrEmpty(value) || ItemBagsMod.BagConfig?.IndexedBagTypes == null)
+                {
+                    TypeInfo = null;
+                }
+                else
+                {
+                    if (ItemBagsMod.BagConfig.IndexedBagTypes.TryGetValue(value, out BagType Type))
+                        TypeInfo = Type;
+                    else
+                        TypeInfo = null;
+                }
+            }
+        }
+
         [XmlIgnore]
         public BagSizeConfig SizeInfo { get; protected set; }
 
+        [XmlIgnore]
         private int _MaxStackSize { get; set; }
         [XmlIgnore]
         public override int MaxStackSize { get { return _MaxStackSize; } }
@@ -148,11 +230,7 @@ namespace ItemBags.Bags
             : base(ItemBagsMod.Translate("DefaultBagName"), ItemBagsMod.Translate("DefaultBagDescription"), ContainerSize.Small, null, null, new Vector2(16, 16), 0.5f, 1f)
         {
             this.TypeInfo = ItemBagsMod.BagConfig.BagTypes.First();
-            this.SizeInfo = TypeInfo.SizeSettings.FirstOrDefault(x => x.Size == ContainerSize.Small);
             this.Autofill = false;
-
-            _MaxStackSize = ItemBagsMod.UserConfig.GetStandardBagCapacity(Size, TypeInfo);
-            this.AllowedObjects = new List<AllowedObject>().AsReadOnly();
             this.ExcludedAutofillItems = new Dictionary<string, HashSet<ObjectQuality>>();
         }
 
@@ -161,21 +239,7 @@ namespace ItemBags.Bags
             : base(BagType.GetTranslatedName(TypeInfo), "", Size, TypeInfo.GetIconTexture(), TypeInfo.IconSourceRect, new Vector2(16, 16), 0.5f, 1f)
         {
             this.TypeInfo = TypeInfo;
-            this.SizeInfo = TypeInfo.SizeSettings.FirstOrDefault(x => x.Size == Size);
-            if (SizeInfo == null) // This should never happen but just in case...
-                SizeInfo = TypeInfo.SizeSettings.First();
             this.Autofill = Autofill;
-
-            _MaxStackSize = ItemBagsMod.UserConfig.GetStandardBagCapacity(Size, TypeInfo);
-
-            DescriptionAlias = string.Format("{0}\n({1})", 
-                BagType.GetTranslatedDescription(TypeInfo), 
-                ItemBagsMod.Translate("CapacityDescription", new Dictionary<string, string>() { { "count", MaxStackSize.ToString() } }));
-
-            if (SizeInfo.Size != Size)
-                this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(new List<AllowedObject>());
-            else
-                this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(SizeInfo.Items.Select(x => new AllowedObject(x)).ToList());
             this.ExcludedAutofillItems = new Dictionary<string, HashSet<ObjectQuality>>();
         }
 
@@ -189,8 +253,8 @@ namespace ItemBags.Bags
 
             if (SavedData.IsCustomIcon)
             {
-                this.Icon = Game1.objectSpriteSheet;
-                this.IconTexturePosition = SavedData.OverriddenIcon;
+                this.CustomIconSourceTexture = BagType.SourceTexture.SpringObjects;
+                this.CustomIconTexturePosition = SavedData.OverriddenIcon;
             }
 
             this.ExcludedAutofillItems = new Dictionary<string, HashSet<ObjectQuality>>();
@@ -301,8 +365,8 @@ namespace ItemBags.Bags
 
                 if (Data.IsCustomIcon)
                 {
-                    this.Icon = Game1.objectSpriteSheet;
-                    this.IconTexturePosition = Data.OverriddenIcon;
+                    this.CustomIconSourceTexture = BagType.SourceTexture.SpringObjects;
+                    this.CustomIconTexturePosition = Data.OverriddenIcon;
                 }
                 else
                 {
@@ -320,13 +384,10 @@ namespace ItemBags.Bags
 
         public override void ResetIcon()
         {
-            this.Icon = TypeInfo.GetIconTexture();
-            this.IconTexturePosition = TypeInfo.IconSourceRect;
-        }
-
-        public override bool IsUsingDefaultIcon()
-        {
-            return this.Icon == TypeInfo.GetIconTexture() && this.IconTexturePosition.HasValue && this.IconTexturePosition == TypeInfo.IconSourceRect;
+            this.DefaultIconTexture = TypeInfo.GetIconTexture();
+            this.DefaultIconTexturePosition = TypeInfo.IconSourceRect;
+            this.CustomIconSourceTexture = null;
+            this.CustomIconTexturePosition = null;
         }
 
         public override int GetPurchasePrice() { return ItemBagsMod.UserConfig.GetStandardBagPrice(Size, TypeInfo); }

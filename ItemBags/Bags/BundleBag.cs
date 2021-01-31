@@ -21,7 +21,7 @@ using PyTK.CustomElementHandler;
 namespace ItemBags.Bags
 {
     /// <summary>A bag used for storing items required by incomplete Community Center Bundles</summary>
-    //[XmlType("Mods_BundleBag")]
+    [XmlType("Mods_BundleBag")]
     [XmlRoot(ElementName = "BundleBag", Namespace = "")]
 #if ANDROID
     public class BundleBag : BoundedBag
@@ -79,8 +79,8 @@ namespace ItemBags.Bags
 
             if (SavedData.IsCustomIcon)
             {
-                this.Icon = Game1.objectSpriteSheet;
-                this.IconTexturePosition = SavedData.OverriddenIcon;
+                this.CustomIconSourceTexture = BagType.SourceTexture.SpringObjects;
+                this.CustomIconTexturePosition = SavedData.OverriddenIcon;
             }
         }
 
@@ -108,8 +108,8 @@ namespace ItemBags.Bags
 
                 if (Data.IsCustomIcon)
                 {
-                    this.Icon = Game1.objectSpriteSheet;
-                    this.IconTexturePosition = Data.OverriddenIcon;
+                    this.CustomIconSourceTexture = BagType.SourceTexture.SpringObjects;
+                    this.CustomIconTexturePosition = Data.OverriddenIcon;
                 }
                 else
                 {
@@ -126,11 +126,12 @@ namespace ItemBags.Bags
 
         public override void ResetIcon()
         {
-            this.Icon = TextureHelpers.JunimoNoteTexture;
-            this.IconTexturePosition = new Rectangle(0, 244, 16, 16);
+            this.DefaultIconTexture = TextureHelpers.JunimoNoteTexture;
+            this.DefaultIconTexturePosition = new Rectangle(0, 244, 16, 16);
+            this.CustomIconSourceTexture = null;
+            this.CustomIconTexturePosition = null;
         }
 
-        public override bool IsUsingDefaultIcon() { return this.Icon == TextureHelpers.JunimoNoteTexture && this.IconTexturePosition == new Rectangle(0, 244, 16, 16); }
         public override bool CanCustomizeIcon() { return false; }
 
         public override int GetPurchasePrice() { return ItemBagsMod.UserConfig.GetBundleBagPrice(Size); }

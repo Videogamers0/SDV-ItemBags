@@ -78,7 +78,7 @@ namespace ItemBags.Bags
     }
 
     /// <summary>A bag that can store most stackable objects.</summary>
-    //[XmlType("Mods_Rucksack")]
+    [XmlType("Mods_Rucksack")]
     [XmlRoot(ElementName = "Rucksack", Namespace = "")]
 #if ANDROID
     public class Rucksack : ItemBag
@@ -93,17 +93,17 @@ namespace ItemBags.Bags
         /// If multiple <see cref="ItemBag"/> objects can store the item and have Autofill=true, 
         /// then it will first prioritize a <see cref="BundleBag"/>, then <see cref="Rucksack"/> with <see cref="Rucksack.AutofillPriority"/>=<see cref="AutofillPriority.High"/>,<para/>
         /// then standard <see cref="BoundedBag"/>, then <see cref="Rucksack"/> with <see cref="Rucksack.AutofillPriority"/>=<see cref="AutofillPriority.Low"/>.</summary>
-        [XmlIgnore]
+        [XmlElement("Autofill")]
         public bool Autofill { get; set; }
 
         /// <summary>Determines the priority when choosing which bag to fill with a picked up item, when there are multiple bags that can be autofilled.<para/>
         /// Only relevant if <see cref="Autofill"/>=true</summary>
-        [XmlIgnore]
+        [XmlElement("AutofillPriority")]
         public AutofillPriority AutofillPriority { get; set; }
 
-        [XmlIgnore]
+        [XmlElement("SortProperty")]
         public SortingProperty SortProperty { get; set; }
-        [XmlIgnore]
+        [XmlElement("SortOrder")]
         public SortingOrder SortOrder { get; set; }
 
         /// <summary>Cycles Autofill between On (Low Priority), On (High Priority), and Off</summary>
@@ -227,6 +227,7 @@ namespace ItemBags.Bags
             return ChangesMade;
         }
 
+        [XmlIgnore]
         private int _MaxStackSize { get; set; }
         [XmlIgnore]
         public override int MaxStackSize { get { return _MaxStackSize; } }
@@ -277,8 +278,8 @@ namespace ItemBags.Bags
 
             if (SavedData.IsCustomIcon)
             {
-                this.Icon = Game1.objectSpriteSheet;
-                this.IconTexturePosition = SavedData.OverriddenIcon;
+                this.CustomIconSourceTexture = BagType.SourceTexture.SpringObjects;
+                this.CustomIconTexturePosition = SavedData.OverriddenIcon;
             }
         }
 
@@ -325,8 +326,8 @@ namespace ItemBags.Bags
 
                 if (Data.IsCustomIcon)
                 {
-                    this.Icon = Game1.objectSpriteSheet;
-                    this.IconTexturePosition = Data.OverriddenIcon;
+                    this.CustomIconSourceTexture = BagType.SourceTexture.SpringObjects;
+                    this.CustomIconTexturePosition = Data.OverriddenIcon;
                 }
                 else
                 {
@@ -365,8 +366,13 @@ namespace ItemBags.Bags
             DrawInMenu(GrayscaleTexture, null, new Vector2(16 - GrayscaleTexture.Width, 16 - GrayscaleTexture.Height) * 2f, 1.3f, spriteBatch, location, scaleSize, transparency, layerDepth, drawStackNumber, color, drawShadow);
         }
 
-        public override bool IsUsingDefaultIcon() { return this.Icon == null; }
-        public override void ResetIcon() { this.Icon = null; }
+        public override void ResetIcon()
+        {
+            this.DefaultIconTexture = null;
+            this.DefaultIconTexturePosition = new Rectangle();
+            this.CustomIconSourceTexture = null;
+            this.CustomIconTexturePosition = null;
+        }
 
         public override int GetPurchasePrice()
         {
