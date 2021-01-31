@@ -86,15 +86,15 @@ namespace ItemBags.Bags
         public Dictionary<string, HashSet<ObjectQuality>> ExcludedAutofillItems { get; private set; }
 
         [XmlArray("ExcludedAutofillItems")]
-        [XmlArrayItem("Item")]
-        public List<string> SerializableExcludedAutofillItems
+        [XmlArrayItem("ExcludedAutofillItem")]
+        public string[] SerializableExcludedAutofillItems
         {
             get
             {
                 if (ExcludedAutofillItems == null)
-                    return new List<string>();
+                    return new string[] { };
                 else
-                    return ExcludedAutofillItems.Select(x => EncodeExcludedItem(x.Key, x.Value)).ToList();
+                    return ExcludedAutofillItems.Select(x => EncodeExcludedItem(x.Key, x.Value)).ToArray();
             }
             set
             {
