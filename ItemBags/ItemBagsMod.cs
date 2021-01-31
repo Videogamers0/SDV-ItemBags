@@ -95,6 +95,7 @@ namespace ItemBags
                 }
 
                 //  Register custom types for serialization
+#if !ANDROID
                 if (Helper.ModRegistry.IsLoaded(SpaceCoreUniqueId))
                 {
                     IModInfo SpaceCoreInfo = Helper.ModRegistry.Get(SpaceCoreUniqueId);
@@ -104,6 +105,7 @@ namespace ItemBags
                     API.RegisterSerializerType(typeof(OmniBag));
                     API.RegisterSerializerType(typeof(Rucksack));
                 }
+#endif
 
                 ModdedBag.OnGameLaunched();
             };

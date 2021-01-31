@@ -11,6 +11,11 @@
     {
       "UniqueID": "spacechase0.JsonAssets",
       "IsRequired": false
+    },
+    {
+      "UniqueID": "spacechase0.SpaceCore",
+      "IsRequired": false,
+      "MinimumVersion": "1.5.0"
     }
   ]
 }
