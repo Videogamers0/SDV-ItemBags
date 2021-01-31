@@ -26,7 +26,7 @@ namespace ItemBags.Bags
 #if ANDROID
     public class BundleBag : BoundedBag
 #else
-    public class BundleBag : BoundedBag, ISaveElement
+    public class BundleBag : BoundedBag//, ISaveElement
 #endif
     {
         public const string BundleBagTypeId = "c3f69b2c-6b21-477c-ad43-ee3b996a96bd";

@@ -83,7 +83,7 @@ namespace ItemBags.Bags
 #if ANDROID
     public class Rucksack : ItemBag
 #else
-    public class Rucksack : ItemBag, ISaveElement
+    public class Rucksack : ItemBag//, ISaveElement
 #endif
     {
         public const string RucksackTypeId = "a56bbc00-9d89-4216-8e06-5ea0cfa95525";

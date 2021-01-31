@@ -25,7 +25,7 @@ namespace ItemBags.Bags
 #if ANDROID
     public class OmniBag : ItemBag
 #else
-    public class OmniBag : ItemBag, ISaveElement
+    public class OmniBag : ItemBag//, ISaveElement
 #endif
     {
         public const string OmniBagTypeId = "6eb4c15d-3ad3-4b47-aab5-eb2f5daa8b3f";

@@ -33,7 +33,7 @@ namespace ItemBags.Bags
 #if ANDROID
     public class BoundedBag : ItemBag
 #else
-    public class BoundedBag : ItemBag, ISaveElement
+    public class BoundedBag : ItemBag//, ISaveElement
 #endif
     {
         public class AllowedObject
@@ -85,27 +85,51 @@ namespace ItemBags.Bags
         [XmlIgnore]
         public Dictionary<string, HashSet<ObjectQuality>> ExcludedAutofillItems { get; private set; }
 
-        [XmlIgnore]
         [XmlArray("ExcludedAutofillItems")]
         [XmlArrayItem("Item")]
-        public List<Tuple<string, List<ObjectQuality>>> SerializableExcludedAutofillItems
+        public List<string> SerializableExcludedAutofillItems
         {
             get
             {
-                return ExcludedAutofillItems.Select(x => Tuple.Create(x.Key, x.Value.ToList())).ToList();
+                if (ExcludedAutofillItems == null)
+                    return new List<string>();
+                else
+                    return ExcludedAutofillItems.Select(x => EncodeExcludedItem(x.Key, x.Value)).ToList();
             }
             set
             {
                 ExcludedAutofillItems = new Dictionary<string, HashSet<ObjectQuality>>();
                 if (value != null)
                 {
-                    foreach (var Tuple in value)
+                    foreach (string EncodedData in value)
                     {
-                        ExcludedAutofillItems[Tuple.Item1] = new HashSet<ObjectQuality>(Tuple.Item2);
+                        if (TryDecodeExcludedItem(EncodedData, out string Name, out HashSet<ObjectQuality> Qualities))
+                            ExcludedAutofillItems[Name] = Qualities;
                     }
                 }
             }
-        } 
+        }
+
+        private static string EncodeExcludedItem(string Name, HashSet<ObjectQuality> Qualities)
+        {
+            string Delimiter = "||";
+            return string.Format("{0}{1}{2}", Name, Delimiter, string.Join(Delimiter, Qualities.Select(x => x.ToString())));
+        }
+
+        private static bool TryDecodeExcludedItem(string Data, out string Name, out HashSet<ObjectQuality> Qualities)
+        {
+            Name = null;
+            Qualities = null;
+
+            if (string.IsNullOrEmpty(Data))
+                return false;
+
+            string Delimiter = "||";
+            string[] Fields = Data.Split(new List<string>() { Delimiter }.ToArray(), StringSplitOptions.RemoveEmptyEntries);
+            Name = Fields[0];
+            Qualities = new HashSet<ObjectQuality>(Fields.Skip(1).Select(x => (ObjectQuality)Enum.Parse(typeof(ObjectQuality), x)));
+            return true;
+        }
 
         public void ToggleItemAutofill(Object Item)
         {
