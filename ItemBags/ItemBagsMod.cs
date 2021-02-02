@@ -56,6 +56,11 @@ namespace ItemBags
         {
             ModInstance = this;
 
+            if (Helper.ModRegistry.IsLoaded("Entoarox.EntoaroxFramework"))
+            {
+                Monitor.Log("Entoarox Framework overrides the game's save serializer and may cause errors when trying to save your game with this mod installed.", LogLevel.Warn);
+            }
+
             LoadUserConfig();
             LoadGlobalConfig();
             LoadModdedItems();

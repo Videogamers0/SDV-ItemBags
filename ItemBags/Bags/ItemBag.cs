@@ -362,8 +362,15 @@ namespace ItemBags.Bags
         [XmlIgnore]
         public string DescriptionAlias { get; protected set; }
 
+        [XmlIgnore]
+        private ContainerSize _Size;
         [XmlElement("Size")]
-        public ContainerSize Size { get; set; }
+        public ContainerSize Size {
+            get { return _Size; }
+            set { _Size = value; OnSizeChanged?.Invoke(this, EventArgs.Empty); }
+        }
+        public event EventHandler<EventArgs> OnSizeChanged;
+
         /// <summary>Never Add/Remove from this List directly. Use <see cref="MoveToBag(Object, int, out int, bool, IList{Item})"/> and <see cref="MoveFromBag(Object, int, out int, bool, IList{Item}, int)"/></summary>
         [XmlArray("BagContents")]
         [XmlArrayItem("BagItem")]

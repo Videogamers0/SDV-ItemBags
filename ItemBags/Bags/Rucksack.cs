@@ -235,37 +235,41 @@ namespace ItemBags.Bags
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         public Rucksack() : base(ItemBagsMod.Translate("RucksackName"), ItemBagsMod.Translate("RucksackDescription"), ContainerSize.Small, null, null, new Vector2(16, 16), 0.5f, 1f)
         {
-            this.NumSlots = ItemBagsMod.UserConfig.GetRucksackSlotCount(Size);
             this.Autofill = false;
             this.AutofillPriority = AutofillPriority.Low;
             this.SortProperty = SortingProperty.Similarity;
             this.SortOrder = SortingOrder.Ascending;
 
-            _MaxStackSize = ItemBagsMod.UserConfig.GetRucksackCapacity(Size);
+            InitializeSizeSettings();
+            LoadTextures();
+            OnSizeChanged += Rucksack_OnSizeChanged;
+        }
 
+        private void Rucksack_OnSizeChanged(object sender, EventArgs e)
+        {
+            InitializeSizeSettings();
+        }
+
+        private void InitializeSizeSettings()
+        {
+            NumSlots = ItemBagsMod.UserConfig.GetRucksackSlotCount(Size);
+            _MaxStackSize = ItemBagsMod.UserConfig.GetRucksackCapacity(Size);
             DescriptionAlias = string.Format("{0}\n({1})",
                 ItemBagsMod.Translate("RucksackDescription"),
                 ItemBagsMod.Translate("CapacityDescription", new Dictionary<string, string>() { { "count", MaxStackSize.ToString() } }));
-
-            LoadTextures();
         }
 
         public Rucksack(ContainerSize Size, bool Autofill, AutofillPriority AutofillPriority = AutofillPriority.High, SortingProperty SortProperty = SortingProperty.Time, SortingOrder SortOrder = SortingOrder.Ascending)
             : base(ItemBagsMod.Translate("RucksackName"), ItemBagsMod.Translate("RucksackDescription"), Size, null, null, new Vector2(16, 16), 0.5f, 1f)
         {
-            this.NumSlots = ItemBagsMod.UserConfig.GetRucksackSlotCount(Size);
             this.Autofill = Autofill;
             this.AutofillPriority = AutofillPriority;
             this.SortProperty = SortProperty;
             this.SortOrder = SortOrder;
 
-            _MaxStackSize = ItemBagsMod.UserConfig.GetRucksackCapacity(Size);
-
-            DescriptionAlias = string.Format("{0}\n({1})",
-                ItemBagsMod.Translate("RucksackDescription"),
-                ItemBagsMod.Translate("CapacityDescription", new Dictionary<string, string>() { { "count", MaxStackSize.ToString() } }));
-
+            InitializeSizeSettings();
             LoadTextures();
+            OnSizeChanged += Rucksack_OnSizeChanged;
         }
 
         public Rucksack(BagInstance SavedData)
@@ -307,13 +311,8 @@ namespace ItemBags.Bags
                 this.Size = Data.Size;
                 this.Autofill = Data.Autofill;
                 this.AutofillPriority = Data.AutofillPriority;
-                this.NumSlots = ItemBagsMod.UserConfig.GetRucksackSlotCount(Size);
 
-                this._MaxStackSize = ItemBagsMod.UserConfig.GetRucksackCapacity(Size);
-
-                DescriptionAlias = string.Format("{0}\n({1})",
-                    ItemBagsMod.Translate("RucksackDescription"),
-                    ItemBagsMod.Translate("CapacityDescription", new Dictionary<string, string>() { { "count", MaxStackSize.ToString() } }));
+                InitializeSizeSettings();
 
                 this.SortProperty = Data.SortProperty;
                 this.SortOrder = Data.SortOrder;
