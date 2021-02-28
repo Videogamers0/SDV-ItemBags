@@ -188,56 +188,54 @@ namespace ItemBags.Bags
             get { return _TypeInfo; }
             protected set
             {
-                if (TypeInfo != value)
+                _TypeInfo = value;
+
+                if (TypeInfo == null)
                 {
-                    _TypeInfo = value;
+                    SizeInfo = null;
+                }
+                else
+                {
+                    DefaultIconTexture = TypeInfo.GetIconTexture();
+                    DefaultIconTexturePosition = TypeInfo.IconSourceRect;
 
-                    if (TypeInfo == null)
-                    {
-                        SizeInfo = null;
-                    }
+                    SizeInfo = TypeInfo.SizeSettings.FirstOrDefault(x => x.Size == this.Size);
+                    if (SizeInfo == null) // This should never happen but just in case...
+                        SizeInfo = TypeInfo.SizeSettings.First();
+
+                    _MaxStackSize = ItemBagsMod.UserConfig.GetStandardBagCapacity(Size, TypeInfo);
+
+                    BaseName = BagType.GetTranslatedName(TypeInfo);
+                    DescriptionAlias = string.Format("{0}\n({1})",
+                        BagType.GetTranslatedDescription(TypeInfo),
+                        ItemBagsMod.Translate("CapacityDescription", new Dictionary<string, string>() { { "count", MaxStackSize.ToString() } }));
+
+                    if (SizeInfo.Size != Size)
+                        this.AllowedObjects = new List<AllowedObject>().AsReadOnly();
                     else
-                    {
-                        DefaultIconTexture = TypeInfo.GetIconTexture();
-                        DefaultIconTexturePosition = TypeInfo.IconSourceRect;
-
-                        SizeInfo = TypeInfo.SizeSettings.FirstOrDefault(x => x.Size == this.Size);
-                        if (SizeInfo == null) // This should never happen but just in case...
-                            SizeInfo = TypeInfo.SizeSettings.First();
-
-                        _MaxStackSize = ItemBagsMod.UserConfig.GetStandardBagCapacity(Size, TypeInfo);
-
-                        BaseName = BagType.GetTranslatedName(TypeInfo);
-                        DescriptionAlias = string.Format("{0}\n({1})",
-                            BagType.GetTranslatedDescription(TypeInfo),
-                            ItemBagsMod.Translate("CapacityDescription", new Dictionary<string, string>() { { "count", MaxStackSize.ToString() } }));
-
-                        if (SizeInfo.Size != Size)
-                            this.AllowedObjects = new List<AllowedObject>().AsReadOnly();
-                        else
-                            this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(SizeInfo.Items.Select(x => new AllowedObject(x)).ToList());
-                    }
+                        this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(SizeInfo.Items.Select(x => new AllowedObject(x)).ToList());
                 }
             }
         }
 
         [XmlElement("BagTypeId")]
-        public string TypeId
-        {
+        public string TypeId {
             get { return TypeInfo?.Id ?? ""; }
-            set
+            set { SetTypeId(value); }
+        }
+
+        private void SetTypeId(string value)
+        {
+            if (string.IsNullOrEmpty(value) || ItemBagsMod.BagConfig?.IndexedBagTypes == null)
             {
-                if (string.IsNullOrEmpty(value) || ItemBagsMod.BagConfig?.IndexedBagTypes == null)
-                {
-                    TypeInfo = null;
-                }
+                TypeInfo = null;
+            }
+            else
+            {
+                if (ItemBagsMod.BagConfig.IndexedBagTypes.TryGetValue(value, out BagType Type))
+                    TypeInfo = Type;
                 else
-                {
-                    if (ItemBagsMod.BagConfig.IndexedBagTypes.TryGetValue(value, out BagType Type))
-                        TypeInfo = Type;
-                    else
-                        TypeInfo = null;
-                }
+                    TypeInfo = null;
             }
         }
 
@@ -265,6 +263,12 @@ namespace ItemBags.Bags
             this.TypeInfo = TypeInfo;
             this.Autofill = Autofill;
             this.ExcludedAutofillItems = new Dictionary<string, HashSet<ObjectQuality>>();
+            OnSizeChanged += BoundedBag_OnSizeChanged;
+        }
+
+        private void BoundedBag_OnSizeChanged(object sender, EventArgs e)
+        {
+            SetTypeId(this.TypeId); // Force TypeInfo to be re-initialized
         }
 
         public BoundedBag(BagType TypeInfo, BagInstance SavedData)
