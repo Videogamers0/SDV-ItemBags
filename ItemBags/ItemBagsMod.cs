@@ -58,7 +58,9 @@ namespace ItemBags
 
             if (Helper.ModRegistry.IsLoaded("Entoarox.EntoaroxFramework"))
             {
-                Monitor.Log("Entoarox Framework overrides the game's save serializer and may cause errors when trying to save your game with this mod installed.", LogLevel.Warn);
+                Monitor.Log("WARNING - ItemBags might not be compatible with Entoarox Framework. ItemBags uses SpaceCore to handle saving/loading custom items," +
+                    " which requires overriding the game's save serializer. Entoarox Framework also overrides the save serializer so your game may fail to save" +
+                    " with ItemBags and Entoarox Framework installed. If you are able to save while owning a bag item, then you can safely ignore this message.", LogLevel.Error);
             }
 
             LoadUserConfig();
