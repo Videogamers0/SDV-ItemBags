@@ -20,7 +20,7 @@ using ItemBags.Persistence;
 using ItemBags.Helpers;
 using System.Runtime.Serialization;
 #if !ANDROID
-using PyTK.CustomElementHandler;
+//using PyTK.CustomElementHandler;
 #endif
 
 namespace ItemBags.Bags

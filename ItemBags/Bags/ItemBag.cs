@@ -479,7 +479,14 @@ namespace ItemBags.Bags
                     {
                         int IdBeforeFixing = Item.ParentSheetIndex;
 
-                        bool IsItemStillValid = !API.FixIdsInItem(Item);
+                        bool IsItemStillValid = true;
+                        try { IsItemStillValid = !API.FixIdsInItem(Item); }
+                        catch (Exception ex2) 
+                        {
+                            string Msg = $"Error while invoking JsonAssets API 'FixIdsInItem' for id {IdBeforeFixing} (Previous item name: {Item.DisplayName}): {ex2.Message}\n\n{ex2.ToString()}";
+                            ItemBagsMod.ModInstance.Monitor.Log(Msg, LogLevel.Error); 
+                        }
+
                         if (!IsItemStillValid)
                         {
                             //  The mod that this item belongs to is no longer installed
@@ -500,7 +507,7 @@ namespace ItemBags.Bags
 #if DEBUG
                                 ItemBagsMod.ModInstance.Monitor.Log(Message, LogLevel.Debug);
 #else
-                            ItemBagsMod.ModInstance.Monitor.Log(Message, LogLevel.Trace);
+                                ItemBagsMod.ModInstance.Monitor.Log(Message, LogLevel.Trace);
 #endif
                             }
                         }

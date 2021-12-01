@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Object = StardewValley.Object;
 #if !ANDROID
-using PyTK.CustomElementHandler;
+//using PyTK.CustomElementHandler;
 #endif
 
 namespace ItemBags.Bags

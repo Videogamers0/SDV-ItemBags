@@ -249,7 +249,7 @@ namespace ItemBags.Persistence
             }
             catch (Exception ex)
             {
-                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Failed to import modded bags. Error: {0}", ex.Message), LogLevel.Error);
+                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Failed to import modded bags. Error: {0}\n\n{1}", ex.Message, ex.ToString()), LogLevel.Error);
             }
         }
 
@@ -401,7 +401,7 @@ namespace ItemBags.Persistence
             }
             catch (Exception ex)
             {
-                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Failed to import modded items. Error: {0}", ex.Message), LogLevel.Error);
+                ItemBagsMod.ModInstance.Monitor.Log(string.Format("Failed to import modded items. Error: {0}\n\n{1}", ex.Message, ex.ToString()), LogLevel.Error);
             }
             finally { HasImportedItems = true; }
         }

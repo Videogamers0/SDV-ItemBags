@@ -22,7 +22,7 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
-        public static Version CurrentVersion = new Version(2, 0, 1); // Last updated 9/22/2021 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(2, 0, 2); // Last updated 12/1/2021 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
         public const string SpaceCoreUniqueId = "spacechase0.SpaceCore";
@@ -144,6 +144,7 @@ namespace ItemBags
             AutofillHandler.OnModEntry(helper);
             MultiplayerHandler.OnModEntry(helper);
             MonsterLootHandler.OnModEntry(helper);
+            LegacyDataMigrator.OnModEntry(helper);
         }
 
         internal static void LoadUserConfig()
@@ -529,7 +530,7 @@ namespace ItemBags
                         }
 
                         //  Add Omni Bags to stock
-                        foreach(OmniBagSizeConfig SizeCfg in UserConfig.OmniBagSettings)
+                        foreach (OmniBagSizeConfig SizeCfg in UserConfig.OmniBagSettings)
                         {
                             ContainerSize Size = SizeCfg.Size;
                             if (SizeCfg.Sellers.Contains(BagShop) && UserConfig.IsSizeVisibleInShops(Size))

@@ -17,7 +17,7 @@ using StardewValley.Menus;
 using StardewValley.Objects;
 using Object = StardewValley.Object;
 #if !ANDROID
-using PyTK.CustomElementHandler;
+//using PyTK.CustomElementHandler;
 #endif
 
 namespace ItemBags.Bags
