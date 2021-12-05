@@ -53,10 +53,9 @@ namespace ItemBags.Bags
         public bool AllowDowngradeItemQuality { get { return ItemBagsMod.UserConfig.AllowDowngradeBundleItemQuality(this.Size); } }
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
-        public BundleBag() : base()
+        public BundleBag() : this(ValidSizes.Min(), true)
         {
-            this.Size = ValidSizes.Min();
-            this.Autofill = true;
+
         }
 
         /// <param name="Size">Must be a Size within <see cref="ValidSizes"/></param>
