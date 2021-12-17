@@ -166,7 +166,7 @@ namespace ItemBags.Bags
                 return true;
             else
             {
-                Object BagItem = this.Contents.FirstOrDefault(x => AreItemsEquivalent(x, Item, false));
+                Object BagItem = this.Contents.FirstOrDefault(x => AreItemsEquivalent(x, Item, false, true));
                 if (BagItem == null)
                     return false;
                 else

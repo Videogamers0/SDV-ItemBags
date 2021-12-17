@@ -246,7 +246,7 @@ namespace ItemBags.Bags
             ObjectQuality OriginalQuality = (ObjectQuality)Item.Quality;
             bool CanDowngradeQuality = OriginalQuality > ObjectQuality.Regular && this.AllowDowngradeItemQuality && Source != null && Item != null && Source.Contains(Item);
             if (!CanDowngradeQuality)
-                return base.MoveToBag(Item, Qty, out MovedQty, PlaySoundEffect, Source, NotifyIfContentsChanged, ResyncMultiplayerData);
+                return base.MoveToBag(Item, Qty, out MovedQty, PlaySoundEffect, Source, NotifyIfContentsChanged, ResyncMultiplayerData, false);
             else
             {
                 //Dictionary<ObjectQuality, int> RequiredQuantities = GetRequiredQuantities(Item);
@@ -258,7 +258,7 @@ namespace ItemBags.Bags
                 foreach (ObjectQuality CurrentQuality in ValidQualities)
                 {
                     Item.Quality = (int)CurrentQuality;
-                    if (base.MoveToBag(Item, RemainingQty, out int CurrentMovedQty, false, Source, false, false))
+                    if (base.MoveToBag(Item, RemainingQty, out int CurrentMovedQty, false, Source, false, false, false))
                     {
                         TotalMovedQty += CurrentMovedQty;
                         RemainingQty -= CurrentMovedQty;
@@ -288,6 +288,11 @@ namespace ItemBags.Bags
                     return false;
                 }
             }
+        }
+
+        public override bool MoveFromBag(Object Item, int Qty, out int MovedQty, bool PlaySoundEffect, IList<Item> Target, int ActualTargetCapacity, bool NotifyIfContentsChanged = true, bool ResyncMultiplayerData = true)
+        {
+            return base.MoveFromBag(Item, Qty, out MovedQty, PlaySoundEffect, Target, ActualTargetCapacity, NotifyIfContentsChanged, ResyncMultiplayerData, false);
         }
 
         public override void drawTooltip(SpriteBatch spriteBatch, ref int x, ref int y, SpriteFont font, float alpha, StringBuilder overrideText)
