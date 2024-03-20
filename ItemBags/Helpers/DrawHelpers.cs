@@ -138,12 +138,14 @@ namespace ItemBags.Helpers
             else if (Item is Ring Ring)
             {
                 SourceTexture = Game1.objectSpriteSheet;
-                SourceTextureRectangle = new Rectangle?(Game1.getSourceRectForStandardTileSheet(SourceTexture, Ring.indexInTileSheet, 16, 16));
+                if (int.TryParse(Ring.ItemId, out int RingId))
+                    SourceTextureRectangle = new Rectangle?(Game1.getSourceRectForStandardTileSheet(SourceTexture, RingId, 16, 16));
             }
             else if (Item is Hat Hat)
             {
                 SourceTexture = FarmerRenderer.hatsTexture;
-                SourceTextureRectangle = new Rectangle?(new Rectangle(Hat.which * 20 % SourceTexture.Width, Hat.which * 20 / SourceTexture.Width * 20 * 4, 20, 20));
+                if (int.TryParse(Hat.ItemId, out int HatId))
+                    SourceTextureRectangle = new Rectangle?(new Rectangle(HatId * 20 % SourceTexture.Width, HatId * 20 / SourceTexture.Width * 20 * 4, 20, 20));
             }
             else if (Item is Boots Boots)
             {
@@ -152,30 +154,27 @@ namespace ItemBags.Helpers
             }
             else if (Item is Clothing Clothing)
             {
-                Color clothes_color = Clothing.clothesColor;
+                Color clothes_color = Clothing.clothesColor.Value;
                 if (Clothing.isPrismatic.Value)
                 {
                     clothes_color = Utility.GetPrismaticColor(0);
                 }
-                if (Clothing.clothesType.Value != 0)
+                if (Clothing.clothesType.Value == Clothing.ClothesType.PANTS)
                 {
-                    if (Clothing.clothesType.Value == 1)
-                    {
-                        b.Draw(FarmerRenderer.pantsTexture, Destination, 
-                            new Rectangle?(new Rectangle(192 * (Clothing.indexInTileSheetMale.Value % (FarmerRenderer.pantsTexture.Width / 192)), 688 * (Clothing.indexInTileSheetMale.Value / (FarmerRenderer.pantsTexture.Width / 192)) + 672, 16, 16)), 
-                            Utility.MultiplyColor(clothes_color, Color.White) * Transparency, 0f, Vector2.Zero, SpriteEffects.None, 1f);
-                        //b.Draw(FarmerRenderer.pantsTexture, location + new Vector2(32f, 32f), 
-                            //new Rectangle?(new Rectangle(192 * (this.indexInTileSheetMale.Value % (FarmerRenderer.pantsTexture.Width / 192)), 688 * (this.indexInTileSheetMale.Value / (FarmerRenderer.pantsTexture.Width / 192)) + 672, 16, 16)), 
-                            //Utility.MultiplyColor(clothes_color, color) * transparency, 0f, new Vector2(8f, 8f), scaleSize * 4f, SpriteEffects.None, layerDepth);
-                    }
+                    b.Draw(FarmerRenderer.pantsTexture, Destination, 
+                        new Rectangle?(new Rectangle(192 * (Clothing.indexInTileSheet.Value % (FarmerRenderer.pantsTexture.Width / 192)), 688 * (Clothing.indexInTileSheet.Value / (FarmerRenderer.pantsTexture.Width / 192)) + 672, 16, 16)), 
+                        Utility.MultiplyColor(clothes_color, Color.White) * Transparency, 0f, Vector2.Zero, SpriteEffects.None, 1f);
+                    //b.Draw(FarmerRenderer.pantsTexture, location + new Vector2(32f, 32f), 
+                        //new Rectangle?(new Rectangle(192 * (this.indexInTileSheetMale.Value % (FarmerRenderer.pantsTexture.Width / 192)), 688 * (this.indexInTileSheetMale.Value / (FarmerRenderer.pantsTexture.Width / 192)) + 672, 16, 16)), 
+                        //Utility.MultiplyColor(clothes_color, color) * transparency, 0f, new Vector2(8f, 8f), scaleSize * 4f, SpriteEffects.None, layerDepth);
                 }
-                else
+                else if (Clothing.clothesType.Value == Clothing.ClothesType.SHIRT)
                 {
                     b.Draw(FarmerRenderer.shirtsTexture, Destination, 
-                        new Rectangle?(new Rectangle(Clothing.indexInTileSheetMale.Value * 8 % 128, Clothing.indexInTileSheetMale.Value * 8 / 128 * 32, 8, 8)), 
+                        new Rectangle?(new Rectangle(Clothing.indexInTileSheet.Value * 8 % 128, Clothing.indexInTileSheet.Value * 8 / 128 * 32, 8, 8)), 
                         Color.White * Transparency, 0f, Vector2.Zero, SpriteEffects.None, 1f);
                     b.Draw(FarmerRenderer.shirtsTexture, Destination, 
-                        new Rectangle?(new Rectangle(Clothing.indexInTileSheetMale.Value * 8 % 128 + 128, Clothing.indexInTileSheetMale.Value * 8 / 128 * 32, 8, 8)), 
+                        new Rectangle?(new Rectangle(Clothing.indexInTileSheet.Value * 8 % 128 + 128, Clothing.indexInTileSheet.Value * 8 / 128 * 32, 8, 8)), 
                         Utility.MultiplyColor(clothes_color, Color.White) * Transparency, 0f, Vector2.Zero, SpriteEffects.None, 1f);
                     //b.Draw(FarmerRenderer.shirtsTexture, location + new Vector2(32f, 32f), new Rectangle?(new Rectangle(this.indexInTileSheetMale.Value * 8 % 128, this.indexInTileSheetMale.Value * 8 / 128 * 32, 8, 8)), color * transparency, 0f, new Vector2(4f, 4f), scaleSize * 4f, SpriteEffects.None, layerDepth);
                     //b.Draw(FarmerRenderer.shirtsTexture, location + new Vector2(32f, 32f), new Rectangle?(new Rectangle(this.indexInTileSheetMale.Value * 8 % 128 + 128, this.indexInTileSheetMale.Value * 8 / 128 * 32, 8, 8)), Utility.MultiplyColor(clothes_color, color) * transparency, 0f, new Vector2(4f, 4f), scaleSize * 4f, SpriteEffects.None, layerDepth + dye_portion_layer_offset);
@@ -183,10 +182,10 @@ namespace ItemBags.Helpers
             }
             else if (Item is Fence Fence)
             {
-                int DrawSum = Fence.getDrawSum(Game1.currentLocation);
+                int DrawSum = Fence.getDrawSum();
                 int SourceRectPosition = Fence.fenceDrawGuide[DrawSum];
                 SourceTexture = Fence.fenceTexture.Value;
-                if (Fence.isGate)
+                if (Fence.isGate.Value)
                 {
                     if (DrawSum == 110)
                     {
@@ -199,15 +198,15 @@ namespace ItemBags.Helpers
                 }
                 SourceTextureRectangle = new Rectangle?(Game1.getArbitrarySourceRect(SourceTexture, 64, 128, SourceRectPosition));
             }
-            else if (Item is Furniture Furniture)
+            else if (Item is Furniture)// Furniture)
             {
-                SourceTexture = Furniture.furnitureTexture;
-                SourceTextureRectangle = Furniture.defaultSourceRect;
+                SourceTexture = null; // Furniture.furnitureTexture; // Stardew Valley 1.6 no longer has a Furniture.furnitureTexture field.
+                SourceTextureRectangle = null; //Furniture.defaultSourceRect;
             }
-            else if (Item is Wallpaper WP)
+            else if (Item is Wallpaper)// WP)
             {
                 SourceTexture = null; // Wallpaper.wallpaperTexture; //Stardew Valley beta 1.5.5 no longer has a Wallpaper.wallpaperTexture field. No idea where it is now
-                SourceTextureRectangle = WP.sourceRect;
+                SourceTextureRectangle = null; // WP.sourceRect;
             }
             else
             {
@@ -226,7 +225,7 @@ namespace ItemBags.Helpers
                 else
                 {
                     SourceTexture = Game1.objectSpriteSheet;
-                    SourceTextureRectangle = new Rectangle?(Game1.getSourceRectForStandardTileSheet(SourceTexture, Item.parentSheetIndex, 16, 16));
+                    SourceTextureRectangle = new Rectangle?(Game1.getSourceRectForStandardTileSheet(SourceTexture, Item.ParentSheetIndex, 16, 16));
                 }
             }
 
@@ -345,10 +344,10 @@ namespace ItemBags.Helpers
                         RequiredSize.Y += RecoveryIconSize;
                     }
 
-                    bool HasBuffs = Game1.objectInformation[Item.ParentSheetIndex].Split(new char[] { '/' }).Length > 7;
+                    bool HasBuffs = Item.GetFoodOrDrinkBuffs().Any(); //Game1.objectData[Item.ParentSheetIndex].Split(new char[] { '/' }).Length > 7;
                     if (HasBuffs)
                     {
-                        List<string> Buffs = Game1.objectInformation[Item.ParentSheetIndex].Split(new char[] { '/' })[7].Split(new char[] { ' ' }).Where(x => int.Parse(x) != 0).ToList();
+                        List<string> Buffs = Item.GetFoodOrDrinkBuffs().Select(x => x.displayName).ToList(); //Game1.objectData[Item.ParentSheetIndex].Split(new char[] { '/' })[7].Split(new char[] { ' ' }).Where(x => int.Parse(x) != 0).ToList();
                         RequiredSize.Y += Buffs.Count * RecoveryIconSize;
                     }
 
@@ -473,12 +472,14 @@ namespace ItemBags.Helpers
                         CurrentPosition.Y += RecoveryIconSize;
                     }
 
+#if NEVER // TODO refactor this to 1.6 updates
                     //  Draw buff effects
-                    bool HasBuffs = Game1.objectInformation[Item.ParentSheetIndex].Split(new char[] { '/' }).Length > 7;
+                    bool HasBuffs = Item.GetFoodOrDrinkBuffs().Any(); //Game1.objectInformation[Item.ParentSheetIndex].Split(new char[] { '/' }).Length > 7;
                     if (HasBuffs)
                     {
-                        string[] Buffs = Game1.objectInformation[Item.ParentSheetIndex].Split(new char[] { '/' })[7].Split(new char[] { ' ' });
-                        for (int i = 0; i < Buffs.Length; i++)
+                        //string[] Buffs = Game1.objectInformation[Item.ParentSheetIndex].Split(new char[] { '/' })[7].Split(new char[] { ' ' });
+                        List<Buff> Buffs = Item.GetFoodOrDrinkBuffs().ToList();
+                        for (int i = 0; i < Buffs.Count; i++)
                         {
                             int BuffAmount = Convert.ToInt32(Buffs[i]);
                             if (BuffAmount != 0)
@@ -494,6 +495,7 @@ namespace ItemBags.Helpers
                             }
                         }
                     }
+#endif
 
                     CurrentPosition.Y += 5;
                 }

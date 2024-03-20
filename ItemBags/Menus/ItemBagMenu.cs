@@ -577,7 +577,7 @@ namespace ItemBags.Menus
             //  Handle closing the menu
             if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.CloseBag))
             {
-                if (IsShowingModalMenu && CustomizeIconBounds != null)
+                if (IsShowingModalMenu && CustomizeIconBounds != default)
                     CloseModalMenu();
                 else
                     Bag.CloseContents();

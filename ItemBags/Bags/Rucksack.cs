@@ -16,9 +16,6 @@ using StardewValley;
 using StardewValley.Menus;
 using StardewValley.Objects;
 using Object = StardewValley.Object;
-#if !ANDROID
-//using PyTK.CustomElementHandler;
-#endif
 
 namespace ItemBags.Bags
 {
@@ -80,11 +77,7 @@ namespace ItemBags.Bags
     /// <summary>A bag that can store most stackable objects.</summary>
     [XmlType("Mods_Rucksack")]
     [XmlRoot(ElementName = "Rucksack", Namespace = "")]
-#if ANDROID
     public class Rucksack : ItemBag
-#else
-    public class Rucksack : ItemBag//, ISaveElement
-#endif
     {
         public const string RucksackTypeId = "a56bbc00-9d89-4216-8e06-5ea0cfa95525";
 
@@ -287,23 +280,6 @@ namespace ItemBags.Bags
             }
         }
 
-#region PyTK CustomElementHandler
-        public object getReplacement()
-        {
-            return new Object(169, 1);
-        }
-
-        public Dictionary<string, string> getAdditionalSaveData()
-        {
-            return new BagInstance(-1, this).ToPyTKAdditionalSaveData();
-        }
-
-        public void rebuild(Dictionary<string, string> additionalSaveData, object replacement)
-        {
-            BagInstance Data = BagInstance.FromPyTKAdditionalSaveData(additionalSaveData);
-            LoadSettings(Data);
-        }
-
         protected override void LoadSettings(BagInstance Data)
         {
             if (Data != null)
@@ -334,7 +310,6 @@ namespace ItemBags.Bags
                 }
             }
         }
-#endregion PyTK CustomElementHandler
 
         /// <summary>The 13x16 portion of <see cref="CursorsTexture"/> that contains the rucksack icon</summary>
         private static Texture2D OriginalTexture { get; set; }
@@ -545,6 +520,15 @@ namespace ItemBags.Bags
             {
                 base.drawTooltip(spriteBatch, ref x, ref y, font, alpha, overrideText);
             }
+        }
+
+        public override Item GetOneNew() => new Rucksack(Size, Autofill, AutofillPriority, SortProperty, SortOrder);
+        public override Item GetOneCopyFrom(Item source)
+        {
+            if (source is Rucksack bag)
+                return new Rucksack(bag.Size, bag.Autofill, bag.AutofillPriority, bag.SortProperty, bag.SortOrder);
+            else
+                return GetOneNew();
         }
     }
 }

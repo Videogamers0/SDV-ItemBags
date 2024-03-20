@@ -63,7 +63,7 @@ namespace ItemBags
             List<Chest> MaterialContainers = ReflectionResult.GetValue();
             if (MaterialContainers != null)
             {
-                SearchedBags.AddRange(MaterialContainers.SelectMany(x => x.items).Where(x => x != null && x is ItemBag).Cast<ItemBag>());
+                SearchedBags.AddRange(MaterialContainers.SelectMany(x => x.Items).Where(x => x != null && x is ItemBag).Cast<ItemBag>());
             }
 
             if (SearchedBags.Any())
@@ -116,7 +116,7 @@ namespace ItemBags
                                 }
                             }
 
-                            Chest TempChest = new Chest(0, TemporaryChestContents, Vector2.Zero, false, 0);
+                            Chest TempChest = new Chest(TemporaryChestContents, Vector2.Zero);
                             MaterialContainers.Add(TempChest);
                         }
                     }
@@ -153,7 +153,7 @@ namespace ItemBags
                             }
                         }
 
-                        Chest TempChest = new Chest(0, TemporaryChestContents, Vector2.Zero, false, 0);
+                        Chest TempChest = new Chest(TemporaryChestContents, Vector2.Zero);
                         MaterialContainers.Add(TempChest);
                     }
                 }

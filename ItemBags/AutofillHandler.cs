@@ -79,7 +79,7 @@ namespace ItemBags
                         Chest Chest = IGM.context as Chest;
 
                         //  Compare previous chest items to current chest items to see if any items were just added to chest
-                        List<Item> CurrentChestMenuContents = Chest.items.Where(x => x != null).ToList();
+                        List<Item> CurrentChestMenuContents = Chest.Items.Where(x => x != null).ToList();
                         if (PreviousChestMenuContents != null)
                         {
                             List<Item> AddedItems = CurrentChestMenuContents.Where(x => !PreviousChestMenuContents.Contains(x)).ToList();
@@ -103,12 +103,12 @@ namespace ItemBags
             if (ItemBagsMod.UserConfig.AllowAutofillInsideChest)
             {
                 //  Autofill the added items to any bags inside of the chest
-                List<ItemBag> AutofillableBags = GetAutofillableBags(Chest.items, out HashSet<ItemBag> NestedBags);
+                List<ItemBag> AutofillableBags = GetAutofillableBags(Chest.Items, out HashSet<ItemBag> NestedBags);
                 if (AutofillableBags.Any())
                 {
                     foreach (Item NewItem in NewItemStacks)
                     {
-                        TryAutofill(Chest.items, AutofillableBags, NestedBags, NewItem, out int AutofilledQuantity);
+                        TryAutofill(Chest.Items, AutofillableBags, NestedBags, NewItem, out int AutofilledQuantity);
                     }
                 }
             }
@@ -275,7 +275,8 @@ namespace ItemBags
                         if (MovedQty > 0)
                         {
                             //Game1.addHUDMessage(new HUDMessage(string.Format("Moved {0} to {1}", Item.DisplayName, Target.DisplayName), MovedQty, true, Color.White, Target));
-                            Game1.addHUDMessage(new HUDMessage(string.Format("Autofilled item to {0}", Target.DisplayName), MovedQty, true, Color.White, Target));
+                            HUDMessage msg = new HUDMessage($"Autofilled item to {Target.DisplayName}");
+                            Game1.addHUDMessage(msg);
                         }
 
                         if (Obj.Stack <= 0)

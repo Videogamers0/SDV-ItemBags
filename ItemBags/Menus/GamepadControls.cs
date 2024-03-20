@@ -7,12 +7,11 @@ using System.Threading.Tasks;
 using StardewValley;
 using ItemBags.Bags;
 using Microsoft.Xna.Framework;
-using Newtonsoft.Json;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace ItemBags.Menus
 {
-    [JsonObject(Title = "GamepadSettings")]
     [DataContract(Name = "GamepadSettings", Namespace = "")]
     public sealed class GamepadControls
     {
@@ -42,78 +41,78 @@ namespace ItemBags.Menus
         }
 
         /// <summary>Opens the selected bag, if the bag is selected from the Inventory tab of the main <see cref="StardewValley.Menus.GameMenu"/></summary>
-        [JsonProperty("OpenBagFromInventory")]
+        [JsonPropertyName("OpenBagFromInventory")]
         public Buttons OpenBagFromInventory { get; set; } = Buttons.Start | Buttons.B | Buttons.X;
         /// <summary>Opens the selected bag, if the bag is selected from a <see cref="StardewValley.Menus.ItemGrabMenu"/> whose <see cref="StardewValley.Menus.ItemGrabMenu.context"/> is a <see cref="StardewValley.Objects.Chest"/></summary>
-        [JsonProperty("OpenBagFromChest")]
+        [JsonPropertyName("OpenBagFromChest")]
         public Buttons OpenBagFromChest { get; set; } = Buttons.Start | Buttons.B | Buttons.X;
         /// <summary>Opens the selected bag, if the bag is selected from the main <see cref="StardewValley.Menus.Toolbar"/>, and no other menus are currently active.</summary>
-        [JsonProperty("OpenBagFromToolbar")]
+        [JsonPropertyName("OpenBagFromToolbar")]
         public Buttons OpenBagFromToolbar { get; set; } = Buttons.X;
         /// <summary>Closes the current bag menu.</summary>
-        [JsonProperty("CloseBag")]
+        [JsonPropertyName("CloseBag")]
         public Buttons CloseBag { get; set; } = Buttons.B | Buttons.Y | Buttons.Start;
 
         /// <summary>The # of frames to wait before continuing to navigate 1 item slot in the held direction.<para/>
         /// For example, if <see cref="NavigationRepeatFrequency"/>=10, then holding the thumbstick to the right will navigate at ~60/10=6 slots per second.</summary>
-        [JsonProperty("NavigationRepeatFrequency")]
+        [JsonPropertyName("NavigationRepeatFrequency")]
         public uint NavigationRepeatFrequency { get; set; } = 5;
         /// <summary>The # of milliseconds to wait after a gamepad navigation button is pressed, before that navigation action can be repeated while the button remains pressed.</summary>
-        [JsonProperty("NavigationRepeatInitialDelay")]
+        [JsonPropertyName("NavigationRepeatInitialDelay")]
         public uint NavigationRepeatInitialDelay { get; set; } = 180;
 
         /// <summary>Moves cursor left by 1 slot.</summary>
-        [JsonProperty("NavigateSingleLeft")]
+        [JsonPropertyName("NavigateSingleLeft")]
         public Buttons NavigateSingleLeft { get; set; } = Buttons.DPadLeft | Buttons.LeftThumbstickLeft;
         /// <summary>Moves cursor up by 1 slot.</summary>
-        [JsonProperty("NavigateSingleUp")]
+        [JsonPropertyName("NavigateSingleUp")]
         public Buttons NavigateSingleUp { get; set; } = Buttons.DPadUp | Buttons.LeftThumbstickUp;
         /// <summary>Moves cursor right by 1 slot.</summary>
-        [JsonProperty("NavigateSingleRight")]
+        [JsonPropertyName("NavigateSingleRight")]
         public Buttons NavigateSingleRight { get; set; } = Buttons.DPadRight | Buttons.LeftThumbstickRight;
         /// <summary>Moves cursor down by 1 slot.</summary>
-        [JsonProperty("NavigateSingleDown")]
+        [JsonPropertyName("NavigateSingleDown")]
         public Buttons NavigateSingleDown { get; set; } = Buttons.DPadDown | Buttons.LeftThumbstickDown;
 
         public static Dictionary<NavigationDirection, Buttons> NavigateSingleButtons { get; private set; }
 
         /// <summary>Moves cursor left by multiple slots, typically to the start of a row, or to a neighboring UI element.</summary>
-        [JsonProperty("NavigateMultipleLeft")]
+        [JsonPropertyName("NavigateMultipleLeft")]
         public Buttons NavigateMultipleLeft { get; set; } = Buttons.RightThumbstickLeft;
         /// <summary>Moves cursor up by multiple slots, typically to the start of a column, or to a neighboring UI element.</summary>
-        [JsonProperty("NavigateMultipleUp")]
+        [JsonPropertyName("NavigateMultipleUp")]
         public Buttons NavigateMultipleUp { get; set; } = Buttons.RightThumbstickUp;
         /// <summary>Moves cursor right by multiple slots, typically to the end of a row, or to a neighboring UI element.</summary>
-        [JsonProperty("NavigateMultipleRight")]
+        [JsonPropertyName("NavigateMultipleRight")]
         public Buttons NavigateMultipleRight { get; set; } = Buttons.RightThumbstickRight;
         /// <summary>Moves cursor down by multiple slots, typically to the end of a column, or to a neighboring UI element.</summary>
-        [JsonProperty("NavigateMultipleDown")]
+        [JsonPropertyName("NavigateMultipleDown")]
         public Buttons NavigateMultipleDown { get; set; } = Buttons.RightThumbstickDown;
 
         public static Dictionary<NavigationDirection, Buttons> NavigateMultipleButtons { get; private set; }
 
         /// <summary>A modifier key which, if held, causes the primary transfer action to transfer several quantity of the hovered item slot.</summary>
-        [JsonProperty("TransferMultipleModifier")]
+        [JsonPropertyName("TransferMultipleModifier")]
         public Buttons TransferMultipleModifier { get; set; } = Buttons.LeftTrigger;
         /// <summary>A modifier key which, if held, causes the primary transfer action to transfer half of the quantity of the hovered item slot.</summary>
-        [JsonProperty("TransferHalfModifier")]
+        [JsonPropertyName("TransferHalfModifier")]
         public Buttons TransferHalfModifier { get; set; } = Buttons.RightTrigger;
 
         /// <summary>The primary action key, typically used to click buttons or item slots, invoking their primary actions.</summary>
-        [JsonProperty("PrimaryAction")]
+        [JsonPropertyName("PrimaryAction")]
         public Buttons PrimaryAction { get; set; } = Buttons.A;
         /// <summary>The secondary action key, typically used to click buttons or item slots, invoking their secondary actions (such as transferring a single item at a time).</summary>
-        [JsonProperty("SecondaryAction")]
+        [JsonPropertyName("SecondaryAction")]
         public Buttons SecondaryAction { get; set; } = Buttons.X;
 
         /// <summary>If a <see cref="RucksackMenu"/> is currently open, this key cycles the <see cref="Rucksack.SortProperty"/></summary>
-        [JsonProperty("RucksackCycleSortProperty")]
+        [JsonPropertyName("RucksackCycleSortProperty")]
         public Buttons RucksackCycleSortProperty { get; set; } = Buttons.LeftShoulder;
         /// <summary>If a <see cref="RucksackMenu"/> is currently open, this key cycles the <see cref="Rucksack.SortOrder"/></summary>
-        [JsonProperty("RucksackCycleSortOrder")]
+        [JsonPropertyName("RucksackCycleSortOrder")]
         public Buttons RucksackCycleSortOrder { get; set; } = Buttons.RightShoulder;
         /// <summary>If a <see cref="BoundedBagMenu"/> is currently open, this key toggles Autofill on the hovered item slot.</summary>
-        [JsonProperty("BoundedBagToggleAutofill")]
+        [JsonPropertyName("BoundedBagToggleAutofill")]
         public Buttons BoundedBagToggleAutofill { get; set; } = Buttons.LeftShoulder | Buttons.RightShoulder;
 
         public GamepadControls()

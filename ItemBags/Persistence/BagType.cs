@@ -2,7 +2,6 @@
 using ItemBags.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Newtonsoft.Json;
 using StardewValley;
 using System;
 using System.Collections.Generic;

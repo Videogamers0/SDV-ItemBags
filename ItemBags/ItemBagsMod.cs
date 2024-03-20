@@ -144,7 +144,6 @@ namespace ItemBags
             AutofillHandler.OnModEntry(helper);
             MultiplayerHandler.OnModEntry(helper);
             MonsterLootHandler.OnModEntry(helper);
-            LegacyDataMigrator.OnModEntry(helper);
         }
 
         internal static void LoadUserConfig()

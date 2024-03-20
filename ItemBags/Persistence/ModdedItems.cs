@@ -1,7 +1,6 @@
 ﻿using ItemBags.Bags;
 using ItemBags.Helpers;
 using Microsoft.Xna.Framework;
-using Newtonsoft.Json;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -13,6 +12,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using static ItemBags.Persistence.BagSizeConfig;
@@ -21,39 +21,38 @@ using Object = StardewValley.Object;
 namespace ItemBags.Persistence
 {
     /// <summary>Represents a <see cref="BoundedBag"/> that can store custom items belonging to other mods.</summary>
-    [JsonObject(Title = "ModdedBag")]
     [DataContract(Name = "ModdedBag", Namespace = "")]
     public class ModdedBag
     {
         public static readonly ReadOnlyCollection<ContainerSize> AllSizes = Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>().ToList().AsReadOnly();
 
         /// <summary>If false, this data file will not be loaded on startup</summary>
-        [JsonProperty("IsEnabled")]
+        [JsonPropertyName("IsEnabled")]
         public bool IsEnabled { get; set; } = true;
 
         /// <summary>The UniqueID property of the mod manifest that this modded bag holds items for</summary>
-        [JsonProperty("ModUniqueId")]
+        [JsonPropertyName("ModUniqueId")]
         public string ModUniqueId { get; set; } = "";
 
         /// <summary>A unique identifier for this modded bag. Typically this Guid is computed using <see cref="StringToGUID(string)"/> with parameter = "<see cref="ModUniqueId"/>+<see cref="BagName"/>"</summary>
-        [JsonProperty("BagId")]
+        [JsonPropertyName("BagId")]
         public string Guid { get; set; } = "";
 
-        [JsonProperty("BagName")]
+        [JsonPropertyName("BagName")]
         public string BagName { get; set; } = "Unnamed";
-        [JsonProperty("BagDescription")]
+        [JsonPropertyName("BagDescription")]
         public string BagDescription { get; set; } = "";
 
-        [JsonProperty("IconTexture")]
+        [JsonPropertyName("IconTexture")]
         public BagType.SourceTexture IconTexture { get; set; } = BagType.SourceTexture.SpringObjects;
-        [JsonProperty("IconPosition")]
+        [JsonPropertyName("IconPosition")]
         public Rectangle IconPosition { get; set; } = new Rectangle();
 
-        [JsonProperty("Prices")]
+        [JsonPropertyName("Prices")]
         public Dictionary<ContainerSize, int> Prices { get; set; } = AllSizes.ToDictionary(x => x, x => BagTypeFactory.DefaultPrices[x]);
-        [JsonProperty("Capacities")]
+        [JsonPropertyName("Capacities")]
         public Dictionary<ContainerSize, int> Capacities { get; set; } = AllSizes.ToDictionary(x => x, x => BagTypeFactory.DefaultCapacities[x]);
-        [JsonProperty("SizeSellers")]
+        [JsonPropertyName("SizeSellers")]
         public Dictionary<ContainerSize, List<BagShop>> Sellers { get; set; } = AllSizes.ToDictionary(x => x, x => new List<BagShop>() { BagShop.Pierre });
 
         private static readonly BagMenuOptions DefaultMenuOptions = new BagMenuOptions() {
@@ -61,11 +60,11 @@ namespace ItemBags.Persistence
                 GroupsPerRow = 5
             }
         };
-        [JsonProperty("SizeMenuOptions")]
+        [JsonPropertyName("SizeMenuOptions")]
         public Dictionary<ContainerSize, BagMenuOptions> MenuOptions { get; set; } = AllSizes.ToDictionary(x => x, x => DefaultMenuOptions.GetCopy());
 
         /// <summary>Metadata about each modded item that should be storeable inside this bag.</summary>
-        [JsonProperty("Items")]
+        [JsonPropertyName("Items")]
         public List<ModdedItem> Items { get; set; } = new List<ModdedItem>();
 
         //Taken from: https://weblogs.asp.net/haithamkhedre/generate-guid-from-any-string-using-c
@@ -113,7 +112,7 @@ namespace ItemBags.Persistence
 
                         foreach (string ModdedItemName in Objects)
                         {
-                            //  Try to guess if the item has multiple different valid qualities, based on the it's category
+                            //  Try to guess if the item has multiple different valid qualities, based on its category
                             bool HasQualities = true;
                             if (AllObjectIds.TryGetValue(ModdedItemName, out int ItemId))
                             {
@@ -276,16 +275,16 @@ namespace ItemBags.Persistence
 
         #region Backwards Compatibility
         /// <summary>Deprecated. Use <see cref="Prices"/> instead.</summary>
-        [JsonProperty("Price")]
+        [JsonPropertyName("Price")]
         private int DeprecatedPrice { set { Prices = AllSizes.ToDictionary(x => x, x => value); } }
         /// <summary>Deprecated. Use <see cref="Capacities"/> instead. The maximum quantity of each item that this bag is capable of storing.</summary>
-        [JsonProperty("Capacity")]
+        [JsonPropertyName("Capacity")]
         private int DeprecatedCapacity { set { Capacities = AllSizes.ToDictionary(x => x, x => value); } }
         /// <summary>Deprecated. Use <see cref="Sellers"/> instead. The shops that will sell this bag</summary>
-        [JsonProperty("Sellers")]
+        [JsonPropertyName("Sellers")]
         private List<BagShop> DeprecatedSellers { set { Sellers = AllSizes.ToDictionary(x => x, x => new List<BagShop>(value)); } }
         /// <summary>Deprecated. Use <see cref="MenuOptions"/> instead.</summary>
-        [JsonProperty("MenuOptions")]
+        [JsonPropertyName("MenuOptions")]
         private BagMenuOptions DeprecatedMenuOptions { set { MenuOptions = AllSizes.ToDictionary(x => x, x => value.GetCopy()); } }
 
         [OnDeserialized]
@@ -300,12 +299,11 @@ namespace ItemBags.Persistence
     }
 
     /// <summary>Represents modded items that should be merged into non-modded bags, such as storing a modded seed item in the built-in "Seed Bag"</summary>
-    [JsonObject(Title = "ModdedItems")]
     [DataContract(Name = "ModdedItems", Namespace = "")]
     public class ModdedItems
     {
         /// <summary>This property is only public for serialization purposes. Use <see cref="CreatedByVersion"/> instead.</summary>
-        [JsonProperty("CreatedByVersion")]
+        [JsonPropertyName("CreatedByVersion")]
         public string CreatedByVersionString { get; set; }
         /// <summary>Warning - in old versions of the mod, this value may be null. This feature was added with v1.3.4</summary>
         [JsonIgnore]
@@ -314,7 +312,7 @@ namespace ItemBags.Persistence
             set { CreatedByVersionString = value?.ToString(); }
         }
 
-        [JsonProperty("Mods")]
+        [JsonPropertyName("Mods")]
         public List<ModAddon> ModAddons { get; set; } = new List<ModAddon>();
 
         private bool HasImportedItems { get; set; } = false;
@@ -407,47 +405,44 @@ namespace ItemBags.Persistence
         }
     }
 
-    [JsonObject(Title = "ModAddon")]
     [DataContract(Name = "ModAddon", Namespace = "")]
     public class ModAddon
     {
-        [JsonProperty("ModUniqueId")]
+        [JsonPropertyName("ModUniqueId")]
         public string UniqueId { get; set; } = "";
-        [JsonProperty("Bags")]
+        [JsonPropertyName("Bags")]
         public List<BagAddon> BagAddons { get; set; } = new List<BagAddon>();
     }
 
-    [JsonObject(Title = "BagAddon")]
     [DataContract(Name = "BagAddon", Namespace = "")]
     public class BagAddon
     {
         /// <summary>The un-translated name of the standard bag type that is being modified, without a Size prefix. Case sensitive. EX: "Crop Bag".</summary>
-        [JsonProperty("Name")]
+        [JsonPropertyName("Name")]
         public string Name { get; set; } = "";
         /// <summary>Metadata about each modded item that should be storeable inside this bag.</summary>
-        [JsonProperty("Items")]
+        [JsonPropertyName("Items")]
         public List<ModdedItem> Items { get; set; } = new List<ModdedItem>();
     }
 
-    [JsonObject(Title = "Item")]
     [DataContract(Name = "Item", Namespace = "")]
     public class ModdedItem
     {
         /// <summary>The un-translated name of the modded Object.</summary>
-        [JsonProperty("Name")]
+        [JsonPropertyName("Name")]
         public string Name { get; set; } = "";
         /// <summary>True if this Object is a placeable Object such as a Furnace.</summary>
-        [JsonProperty("IsBigCraftable")]
+        [JsonPropertyName("IsBigCraftable")]
         public bool IsBigCraftable { get; set; } = false;
         /// <summary>True if this Object is available in multiple different Qualities (Regular/Silver/Gold/Iridium)</summary>
-        [JsonProperty("HasQualities")]
+        [JsonPropertyName("HasQualities")]
         public bool HasQualities { get; set; } = false;
         /// <summary>The minimum size of the bag that is required to store this Object.</summary>
-        [JsonProperty("RequiredSize")]
+        [JsonPropertyName("RequiredSize")]
         public string SizeString { get; set; } = ContainerSize.Small.ToString();
         /// <summary>Optional. You only need to specify either <see cref="Name"/> or <see cref="ObjectId"/>, not both.<para/>
         /// Do not use <see cref="ObjectId"/> if the item does not have a static item id (such as a JsonAssets modded item).</summary>
-        [JsonProperty("ObjectId")]
+        [JsonPropertyName("ObjectId")]
         public int? ObjectId { get; set; } = null;
 
         public ModdedItem()

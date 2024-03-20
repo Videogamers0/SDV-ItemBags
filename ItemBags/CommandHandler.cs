@@ -460,9 +460,9 @@ namespace ItemBags
 
                                 //  Get the items that match the desired conditions
                                 List<SObject> TargetItems = new List<SObject>();
-                                foreach (var KVP in Game1.objectInformation)
+                                foreach (var KVP in Game1.objectData)
                                 {
-                                    int Id = KVP.Key;
+                                    string Id = KVP.Key;
                                     SObject Instance = new SObject(Id, 1);
                                     bool IsModdedItem = ModdedItemNames.Contains(Instance.DisplayName);
 
@@ -474,9 +474,9 @@ namespace ItemBags
                                         }
                                     }
                                 }
-                                foreach (var KVP in Game1.bigCraftablesInformation)
+                                foreach (var KVP in Game1.bigCraftableData)
                                 {
-                                    int Id = KVP.Key;
+                                    string Id = KVP.Key;
                                     SObject Instance = new SObject(Vector2.Zero, Id, false);
                                     bool IsModdedItem = ModdedItemNames.Contains(Instance.DisplayName);
 

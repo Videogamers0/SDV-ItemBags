@@ -140,10 +140,10 @@ namespace ItemBags.Community_Center
             }
         }
 
-        private static HashSet<int> InvalidItemIds = new HashSet<int>(new List<int>() { 639, 640, 641, 642, 643 });
+        private static HashSet<string> InvalidItemIds = new List<string>() { "639", "640", "641", "642", "643" }.ToHashSet();
         /// <summary>In the game data for bundles ("Data/Bundles.xnb"), The Bundle at "Pantry/4" contains several Item Ids which don't seem to correspond to an actual item. 
         /// "Pantry/4" (The "Animal Bundle") data contains 12 item Ids even though the Community Center menu only displays 6 different items for that bundle. No clue why.</summary>
-        internal static bool IsValidItemId(int Id)
+        internal static bool IsValidItemId(string Id)
         {
             return !InvalidItemIds.Contains(Id);
         }

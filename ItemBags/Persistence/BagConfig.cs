@@ -2,7 +2,6 @@
 using ItemBags.Helpers;
 using ItemBags.Menus;
 using Microsoft.Xna.Framework;
-using Newtonsoft.Json;
 using StardewModdingAPI;
 using System;
 using System.Collections.Generic;
@@ -11,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
