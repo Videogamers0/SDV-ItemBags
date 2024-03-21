@@ -106,7 +106,6 @@ namespace ItemBags.Community_Center
                 {
                     this.RequiredItemCount = int.Parse(Entries[4]);
 
-#if NEVER //TODO learn the new format for 1.6 game update
                     if (Entries.Count > 5)
                     {
                         string TextureOverrideData = Entries[5];
@@ -130,7 +129,6 @@ namespace ItemBags.Community_Center
                             this.OverriddenLargeIconIndex = null;
                         }
                     }
-#endif
                 }
             }
             catch (Exception ex)

@@ -110,18 +110,23 @@ namespace ItemBags.Helpers
         internal static void OnSaved() { LoadCustomItems(); }
         internal static void OnLoaded()
         {
-            //ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnLoaded started.", LogLevel.Info);
+            void DoWork()
+            {
+                //ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnLoaded started.", LogLevel.Info);
 
-            //if (Context.IsMultiplayer && !Context.IsMainPlayer)
-            //    ItemBagsMod.ModInstance.Helper.Multiplayer.SendMessage("RequestBagResync", "RequestBagResync", new string[] { ItemBagsMod.ModUniqueId });
+                //if (Context.IsMultiplayer && !Context.IsMainPlayer)
+                //    ItemBagsMod.ModInstance.Helper.Multiplayer.SendMessage("RequestBagResync", "RequestBagResync", new string[] { ItemBagsMod.ModUniqueId });
 
-            try { LoadCustomItems(); }
-            catch (Exception ex) { ItemBagsMod.ModInstance.Monitor.Log("ItemBags error during LoadCustomItems: " + ex.Message, LogLevel.Error); }
+                try { LoadCustomItems(); }
+                catch (Exception ex) { ItemBagsMod.ModInstance.Monitor.Log("ItemBags error during LoadCustomItems: " + ex.Message, LogLevel.Error); }
 
-            CommunityCenterBundles.Instance = null;
-            CommunityCenterBundles.Instance = new CommunityCenterBundles();
+                CommunityCenterBundles.Instance = null;
+                CommunityCenterBundles.Instance = new CommunityCenterBundles();
 
-            //ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnLoaded finished.", LogLevel.Info);
+                //ItemBagsMod.ModInstance.Monitor.Log("ItemBags OnLoaded finished.", LogLevel.Info);
+            }
+
+            DelayHelpers.InvokeLater(1, DoWork);
         }
 
         /// <summary>Restores custom items used by this mod that were modified by <see cref="OnSaving"/>. Intended to be used after the game is saved or a save file is loaded.</summary>

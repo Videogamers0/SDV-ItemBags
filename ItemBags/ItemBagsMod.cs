@@ -23,6 +23,12 @@ namespace ItemBags
 {
     public class ItemBagsMod : Mod
     {
+#if DEBUG
+        internal static LogLevel InfoLogLevel = LogLevel.Debug;
+#else
+        internal static LogLevel InfoLogLevel = LogLevel.Trace;
+#endif
+
         public static Version CurrentVersion = new Version(2, 0, 3); // Last updated 12/4/2021 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
@@ -31,6 +37,7 @@ namespace ItemBags
         public const string EntoaroxFrameworkUniqueId = "Entoarox.EntoaroxFramework";
 
         internal static ItemBagsMod ModInstance { get; private set; }
+        public static IMonitor Logger => ModInstance?.Monitor;
         internal static string Translate(string Key, Dictionary<string, string> Parameters = null)
         {
             Translation Result;
@@ -64,6 +71,8 @@ namespace ItemBags
                     "since both of these mods attempt to override the game's save serializer to handle saving/loading of custom items. " +
                     "Consider updating to a newer version of Entoarox Framework to resolve this compatibility issue.", LogLevel.Warn);
             }
+
+            DelayHelpers.Entry(helper);
 
             LoadUserConfig();
             LoadGlobalConfig();

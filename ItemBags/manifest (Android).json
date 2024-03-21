@@ -21,6 +21,10 @@
       "UniqueID": "Entoarox.EntoaroxFramework",
       "IsRequired": false,
       "MinimumVersion": "2.5.5"
+    },
+    {
+      "UniqueID": "alja.CCCB",
+      "IsRequired": false
     }
   ]
 }
