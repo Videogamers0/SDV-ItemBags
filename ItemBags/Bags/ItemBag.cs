@@ -1219,9 +1219,6 @@ namespace ItemBags.Bags
             set { /*base.BaseName = value;*/ }
         }
 
-        public abstract new Item GetOneNew();
-        public abstract new Item GetOneCopyFrom(Item source);
-
 #region Stack
         public override int Stack
         {

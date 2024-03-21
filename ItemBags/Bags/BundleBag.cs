@@ -286,13 +286,14 @@ namespace ItemBags.Bags
             BaseDrawToolTip(spriteBatch, ref x, ref y, font, alpha, overrideText);
         }
 
-        public override Item GetOneNew() => new BundleBag(Size, Autofill);
-        public override Item GetOneCopyFrom(Item source)
+        protected override Item GetOneNew() => new BundleBag(Size, Autofill);
+        protected override void GetOneCopyFrom(Item source)
         {
             if (source is BundleBag bag)
-                return new BundleBag(bag.Size, bag.Autofill);
-            else
-                return GetOneNew();
+            {
+                Size = bag.Size;
+                Autofill = bag.Autofill;
+            }
         }
     }
 }

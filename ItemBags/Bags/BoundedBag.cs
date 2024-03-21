@@ -498,13 +498,15 @@ namespace ItemBags.Bags
             }
         }
 
-        public override Item GetOneNew() => new BoundedBag(TypeInfo, Size, Autofill);
-        public override Item GetOneCopyFrom(Item source)
+        protected override Item GetOneNew() => new BoundedBag(TypeInfo, Size, Autofill);
+        protected override void GetOneCopyFrom(Item source)
         {
             if (source is BoundedBag bag)
-                return new BoundedBag(bag.TypeInfo, bag.Size, bag.Autofill);
-            else
-                return GetOneNew();
+            {
+                TypeInfo = bag.TypeInfo;
+                Size = bag.Size;
+                Autofill = bag.Autofill;
+            }
         }
     }
 }

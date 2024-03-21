@@ -309,13 +309,13 @@ namespace ItemBags.Bags
             return ChangesMade;
         }
 
-        public override Item GetOneNew() => new OmniBag(Size);
-        public override Item GetOneCopyFrom(Item source)
+        protected override Item GetOneNew() => new OmniBag(Size);
+        protected override void GetOneCopyFrom(Item source)
         {
             if (source is OmniBag bag)
-                return new OmniBag(bag.Size);
-            else
-                return GetOneNew();
+            {
+                Size = bag.Size;
+            }
         }
 
         //Possible TODO: Override this and draw all of the bag types if in a shopmenu

@@ -224,7 +224,7 @@ namespace ItemBags
                     {
                         try
                         {
-                            List<ClickableComponent> toolbarButtons = typeof(Toolbar).GetField("buttons", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(toolbar) as List<ClickableComponent>;
+                            List<ClickableComponent> toolbarButtons = typeof(Toolbar).GetField("buttons", BindingFlags.Public | BindingFlags.Instance).GetValue(toolbar) as List<ClickableComponent>;
                             if (toolbarButtons != null)
                             {
                                 //  Find the slot on the toolbar that they clicked, if any

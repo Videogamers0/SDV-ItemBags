@@ -522,13 +522,17 @@ namespace ItemBags.Bags
             }
         }
 
-        public override Item GetOneNew() => new Rucksack(Size, Autofill, AutofillPriority, SortProperty, SortOrder);
-        public override Item GetOneCopyFrom(Item source)
+        protected override Item GetOneNew() => new Rucksack(Size, Autofill, AutofillPriority, SortProperty, SortOrder);
+        protected override void GetOneCopyFrom(Item source)
         {
             if (source is Rucksack bag)
-                return new Rucksack(bag.Size, bag.Autofill, bag.AutofillPriority, bag.SortProperty, bag.SortOrder);
-            else
-                return GetOneNew();
+            {
+                Size = bag.Size;
+                Autofill = bag.Autofill;
+                AutofillPriority = bag.AutofillPriority;
+                SortProperty = bag.SortProperty;
+                SortOrder = bag.SortOrder;
+            }
         }
     }
 }
