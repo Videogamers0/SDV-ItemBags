@@ -3,6 +3,7 @@ using ItemBags.Menus;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
+using StardewValley.ItemTypeDefinitions;
 using StardewValley.Objects;
 using StardewValley.Tools;
 using System;
@@ -116,12 +117,30 @@ namespace ItemBags.Helpers
 
             Texture2D SourceTexture = null;
             Rectangle? SourceTextureRectangle = null;
+
             if (Item is ItemBag Bag)
             {
                 float BaseScale = Destination.Width / (float)BagInventoryMenu.DefaultInventoryIconSize;
                 Vector2 OffsetDueToScaling = new Vector2((BaseScale - 1.0f) * BagInventoryMenu.DefaultInventoryIconSize * 0.5f); // I honestly forget why I needed this lmao. Maybe ItemBag.drawInMenu override was scaling around a different origin or some shit
                 Bag.drawInMenu(b, new Vector2(Destination.X, Destination.Y) + OffsetDueToScaling, IconScale * Destination.Width / 64f * 0.8f, Transparency, 1.0f, StackDrawType.Hide, Overlay, false);
             }
+            else
+            {
+                ParsedItemData Data = ItemRegistry.GetDataOrErrorItem(Item.QualifiedItemId);
+                SourceTexture = Data.GetTexture();
+                SourceTextureRectangle = Data.GetSourceRect();
+            }
+
+            if (Item is Object BigCraftable && BigCraftable.bigCraftable.Value)
+            {
+                ScaledIconDestination = new Rectangle(ScaledIconDestination.X + ScaledIconDestination.Width / 4, ScaledIconDestination.Y,
+                    ScaledIconDestination.Width - ScaledIconDestination.Width / 2, ScaledIconDestination.Height);
+                //From decompiled .exe code:
+                //spriteBatch.Draw(Game1.bigCraftableSpriteSheet, location + new Vector2(32f, 32f), new Rectangle?(sourceRect), color * transparency, 
+                //    0f, new Vector2(8f, 16f), 4f * ((double)scaleSize < 0.2 ? scaleSize : scaleSize / 2f), SpriteEffects.None, layerDepth);
+            }
+
+#if LEGACY_CODE // old drawing logic from before ItemRegistry.GetDataOrErrorItem existed
             else if (Item is Tool Tool)
             {
                 if (Item is MeleeWeapon Weapon)
@@ -228,6 +247,7 @@ namespace ItemBags.Helpers
                     SourceTextureRectangle = new Rectangle?(Game1.getSourceRectForStandardTileSheet(SourceTexture, Item.ParentSheetIndex, 16, 16));
                 }
             }
+#endif
 
             //  Draw the sprite
             if (SourceTexture != null)
