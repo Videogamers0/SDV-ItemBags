@@ -347,26 +347,26 @@ namespace ItemBags
                 string[] ModdedBagFiles = Directory.GetFiles(ModdedBagsDirectory, "*.json", SearchOption.TopDirectoryOnly);
                 if (ModdedBagFiles.Length > 0)
                 {
-                        foreach (string File in ModdedBagFiles)
-                        {
-                            string RelativePath = File.Replace(ModInstance.Helper.DirectoryPath + Path.DirectorySeparatorChar, "");
-                            ModdedBag ModdedBag = ModInstance.Helper.Data.ReadJsonFile<ModdedBag>(RelativePath);
+                    foreach (string File in ModdedBagFiles)
+                    {
+                        string RelativePath = File.Replace(ModInstance.Helper.DirectoryPath + Path.DirectorySeparatorChar, "");
+                        ModdedBag ModdedBag = ModInstance.Helper.Data.ReadJsonFile<ModdedBag>(RelativePath);
 
-                            if (ModdedBag.IsEnabled && (string.IsNullOrEmpty(ModdedBag.ModUniqueId) || ModInstance.Helper.ModRegistry.IsLoaded(ModdedBag.ModUniqueId)))
+                        if (ModdedBag.IsEnabled && (string.IsNullOrEmpty(ModdedBag.ModUniqueId) || ModInstance.Helper.ModRegistry.IsLoaded(ModdedBag.ModUniqueId)))
+                        {
+                            if (!ModdedBags.Any(x => x.Guid == ModdedBag.Guid))
                             {
-                                if (!ModdedBags.Any(x => x.Guid == ModdedBag.Guid))
-                                {
-                                    ModdedBags.Add(ModdedBag);
-                                }
-                                else
-                                {
-                                    ModInstance.Monitor.Log(string.Format("Failed to load modded bag '{0}' because there is already another modded bag with the same Id", ModdedBag.BagName), LogLevel.Warn);
-                                }
+                                ModdedBags.Add(ModdedBag);
+                            }
+                            else
+                            {
+                                ModInstance.Monitor.Log(string.Format("Failed to load modded bag '{0}' because there is already another modded bag with the same Id", ModdedBag.BagName), LogLevel.Warn);
                             }
                         }
-
-                        ModInstance.Monitor.Log(string.Format("Loaded {0} modded bag(s): {1}", ModdedBags.Count, string.Join(", ", ModdedBags.Select(x => x.BagName))), LogLevel.Info);
                     }
+
+                    ModInstance.Monitor.Log(string.Format("Loaded {0} modded bag(s): {1}", ModdedBags.Count, string.Join(", ", ModdedBags.Select(x => x.BagName))), LogLevel.Info);
+                }
 
                 TemporaryModdedBagTypes = new Dictionary<ModdedBag, BagType>();
                 foreach (ModdedBag Bag in ModdedBags)

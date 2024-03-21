@@ -1,5 +1,6 @@
 ﻿using ItemBags.Bags;
 using ItemBags.Menus;
+using Newtonsoft.Json;
 using StardewValley;
 using StardewValley.Locations;
 using StardewValley.Monsters;
@@ -9,7 +10,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using static ItemBags.Bags.ItemBag;
@@ -485,45 +485,45 @@ namespace ItemBags.Persistence
     [DataContract(Name = "MonsterLootSettings", Namespace = "")]
     public class MonsterLootSettings
     {
-        [JsonPropertyName("LogDropChancesToConsole")]
+        [JsonProperty("LogDropChancesToConsole")]
         public bool LogDropChancesToConsole { get; set; } = false;
 
         public bool CanReceiveBagsAsDrops { get; set; } = true;
 
         /// <summary>If you've earned an ItemBag drop, and that drop is randomly chosen to be a standard bag (A <see cref="BoundedBag"/>), then this is the chance that it will 
         /// try to force a new type that you don't already own.</summary>
-        [JsonPropertyName("ForceNewBagTypeChance")]
+        [JsonProperty("ForceNewBagTypeChance")]
         public double ForceNewBagTypeChance { get; set; } = 0.4;
 
         //  The settings in this region determine the odds of getting any ItemBag when killing a monster. The actual bag chosen if these rolls succeed is then based on the corresponding BagTypeDropSettings
         #region Initial Chance
         /// <summary>The base chance of receiving an ItemBag when any monster is slain. 0.01 = 1% chance</summary>
-        [JsonPropertyName("BaseDropChance")]
+        [JsonProperty("BaseDropChance")]
         public double BaseDropChance { get; set; }
 
         #region Location Modifiers
         /// <summary>An additional bonus to the chance of receiving an ItemBag when a monster is slain within the mines. 0.01 = +1% chance<para/>
         /// (Stacks multiplicatively with <see cref="BaseDropChance"/>, so if <see cref="MineDepthBonusPerLevel"/> = 0.01, and player is in Mine level 35, you would have a 0.01 * 35 = +35% (1.35 multiplier) chance to receive drops)</summary>
-        [JsonPropertyName("MineDepthBonusPerLevel")]
+        [JsonProperty("MineDepthBonusPerLevel")]
         public double MineDepthBonusPerLevel { get; set; }
 
         /// <summary>Values of <see cref="MineShaft.mineLevel"/> that are greater than this value will no longer give a bonus to the drop chance of receiving an ItemBag from a slain monster.</summary>
-        [JsonPropertyName("MaxMineDepth")]
+        [JsonProperty("MaxMineDepth")]
         public int MaxMineDepth { get; set; }
 
         /// <summary>An additional bonus to the chance of receiving an ItemBag when a monster is slain within the Quarry, 0.01 = +1% chance<para/>
         /// (Stacks multiplicatively with <see cref="BaseDropChance"/>, so if <see cref="QuarryLocationBonus"/> = 0.5, the player is in the Quarry, you would have a 0.5 = +50% (1.5 multiplier) chance to receive drops)</summary>
-        [JsonPropertyName("QuarryLocationBonus")]
+        [JsonProperty("QuarryLocationBonus")]
         public double QuarryLocationBonus { get; set; }
 
         /// <summary>An additional bonus to the chance of receiving an ItemBag when a monster is slain within the Forest, 0.01 = +1% chance<para/>
         /// (Stacks multiplicatively with <see cref="BaseDropChance"/>, so if <see cref="ForestLocationBonus"/> = 0.5, the player is in the Forest, you would have a 0.5 = +50% (1.5 multiplier) chance to receive drops)</summary>
-        [JsonPropertyName("ForestLocationBonus")]
+        [JsonProperty("ForestLocationBonus")]
         public double ForestLocationBonus { get; set; }
 
         /// <summary>An additional bonus to the chance of receiving an ItemBag when a monster is slain within a location not recognized by other settings (I.E. not in the mines, quarry, or forest), 0.01 = +1% chance<para/>
         /// (Stacks multiplicatively with <see cref="BaseDropChance"/>, so if <see cref="OtherLocationBonus"/> = 0.5, the player is NOT in the mines/quarry/forest, you would have a 0.5 = +50% (1.5 multiplier) chance to receive drops)</summary>
-        [JsonPropertyName("OtherLocationBonus")]
+        [JsonProperty("OtherLocationBonus")]
         public double OtherLocationBonus { get; set; }
         #endregion Location Modifiers
 
@@ -533,43 +533,43 @@ namespace ItemBags.Persistence
         /// This bonus is affected by <see cref="MaxExperience"/> and <see cref="MaxExperienceMultiplier"/><para/>
         /// If the slain monster awards LESS than <see cref="BaseExperience"/>, you will receive a penalty to the chance of receiving an ItemBag.
         /// This penalty is affected by <see cref="MinExperience"/> and <see cref="MinExperienceMultiplier"/></summary>
-        [JsonPropertyName("BaseExperience")]
+        [JsonProperty("BaseExperience")]
         public int BaseExperience { get; set; }
 
         /// <summary>If a slain monster's <see cref="Monster.ExperienceGained"/> is greater than or equal to <see cref="MaxExperience"/>, then the additional bonus to drop rates is set to <see cref="MaxExperienceMultiplier"/></summary>
-        [JsonPropertyName("MaxExperience")]
+        [JsonProperty("MaxExperience")]
         public int MaxExperience { get; set; }
 
         /// <summary>The bonus multiplier to apply to the chance of receiving ItemBags from slain monsters, when the monster's <see cref="Monster.ExperienceGained"/> is at least <see cref="MaxExperience"/></summary>
-        [JsonPropertyName("MaxExperienceMultiplier")]
+        [JsonProperty("MaxExperienceMultiplier")]
         public double MaxExperienceMultiplier { get; set; }
 
         /// <summary>If a slain monster's <see cref="Monster.ExperienceGained"/> is less than or equal to <see cref="MinExperience"/>, then the additional penalty to drop rates is set to <see cref="MinExperienceMultiplier"/></summary>
-        [JsonPropertyName("MinExperience")]
+        [JsonProperty("MinExperience")]
         public int MinExperience { get; set; }
 
         /// <summary>The penalty multiplier to apply to the chance of receiving ItemBags from slain monsters, when the monster's <see cref="Monster.ExperienceGained"/> is at most <see cref="MinExperience"/></summary>
-        [JsonPropertyName("MinExperienceMultiplier")]
+        [JsonProperty("MinExperienceMultiplier")]
         public double MinExperienceMultiplier { get; set; }
         #endregion Experience Modifiers
 
         /// <summary>An additional bonus to the chance of receiving an ItemBag when a monster is slain. This value is multiplied by the slain monster's <see cref="Monster.MaxHealth"/>/10 (0.01 = +1% chance per 10 HP)<para/>
         /// (Stacks multiplicatively with <see cref="BaseDropChance"/>, so if <see cref="BonusPer10HP"/> = 0.05, and the slain monster had 80 HP, you would have a 0.05*80/10=0.4 = +40% (1.4 multiplier) chance to receive drops)</summary>
-        [JsonPropertyName("BonusPer10HP")]
+        [JsonProperty("BonusPer10HP")]
         public double BonusPer10HP { get; set; }
 
         /// <summary>Values of <see cref="Monster.MaxHealth"/> that are greater than this value will no longer give a bonus to the drop chance of receiving an ItemBag from a slain monster.</summary>
-        [JsonPropertyName("MaxHP")]
+        [JsonProperty("MaxHP")]
         public int MaxHP { get; set; }
         #endregion Initial Chance
 
-        [JsonPropertyName("RucksackDropSettings")]
+        [JsonProperty("RucksackDropSettings")]
         public BagTypeDropSettings RucksackDropSettings { get; set; }
-        [JsonPropertyName("OmniBagDropSettings")]
+        [JsonProperty("OmniBagDropSettings")]
         public BagTypeDropSettings OmniBagDropSettings { get; set; }
-        [JsonPropertyName("BundleBagDropSettings")]
+        [JsonProperty("BundleBagDropSettings")]
         public BagTypeDropSettings BundleBagDropSettings { get; set; }
-        [JsonPropertyName("StandardBagDropSettings")]
+        [JsonProperty("StandardBagDropSettings")]
         public BagTypeDropSettings StandardBagDropSettings { get; set; }
 
         public MonsterLootSettings()
@@ -730,9 +730,9 @@ namespace ItemBags.Persistence
     [DataContract(Name = "BagTypeDropSettings", Namespace = "")]
     public class BagTypeDropSettings
     {
-        [JsonPropertyName("TypeWeight")]
+        [JsonProperty("TypeWeight")]
         public int TypeWeight { get; set; } = 1;
-        [JsonPropertyName("SizeWeights")]
+        [JsonProperty("SizeWeights")]
         public Dictionary<ContainerSize, int> SizeWeights { get; set; } = new Dictionary<ContainerSize, int>();
 
         public BagTypeDropSettings()
