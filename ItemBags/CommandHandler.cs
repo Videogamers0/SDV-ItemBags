@@ -452,10 +452,11 @@ namespace ItemBags
                                 IJsonAssetsAPI API = Helper.ModRegistry.GetApi<IJsonAssetsAPI>(ItemBagsMod.JAUniqueId);
                                 if (API != null)
                                 {
-                                    foreach (string ItemName in API.GetAllBigCraftableIds().Keys)
-                                        ModdedItemNames.Add(ItemName);
-                                    foreach (string ItemName in API.GetAllObjectIds().Keys)
-                                        ModdedItemNames.Add(ItemName);
+                                    //  JsonAssets removed these API calls when updating for 1.6
+                                    //foreach (string ItemName in API.GetAllBigCraftableIds().Keys)
+                                    //    ModdedItemNames.Add(ItemName);
+                                    //foreach (string ItemName in API.GetAllObjectIds().Keys)
+                                    //    ModdedItemNames.Add(ItemName);
                                 }
 
                                 //  Get the items that match the desired conditions

@@ -159,7 +159,8 @@ namespace ItemBags.Persistence
                 IJsonAssetsAPI API = Helper.ModRegistry.GetApi<IJsonAssetsAPI>(ItemBagsMod.JAUniqueId);
                 if (API != null)
                 {
-                    API.IdsFixed += (sender, e) => { OnJsonAssetsIdsFixed(API, ItemBagsMod.BagConfig, true); };
+                    //  JsonAssets removed this API call when updating for 1.6
+                    //API.IdsFixed += (sender, e) => { OnJsonAssetsIdsFixed(API, ItemBagsMod.BagConfig, true); };
                 }
             }
         }
@@ -206,8 +207,11 @@ namespace ItemBags.Persistence
                             AllObjectIds.Add(ObjectName, KVP.Key);
                     }
 
-                    IDictionary<string, int> JABigCraftableIds = API.GetAllBigCraftableIds();
-                    IDictionary<string, int> JAObjectIds = API.GetAllObjectIds();
+                    //  JsonAssets removed these API calls when updating for 1.6
+                    //IDictionary<string, int> JABigCraftableIds = API.GetAllBigCraftableIds();
+                    //IDictionary<string, int> JAObjectIds = API.GetAllObjectIds();
+                    IDictionary<string, int> JABigCraftableIds = new Dictionary<string, int>();
+                    IDictionary<string, int> JAObjectIds = new Dictionary<string, int>();
 
                     //  Now that JsonAssets has finished loading the modded items, go through each one, and convert the items into StoreableBagItems (which requires an Id instead of just a Name)
                     foreach (System.Collections.Generic.KeyValuePair<ModdedBag, BagType> KVP in ItemBagsMod.TemporaryModdedBagTypes)
@@ -353,8 +357,11 @@ namespace ItemBags.Persistence
                         AllObjectIds.Add(ObjectName, KVP.Key);
                 }
 
-                IDictionary<string, int> JABigCraftableIds = API.GetAllBigCraftableIds();
-                IDictionary<string, int> JAObjectIds = API.GetAllObjectIds();
+                //  JsonAssets removed these API calls when updating for 1.6
+                //IDictionary<string, int> JABigCraftableIds = API.GetAllBigCraftableIds();
+                //IDictionary<string, int> JAObjectIds = API.GetAllObjectIds();
+                IDictionary<string, int> JABigCraftableIds = new Dictionary<string, int>();
+                IDictionary<string, int> JAObjectIds = new Dictionary<string, int>();
 
                 //  Import items from each ModAddon
                 foreach (ModAddon ModAddon in ModAddons)

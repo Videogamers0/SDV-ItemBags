@@ -483,12 +483,13 @@ namespace ItemBags.Bags
                         int IdBeforeFixing = Item.ParentSheetIndex;
 
                         bool IsItemStillValid = true;
-                        try { IsItemStillValid = !API.FixIdsInItem(Item); }
-                        catch (Exception ex2) 
-                        {
-                            string Msg = $"Error while invoking JsonAssets API 'FixIdsInItem' for id {IdBeforeFixing} (Previous item name: {Item.DisplayName}): {ex2.Message}\n\n{ex2.ToString()}";
-                            ItemBagsMod.ModInstance.Monitor.Log(Msg, LogLevel.Error); 
-                        }
+                        //  JsonAssets removed these API calls when updating for 1.6
+                        //try { IsItemStillValid = !API.FixIdsInItem(Item); }
+                        //catch (Exception ex2) 
+                        //{
+                        //    string Msg = $"Error while invoking JsonAssets API 'FixIdsInItem' for id {IdBeforeFixing} (Previous item name: {Item.DisplayName}): {ex2.Message}\n\n{ex2.ToString()}";
+                        //    ItemBagsMod.ModInstance.Monitor.Log(Msg, LogLevel.Error); 
+                        //}
 
                         if (!IsItemStillValid)
                         {
