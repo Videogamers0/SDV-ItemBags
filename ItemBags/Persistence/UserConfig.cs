@@ -74,6 +74,9 @@ namespace ItemBags.Persistence
         [XmlElement("GamepadSettings")]
         public GamepadControls GamepadSettings { get; set; }
 
+        [XmlElement("ShowAutofillMessage")]
+        public bool ShowAutofillMessage { get; set; }
+
         public UserConfig()
         {
             InitializeDefaults();
@@ -130,6 +133,8 @@ namespace ItemBags.Persistence
             this.AllowAutofillInsideChest = true;
 
             this.GamepadSettings = new GamepadControls();
+
+            this.ShowAutofillMessage = true;
         }
 
         public bool AllowDowngradeBundleItemQuality(ContainerSize Size)
@@ -256,13 +261,8 @@ namespace ItemBags.Persistence
             { ContainerSize.Massive, 9999 },
         };
 
-        [JsonIgnore]
-        [XmlIgnore]
-        public ContainerSize Size { get; private set; }
         [XmlElement("Size")]
-        [JsonPropertyName("Size")]
-        public string SizeName { get { return Size.ToString(); } set { Size = (ContainerSize)Enum.Parse(typeof(ContainerSize), value); } }
-
+        public ContainerSize Size { get; set; }
         [XmlElement("PriceModifier")]
         public double PriceModifier { get; set; }
         [XmlElement("CapacityModifier")]
@@ -311,12 +311,8 @@ namespace ItemBags.Persistence
     [XmlRoot(ElementName = "BundleBagSizeConfig", Namespace = "")]
     public class BundleBagSizeConfig
     {
-        [JsonIgnore]
-        [XmlIgnore]
-        public ContainerSize Size { get; private set; }
         [XmlElement("Size")]
-        [JsonPropertyName("Size")]
-        public string SizeName { get { return Size.ToString(); } set { Size = (ContainerSize)Enum.Parse(typeof(ContainerSize), value); } }
+        public ContainerSize Size { get; set; }
 
         /// <summary>If true, then placing items inside the BundleBag will allow  downgrading the placed item's <see cref="StardewValley.Object.Quality"/> to the highest quality still needed of that item for an incomplete bundle.<para/>
         /// For example, suppose you picked up a Gold-quality Parsnip. Gold parsnips are needed for the Quality crops bundle and Regular-quality are needed for Spring crops bundle.<para/>
@@ -368,12 +364,8 @@ namespace ItemBags.Persistence
     [XmlRoot(ElementName = "RucksackSizeConfig", Namespace = "")]
     public class RucksackSizeConfig
     {
-        [JsonIgnore]
-        [XmlIgnore]
-        public ContainerSize Size { get; private set; }
         [XmlElement("Size")]
-        [JsonPropertyName("Size")]
-        public string SizeName { get { return Size.ToString(); } set { Size = (ContainerSize)Enum.Parse(typeof(ContainerSize), value); } }
+        public ContainerSize Size { get; set; }
 
         [XmlElement("PriceModifier")]
         public double PriceModifier { get; set; }
@@ -438,12 +430,8 @@ namespace ItemBags.Persistence
     [XmlRoot(ElementName = "OmniBagSizeConfig", Namespace = "")]
     public class OmniBagSizeConfig
     {
-        [JsonIgnore]
-        [XmlIgnore]
-        public ContainerSize Size { get; private set; }
         [XmlElement("Size")]
-        [JsonPropertyName("Size")]
-        public string SizeName { get { return Size.ToString(); } set { Size = (ContainerSize)Enum.Parse(typeof(ContainerSize), value); } }
+        public ContainerSize Size { get; set; }
 
         [XmlElement("PriceModifier")]
         public double PriceModifier { get; set; }

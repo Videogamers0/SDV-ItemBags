@@ -272,7 +272,7 @@ namespace ItemBags
                         ItemBag Target = SortedTargets[i];
                         Target.MoveToBag(Obj, Obj.Stack, out int MovedQty, false, Source);
                         AutofilledQuantity += MovedQty;
-                        if (MovedQty > 0)
+                        if (MovedQty > 0 && ItemBagsMod.UserConfig.ShowAutofillMessage)
                         {
                             //Game1.addHUDMessage(new HUDMessage(string.Format("Moved {0} to {1}", Item.DisplayName, Target.DisplayName), MovedQty, true, Color.White, Target));
                             HUDMessage msg = new HUDMessage($"Autofilled item to {Target.DisplayName}");
