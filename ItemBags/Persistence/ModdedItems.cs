@@ -153,6 +153,7 @@ namespace ItemBags.Persistence
         {
             IModHelper Helper = ItemBagsMod.ModInstance.Helper;
 
+#if LEGACY_CODE
             //  Load modded items from JsonAssets the moment it finishes registering items
             if (Helper.ModRegistry.IsLoaded(ItemBagsMod.JAUniqueId))
             {
@@ -163,6 +164,17 @@ namespace ItemBags.Persistence
                     //API.IdsFixed += (sender, e) => { OnJsonAssetsIdsFixed(API, ItemBagsMod.BagConfig, true); };
                 }
             }
+#else
+            Helper.Events.GameLoop.SaveLoaded += (sender, e) =>
+            {
+                void DoWork()
+                {
+                    IJsonAssetsAPI API = Helper.ModRegistry.IsLoaded(ItemBagsMod.JAUniqueId) ? Helper.ModRegistry.GetApi<IJsonAssetsAPI>(ItemBagsMod.JAUniqueId) : null;
+                    OnJsonAssetsIdsFixed(API, ItemBagsMod.BagConfig, true);
+        }
+                DelayHelpers.InvokeLater(1, DoWork);
+            };
+#endif
         }
 
         internal static void OnConnectedToHost()
@@ -194,7 +206,7 @@ namespace ItemBags.Persistence
                     Dictionary<string, string> AllBigCraftableIds = new Dictionary<string, string>();
                     foreach (System.Collections.Generic.KeyValuePair<string, BigCraftableData> KVP in Game1.bigCraftableData)
                     {
-                        string ObjectName = KVP.Value.Name;
+                        string ObjectName = KVP.Value.DisplayName ?? KVP.Value.Name;
                         if (!AllBigCraftableIds.ContainsKey(ObjectName))
                             AllBigCraftableIds.Add(ObjectName, KVP.Key);
                     }
@@ -202,7 +214,7 @@ namespace ItemBags.Persistence
                     Dictionary<string, string> AllObjectIds = new Dictionary<string, string>();
                     foreach (System.Collections.Generic.KeyValuePair<string, ObjectData> KVP in Game1.objectData)
                     {
-                        string ObjectName = KVP.Value.Name;
+                        string ObjectName = KVP.Value.DisplayName ?? KVP.Value.Name;
                         if (!AllObjectIds.ContainsKey(ObjectName))
                             AllObjectIds.Add(ObjectName, KVP.Key);
                     }
@@ -344,7 +356,7 @@ namespace ItemBags.Persistence
                 Dictionary<string, string> AllBigCraftableIds = new Dictionary<string, string>();
                 foreach (System.Collections.Generic.KeyValuePair<string, BigCraftableData> KVP in Game1.bigCraftableData)
                 {
-                    string ObjectName = KVP.Value.Name;
+                    string ObjectName = KVP.Value.DisplayName ?? KVP.Value.Name;
                     if (!AllBigCraftableIds.ContainsKey(ObjectName))
                         AllBigCraftableIds.Add(ObjectName, KVP.Key);
                 }
@@ -352,7 +364,7 @@ namespace ItemBags.Persistence
                 Dictionary<string, string> AllObjectIds = new Dictionary<string, string>();
                 foreach (System.Collections.Generic.KeyValuePair<string, ObjectData> KVP in Game1.objectData)
                 {
-                    string ObjectName = KVP.Value.Name;
+                    string ObjectName = KVP.Value.DisplayName ?? KVP.Value.Name;
                     if (!AllObjectIds.ContainsKey(ObjectName))
                         AllObjectIds.Add(ObjectName, KVP.Key);
                 }

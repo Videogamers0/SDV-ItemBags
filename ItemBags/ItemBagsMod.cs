@@ -347,12 +347,6 @@ namespace ItemBags
                 string[] ModdedBagFiles = Directory.GetFiles(ModdedBagsDirectory, "*.json", SearchOption.TopDirectoryOnly);
                 if (ModdedBagFiles.Length > 0)
                 {
-                    if (!ModInstance.Helper.ModRegistry.IsLoaded(JAUniqueId))
-                    {
-                        ModInstance.Monitor.Log("Modded bags could not be loaded because you do not have Json Assets mod installed.", LogLevel.Warn);
-                    }
-                    else
-                    {
                         foreach (string File in ModdedBagFiles)
                         {
                             string RelativePath = File.Replace(ModInstance.Helper.DirectoryPath + Path.DirectorySeparatorChar, "");
@@ -373,7 +367,6 @@ namespace ItemBags
 
                         ModInstance.Monitor.Log(string.Format("Loaded {0} modded bag(s): {1}", ModdedBags.Count, string.Join(", ", ModdedBags.Select(x => x.BagName))), LogLevel.Info);
                     }
-                }
 
                 TemporaryModdedBagTypes = new Dictionary<ModdedBag, BagType>();
                 foreach (ModdedBag Bag in ModdedBags)
@@ -389,10 +382,7 @@ namespace ItemBags
             }
         }
 
-        public override object GetApi()
-        {
-            return new ItemBagsAPI();
-        }
+        public override object GetApi() => new ItemBagsAPI();
 
         private void Display_WindowResized(object sender, WindowResizedEventArgs e)
         {
