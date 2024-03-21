@@ -344,12 +344,14 @@ namespace ItemBags.Helpers
                         RequiredSize.Y += RecoveryIconSize;
                     }
 
+#if NEVER // Re-enable this logic once you fix the "#if NEVER // TODO refactor this to 1.6 updates" logic below
                     bool HasBuffs = Item.GetFoodOrDrinkBuffs().Any(); //Game1.objectData[Item.ParentSheetIndex].Split(new char[] { '/' }).Length > 7;
                     if (HasBuffs)
                     {
                         List<string> Buffs = Item.GetFoodOrDrinkBuffs().Select(x => x.displayName).ToList(); //Game1.objectData[Item.ParentSheetIndex].Split(new char[] { '/' })[7].Split(new char[] { ' ' }).Where(x => int.Parse(x) != 0).ToList();
                         RequiredSize.Y += Buffs.Count * RecoveryIconSize;
                     }
+#endif
 
                     RequiredSize.Y += 5;
                 }

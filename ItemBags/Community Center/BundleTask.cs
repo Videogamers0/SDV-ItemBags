@@ -15,8 +15,8 @@ namespace ItemBags.Community_Center
     public class BundleTask
     {
         public BundleRoom Room { get; }
+        /// <summary>This name is always in English. See also: <see cref="TranslatedName"/></summary>
         public string Name { get; }
-        /// <summary>May be null if using the game's default language. Check <see cref="Name"/> if so.</summary>
         public string TranslatedName { get; }
 
         public int BundleIndex { get; }
@@ -88,11 +88,13 @@ namespace ItemBags.Community_Center
             this.SpriteColorIndex = int.Parse(Entries[3]);
 
             bool IsEnglish = LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.en;
-            if (!IsEnglish)
+            if (!IsEnglish || Entries.Last() == Name)
             {
                 this.TranslatedName = Entries.Last();
                 Entries.RemoveAt(Entries.Count - 1);
             }
+
+            //TODO I think 1.6 added the BundleIndex at the end? So probably should do Entries.RemoveAt(Entries.Count - 1);
 
             try
             {
@@ -104,6 +106,7 @@ namespace ItemBags.Community_Center
                 {
                     this.RequiredItemCount = int.Parse(Entries[4]);
 
+#if NEVER //TODO learn the new format for 1.6 game update
                     if (Entries.Count > 5)
                     {
                         string TextureOverrideData = Entries[5];
@@ -127,6 +130,7 @@ namespace ItemBags.Community_Center
                             this.OverriddenLargeIconIndex = null;
                         }
                     }
+#endif
                 }
             }
             catch (Exception ex)

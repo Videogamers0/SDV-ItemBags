@@ -49,8 +49,8 @@ namespace ItemBags.Persistence
             this.Price = Item.Price;
             this.IsBigCraftable = Item.bigCraftable.Value;
             this.Name = Item.Name;
-            this.HoneyType = Item.Value.HasValue ? (int)Item.honeyType.Value.Value : null as int?;
-            this.PreserveType = Item.preserve.Value.HasValue ? (int)Item.preserve.Value.Value : null as int?;
+            //this.HoneyType = Item.honeyType.Value.HasValue ? (int)Item.honeyType.Value.Value : null as int?;
+            this.PreserveType = Item.preserve.Value.HasValue ? (int)Item.preserve.Value.Value : null;
             this.PreservedId = Item.preservedParentSheetIndex.Value;
         }
 
@@ -68,8 +68,8 @@ namespace ItemBags.Persistence
                 if (!string.IsNullOrEmpty(Name))
                     Item.Name = Name;
 
-                if (this.HoneyType != null)
-                    Item.honeyType.Value = (Object.HoneyType)this.HoneyType.Value;
+                //if (this.HoneyType != null)
+                //    Item.honeyType.Value = (Object.HoneyType)this.HoneyType.Value;
                 if (this.PreserveType != null)
                     Item.preserve.Value = (Object.PreserveType)this.PreserveType.Value;
                 if (this.PreservedId != int.MinValue.ToString() && !string.IsNullOrEmpty(PreservedId))

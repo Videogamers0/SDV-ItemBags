@@ -675,9 +675,9 @@ namespace ItemBags.Persistence
 
             //  Compute bonuses based on where the monster was killed
             double LocationBonus;
-            if (SlainMonster.mineMonster && Location is MineShaft Mine)
+            if (SlainMonster.mineMonster.Value && Location is MineShaft Mine)
             {
-                bool IsQuarry = Mine.mapImageSource != null && Mine.mapImageSource.Value != null && Path.GetFileName(Mine.mapImageSource.Value).Equals("mine_quarryshaft", StringComparison.CurrentCultureIgnoreCase);
+                bool IsQuarry = Mine.mapImageSource.Value != null && Path.GetFileName(Mine.mapImageSource.Value).Equals("mine_quarryshaft", StringComparison.CurrentCultureIgnoreCase);
                 if (IsQuarry)
                     LocationBonus = QuarryLocationBonus;
                 else
