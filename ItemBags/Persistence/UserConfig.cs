@@ -488,6 +488,7 @@ namespace ItemBags.Persistence
         [JsonProperty("LogDropChancesToConsole")]
         public bool LogDropChancesToConsole { get; set; } = false;
 
+        [JsonProperty("CanReceiveBagsAsDrops")]
         public bool CanReceiveBagsAsDrops { get; set; } = true;
 
         /// <summary>If you've earned an ItemBag drop, and that drop is randomly chosen to be a standard bag (A <see cref="BoundedBag"/>), then this is the chance that it will 
