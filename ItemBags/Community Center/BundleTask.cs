@@ -104,7 +104,12 @@ namespace ItemBags.Community_Center
                 }
                 else
                 {
-                    this.RequiredItemCount = int.Parse(Entries[4]);
+                    //  Game version 1.6 now allows empty entries in the bundle data, such as:
+                    //  "Spring Crops/O 465 20/24 1 0 188 1 0 190 1 0 192 1 0/0///Spring Crops"
+                    if (int.TryParse(Entries[4], out int RequiredCt))
+                        this.RequiredItemCount = RequiredCt;
+                    else
+                        this.RequiredItemCount = Items.Count;
 
                     if (Entries.Count > 5)
                     {
