@@ -333,13 +333,13 @@ namespace ItemBags
                             string RelativePath = Path.Combine("assets", "Modded Bags", CurrentFilename + ".json");
                             Helper.Data.WriteJsonFile(RelativePath, ModdedBag);
 
-                            Monitor.Log(string.Format("File exported to: {0}\nYou will need to re-launch the game for this file to be loaded.", Path.Combine(Helper.DirectoryPath, RelativePath)), LogLevel.Alert);
+                            Monitor.Log($"File exported to: {Path.Combine(Helper.DirectoryPath, RelativePath)}\nYou will need to re-launch the game for this file to be loaded.", LogLevel.Alert);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);
+                    Monitor.Log($"ItemBags: Unhandled error while executing command: {ex.Message}", LogLevel.Error);
                 }
             });
 
@@ -510,14 +510,14 @@ namespace ItemBags
                                 string RelativePath = Path.Combine("assets", "Modded Bags", CurrentFilename + ".json");
                                 Helper.Data.WriteJsonFile(RelativePath, ModdedBag);
 
-                                Monitor.Log(string.Format("File exported to: {0}\nYou will need to re-launch the game for this file to be loaded.", Path.Combine(Helper.DirectoryPath, RelativePath)), LogLevel.Alert);
+                                Monitor.Log($"File exported to: {Path.Combine(Helper.DirectoryPath, RelativePath)}\nYou will need to re-launch the game for this file to be loaded.", LogLevel.Alert);
                             }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);
+                    Monitor.Log($"ItemBags: Unhandled error while executing command: {ex.Message}", LogLevel.Error);
                 }
             });
         }
@@ -562,19 +562,14 @@ namespace ItemBags
 
         private static string GetSortValue(SObject Instance, SortingProperty Property)
         {
-            switch (Property)
+            return Property switch
             {
-                case SortingProperty.Name:
-                    return Instance.DisplayName;
-                case SortingProperty.Id:
-                    return Instance.ParentSheetIndex.ToString("D4");
-                case SortingProperty.Category:
-                    return string.Format("{0} {1}", Instance.getCategoryName(), Instance.getCategorySortValue().ToString("D3"));
-                case SortingProperty.SingleValue:
-                    return ItemBag.GetSingleItemPrice(Instance).ToString("D6");
-                default:
-                    throw new NotImplementedException(string.Format("Unimplemented {0} '{1}' in {2}.{3}", nameof(SortingProperty), Property, nameof(CommandHandler), nameof(GetSortValue)));
-            }
+                SortingProperty.Name => Instance.DisplayName,
+                SortingProperty.Id => Instance.ParentSheetIndex.ToString("D4"),
+                SortingProperty.Category => $"{Instance.getCategoryName()} {Instance.getCategorySortValue().ToString("D3")}",
+                SortingProperty.SingleValue => ItemBag.GetSingleItemPrice(Instance).ToString("D6"),
+                _ => throw new NotImplementedException($"Unimplemented {nameof(SortingProperty)} '{Property}' in {nameof(CommandHandler)}.{nameof(GetSortValue)}"),
+            };
         }
 
         private static void RegisterReloadConfigCommand()
@@ -592,7 +587,7 @@ namespace ItemBags
                 }
                 catch (Exception ex)
                 {
-                    Monitor.Log(string.Format("ItemBags: Unhandled error while executing command: {0}", ex.Message), LogLevel.Error);
+                    Monitor.Log($"ItemBags: Unhandled error while executing command: {ex.Message}", LogLevel.Error);
                 }
             });
         }

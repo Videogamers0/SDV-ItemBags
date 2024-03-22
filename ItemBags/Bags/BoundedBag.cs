@@ -381,7 +381,8 @@ namespace ItemBags.Bags
 
         internal override bool OnJsonAssetsItemIdsFixed(IJsonAssetsAPI API, bool AllowResyncing)
         {
-            this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(SizeInfo.Items.Select(x => new AllowedObject(x)).ToList());
+            if (SizeInfo != null)
+                this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(SizeInfo.Items.Select(x => new AllowedObject(x)).ToList());
             return ValidateContentsIds(API, AllowResyncing);
         }
 

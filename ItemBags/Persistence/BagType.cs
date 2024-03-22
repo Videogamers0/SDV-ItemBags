@@ -61,6 +61,9 @@ namespace ItemBags.Persistence
 
         public static string GetTranslatedName(BagType Type)
         {
+            if (Type == null)
+                return "";
+
             string TranslationKey = string.Format("{0}Name", Type.Name.Replace(" ", ""));
             try
             {
@@ -84,7 +87,7 @@ namespace ItemBags.Persistence
                 else
                     return Type.Description;
             }
-            catch (Exception) { return Type.Description; }
+            catch (Exception) { return Type?.Description ?? ""; }
         }
 
         public void SerializeToXML(string FilePath, out bool Successful, out Exception SerializationError)

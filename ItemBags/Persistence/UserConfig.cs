@@ -143,24 +143,21 @@ namespace ItemBags.Persistence
             return SizeCfg.AllowDowngradeItemQuality;
         }
 
-        public bool IsSizeVisibleInShops(ContainerSize Size)
+        public bool IsSizeVisibleInShops(ContainerSize Size) => Size switch
         {
-            if (Size == ContainerSize.Small)
-                return !HideSmallBagsFromShops;
-            else if (Size == ContainerSize.Medium)
-                return !HideMediumBagsFromShops;
-            else if (Size == ContainerSize.Large)
-                return !HideLargeBagsFromShops;
-            else if (Size == ContainerSize.Giant)
-                return !HideGiantBagsFromShops;
-            else if (Size == ContainerSize.Massive)
-                return !HideMassiveBagsFromShops;
-            else
-                return true;
-        }
+            ContainerSize.Small => !HideSmallBagsFromShops,
+            ContainerSize.Medium => !HideMediumBagsFromShops,
+            ContainerSize.Large => !HideLargeBagsFromShops,
+            ContainerSize.Giant => !HideGiantBagsFromShops,
+            ContainerSize.Massive => !HideMassiveBagsFromShops,
+            _ => true
+        };
 
         public int GetStandardBagPrice(ContainerSize Size, BagType Type)
         {
+            if (Type == null)
+                return 0;
+
             StandardBagSizeConfig SizeCfg = StandardBagSettings.First(x => x.Size == Size);
             int BasePrice = Type.SizeSettings.First(x => x.Size == Size).Price;
             double Multiplier = GlobalPriceModifier * SizeCfg.PriceModifier;
@@ -172,6 +169,9 @@ namespace ItemBags.Persistence
 
         public int GetStandardBagCapacity(ContainerSize Size, BagType Type)
         {
+            if (Type == null)
+                return 0;
+
             StandardBagSizeConfig SizeCfg = StandardBagSettings.First(x => x.Size == Size);
             return SizeCfg.GetCapacity(Type, GlobalCapacityModifier);
         }
