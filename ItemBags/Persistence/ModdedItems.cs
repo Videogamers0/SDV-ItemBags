@@ -7,6 +7,7 @@ using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.GameData.BigCraftables;
 using StardewValley.GameData.Objects;
+using StardewValley.ItemTypeDefinitions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -113,20 +114,65 @@ namespace ItemBags.Persistence
 
                         foreach (string ModdedItemName in Objects)
                         {
-                            //  Try to guess if the item has multiple different valid qualities, based on its category
-                            bool HasQualities = true;
+                            ModdedItem Item;
                             if (AllObjectIds.TryGetValue(ModdedItemName, out string ItemId))
-                                HasQualities = CategoriesWithQualities.Contains(Game1.objectData[ItemId].Category);
+                            {
+                                //  Try to guess if the item has multiple different valid qualities, based on its category
+                                bool HasQualities = CategoriesWithQualities.Contains(Game1.objectData[ItemId].Category);
+                                Item = new ModdedItem(ItemId, true, false, HasQualities, RequiredSize);
+                            }
+                            else
+                            {
+                                Item = new ModdedItem(ModdedItemName, false, false, true, RequiredSize);
+                            }
 
-                            Items.Add(new ModdedItem(ModdedItemName, false, HasQualities, RequiredSize));
+                            Items.Add(Item);
                         }
                     }
-                    //List<string> Crops = API.GetAllCropsFromContentPack(ModUniqueId);
-                    //if (Crops != null)
-                    //    Items.AddRange(Crops.Select(x => new ModdedItem(x, false, false, RequiredSize)));
+
                     List<string> BigCraftables = API.GetAllBigCraftablesFromContentPack(ModUniqueId);
                     if (BigCraftables != null)
-                        Items.AddRange(BigCraftables.Select(x => new ModdedItem(x, true, false, RequiredSize)));
+                    {
+                        //  Index all BigCraftables by their names
+                        Dictionary<string, string> AllBigCraftableIds = new Dictionary<string, string>();
+                        foreach (System.Collections.Generic.KeyValuePair<string, BigCraftableData> KVP in Game1.bigCraftableData)
+                        {
+                            string BigCraftableName = KVP.Value.DisplayName ?? KVP.Value.Name;
+                            if (!AllBigCraftableIds.ContainsKey(BigCraftableName))
+                                AllBigCraftableIds.Add(BigCraftableName, KVP.Key);
+                        }
+
+                        foreach (string ModdedItemName in BigCraftables)
+                        {
+                            ModdedItem Item;
+                            if (AllBigCraftableIds.TryGetValue(ModdedItemName, out string ItemId))
+                            {
+                                Item = new ModdedItem(ItemId, true, true, false, RequiredSize);
+                            }
+                            else
+                            {
+                                Item = new ModdedItem(ModdedItemName, false, true, false, RequiredSize);
+                            }
+
+                            Items.Add(Item);
+                        }
+                    }
+                }
+            }
+
+            //  Try to find CP items belonging to this mod by looking through Game1.objectData for ObjectData whose name or texture property begins with the mod's unique Id
+            //  (Because it's very common to prefix modded QualifiedItemIds with the mod's UniqueId)
+            if (!Items.Any())
+            {
+                IEnumerable<ObjectData> Matches = Game1.objectData.Values.Where(x => !string.IsNullOrEmpty(x.Name) && (x.Name.StartsWith(ModUniqueId) || (!string.IsNullOrEmpty(x.Texture) && x.Texture.StartsWith(ModUniqueId))));
+                foreach (ObjectData Match in Matches)
+                {
+                    string Id = Match.Name;
+                    bool HasQualities = CategoriesWithQualities.Contains(Match.Category);
+                    ModdedItem Item = new ModdedItem(Id, true, false, HasQualities, RequiredSize);
+                    ItemMetadata Metadata = ItemRegistry.ResolveMetadata(Id);
+                    bool IsBigCraftable = Metadata.TypeIdentifier == "(BC)";
+                    Items.Add(Item);
                 }
             }
 
@@ -394,8 +440,7 @@ namespace ItemBags.Persistence
                                         Id = Item.ObjectId;
                                     else
                                     {
-                                        int IntId;
-                                        if ((Item.IsBigCraftable && !JABigCraftableIds.TryGetValue(Item.Name, out IntId) && !AllBigCraftableIds.TryGetValue(Item.Name, out Id)) ||
+                                        if ((Item.IsBigCraftable && !JABigCraftableIds.TryGetValue(Item.Name, out int IntId) && !AllBigCraftableIds.TryGetValue(Item.Name, out Id)) ||
                                             (!Item.IsBigCraftable && !JAObjectIds.TryGetValue(Item.Name, out IntId) && !AllObjectIds.TryGetValue(Item.Name, out Id)))
                                         {
                                             string Message = string.Format("Warning - no item with Name = '{0}' was found. This item will not be imported to Bag '{1}'.", Item.Name, BagAddon.Name);
@@ -471,13 +516,22 @@ namespace ItemBags.Persistence
             this.ObjectId = null;
         }
 
-        public ModdedItem(string Name, bool IsBigCraftable, bool HasQualities, ContainerSize Size)
+        public ModdedItem(string NameOrId, bool IsId, bool IsBigCraftable, bool HasQualities, ContainerSize Size)
         {
-            this.Name = Name;
+            if (IsId)
+            {
+                this.Name = null;
+                this.ObjectId = NameOrId;
+            }
+            else
+            {
+                this.Name = NameOrId;
+                this.ObjectId = null;
+            }
+
             this.IsBigCraftable = IsBigCraftable;
             this.HasQualities = HasQualities;
             this.SizeString = Size.ToString();
-            this.ObjectId = null;
         }
 
         public ModdedItem(Object Item, bool HasStableId)
@@ -485,7 +539,7 @@ namespace ItemBags.Persistence
             if (HasStableId)
             {
                 this.Name = null;
-                this.ObjectId = Item.ItemId;
+                this.ObjectId = Item.ItemId; //Item.QualifiedItemId ?? Item.ItemId;
             }
             else
             {
