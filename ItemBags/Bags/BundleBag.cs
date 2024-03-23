@@ -289,6 +289,7 @@ namespace ItemBags.Bags
         protected override Item GetOneNew() => new BundleBag(Size, Autofill);
         protected override void GetOneCopyFrom(Item source)
         {
+            base.GetOneCopyFrom(source);
             if (source is BundleBag bag)
             {
                 Size = bag.Size;

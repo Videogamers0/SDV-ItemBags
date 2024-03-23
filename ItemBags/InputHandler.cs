@@ -220,7 +220,7 @@ namespace ItemBags
                                 IB.MoveToBag(Obj, Qty, out int MovedQty, true, Game1.player.Items);
 
                                 if (e.Button == SButton.MouseLeft)
-                                // || (MovedQty > 0 && Obj.Stack == 0) // Handle moving the last quantity with a right-click
+                                    //|| (MovedQty > 0 && Obj.Stack == 0)) // Handle moving the last quantity with a right-click
                                 {
                                     //  Clicking the bag will have made it become the held CursorSlotItem, so queue up an action that will swap them back on next game tick
                                     QueueCursorSlotIndex = ClickedItemIndex;

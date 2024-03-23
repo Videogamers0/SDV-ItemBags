@@ -312,9 +312,11 @@ namespace ItemBags.Bags
         protected override Item GetOneNew() => new OmniBag(Size);
         protected override void GetOneCopyFrom(Item source)
         {
+            base.GetOneCopyFrom(source);
             if (source is OmniBag bag)
             {
                 Size = bag.Size;
+                NestedBags = bag.NestedBags;
             }
         }
 

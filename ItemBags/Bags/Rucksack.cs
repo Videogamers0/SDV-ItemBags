@@ -525,6 +525,7 @@ namespace ItemBags.Bags
         protected override Item GetOneNew() => new Rucksack(Size, Autofill, AutofillPriority, SortProperty, SortOrder);
         protected override void GetOneCopyFrom(Item source)
         {
+            base.GetOneCopyFrom(source);
             if (source is Rucksack bag)
             {
                 Size = bag.Size;

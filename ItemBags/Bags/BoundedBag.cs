@@ -502,11 +502,13 @@ namespace ItemBags.Bags
         protected override Item GetOneNew() => new BoundedBag(TypeInfo, Size, Autofill);
         protected override void GetOneCopyFrom(Item source)
         {
+            base.GetOneCopyFrom(source);
             if (source is BoundedBag bag)
             {
                 TypeInfo = bag.TypeInfo;
                 Size = bag.Size;
                 Autofill = bag.Autofill;
+                ExcludedAutofillItems = bag.ExcludedAutofillItems;
             }
         }
     }

@@ -530,7 +530,6 @@ namespace ItemBags.Bags
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         private ItemBag() : base()
-            //: base("", "", 0, Tool.wateringCanSpriteIndex, Tool.wateringCanMenuIndex)
         {
             BagInstanceString = new NetString(null);
             BagInstanceString.fieldChangeEvent += BagInstanceString_fieldChangeEvent;
@@ -1220,7 +1219,18 @@ namespace ItemBags.Bags
             set { /*base.BaseName = value;*/ }
         }
 
-#region Stack
+        protected override void GetOneCopyFrom(Item source)
+        {
+             base.GetOneCopyFrom(source);
+            if (source is ItemBag bag)
+            {
+                Contents = bag.Contents;
+                CustomIconSourceTexture = bag.CustomIconSourceTexture;
+                CustomIconTexturePosition = bag.CustomIconTexturePosition;
+            }
+        }
+
+        #region Stack
         public override int Stack
         {
             get { return 1; }
