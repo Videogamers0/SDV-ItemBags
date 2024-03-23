@@ -121,7 +121,7 @@ namespace ItemBags
         //  This can cause crashes due to null reference exceptions in overridden methods (such as salePrice(bool ignoreProfitMargins = false) )
         private static bool ValidateBag(ItemBag Bag)
         {
-            if (Bag is BoundedBag BoundedBag && BoundedBag.TypeInfo == null)
+            if (Bag is BoundedBag BoundedBag && Bag is not BundleBag && BoundedBag.TypeInfo == null)
             {
                 BoundedBag.TryRemoveInvalidItems(Game1.player.Items, Game1.player.MaxItems);
                 return false;

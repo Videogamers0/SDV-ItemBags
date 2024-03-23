@@ -555,6 +555,7 @@ namespace ItemBags.Bags
             Vector2? IconRenderOffset = null, float IconScale = 1.0f, float IconTransparency = 1.0f) : base()
             //: base(BaseName, Description, 0, Tool.wateringCanSpriteIndex, Tool.wateringCanMenuIndex)
         {
+            this.BaseName = BaseName;
             Name = BaseName;
             description = Description;
 
