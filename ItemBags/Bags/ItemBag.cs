@@ -1221,7 +1221,7 @@ namespace ItemBags.Bags
 
         protected override void GetOneCopyFrom(Item source)
         {
-             base.GetOneCopyFrom(source);
+            base.GetOneCopyFrom(source);
             if (source is ItemBag bag)
             {
                 Contents = bag.Contents;
