@@ -2177,7 +2177,7 @@ namespace ItemBags.Persistence
             {
                 Id = "49d045ab-47d8-47fc-aed0-745da4a6d8fa",
                 Name = "Farmers Bag",
-                Description = "A bag for storing sprinklers, fertilizers, and scarecrows.",
+                Description = "A bag for storing sprinklers, fertilizers, scarecrows, and other farming essentials.",
                 IconSourceTexture = BagType.SourceTexture.SpringObjects,
                 IconSourceRect = new Rectangle(8 * 16, 15 * 16, 16, 16),
                 SizeSettings = new BagSizeConfig[]
@@ -2602,9 +2602,14 @@ namespace ItemBags.Persistence
 
         //If you create more BagTypes, make sure you add them to BagConfig.InitializeDefaults()
 
+        private static IEnumerable<T> AsEnumerable<T>(params T[] items) => items;
+
+        private static List<StoreableBagItem> CreateStoreableItemList(IEnumerable<int> GroupedIds, IEnumerable<int> UngroupedIds, IEnumerable<int> CraftableIds = null)
+            => CreateStoreableItemList(GroupedIds?.Select(x => x.ToString()), UngroupedIds?.Select(x => x.ToString()), CraftableIds?.Select(x => x.ToString()));
+
         /// <param name="CraftableIds">Optional. If any of these Ids are in <paramref name="UngroupedIds"/>, 
         /// then the corresponding ungrouped items will have <see cref="StoreableBagItem.IsBigCraftable"/>=true</param>
-        private static List<StoreableBagItem> CreateStoreableItemList(IEnumerable<int> GroupedIds, IEnumerable<int> UngroupedIds, IEnumerable<int> CraftableIds = null)
+        private static List<StoreableBagItem> CreateStoreableItemList(IEnumerable<string> GroupedIds, IEnumerable<string> UngroupedIds, IEnumerable<string> CraftableIds = null)
         {
             List<StoreableBagItem> Result = new List<StoreableBagItem>();
             if (GroupedIds != null)
