@@ -461,6 +461,8 @@ namespace ItemBags.Bags
             return ValidateContentsIds(API, AllowResyncing);
         }
 
+        public override bool CanBeLostOnDeath() => false;
+
         [XmlIgnore]
         private bool HasValidatedContentsIds { get; set; } = false;
 
