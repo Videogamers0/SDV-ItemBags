@@ -54,8 +54,8 @@ namespace ItemBags
 
         public const string BagConfigDataKey = "bagconfig";
         public static BagConfig BagConfig { get; private set; }
-        private const string UserConfigFilename = "config.json";
-        public static UserConfig UserConfig { get; private set; }
+        internal const string UserConfigFilename = "config.json";
+        public static UserConfig UserConfig { get; internal set; }
         private const string ModdedItemsFilename = "modded_items.json";
         public static ModdedItems ModdedItems { get; private set; }
 
@@ -79,6 +79,8 @@ namespace ItemBags
             LoadModdedItems();
             LoadModdedBags();
             BagConfig.AfterLoaded();
+
+            GMCM.Entry(helper);
 
             helper.Events.Display.MenuChanged += Display_MenuChanged;
             helper.Events.Display.WindowResized += Display_WindowResized;

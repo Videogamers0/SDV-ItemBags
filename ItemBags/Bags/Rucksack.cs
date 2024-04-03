@@ -236,6 +236,7 @@ namespace ItemBags.Bags
             InitializeSizeSettings();
             LoadTextures();
             OnSizeChanged += Rucksack_OnSizeChanged;
+            GMCM.OnConfigChanged += (sender, e) => { InitializeSizeSettings(); };
         }
 
         private void Rucksack_OnSizeChanged(object sender, EventArgs e)
@@ -263,6 +264,7 @@ namespace ItemBags.Bags
             InitializeSizeSettings();
             LoadTextures();
             OnSizeChanged += Rucksack_OnSizeChanged;
+            GMCM.OnConfigChanged += (sender, e) => { InitializeSizeSettings(); };
         }
 
         public Rucksack(BagInstance SavedData)
