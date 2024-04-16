@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Buildings;
 using StardewValley.Menus;
 using StardewValley.Objects;
 using System;
@@ -245,7 +246,7 @@ namespace ItemBags
                                 //  Find the slot on the toolbar that they clicked, if any
                                 for (int i = 0; i < toolbarButtons.Count; i++)
                                 {
-                                    if (toolbarButtons[i].bounds.Contains(CursorPos) ||(IsGamepadInput && toolbar.currentlySnappedComponent == toolbarButtons[i]))
+                                    if (toolbarButtons[i].bounds.Contains(CursorPos) || (IsGamepadInput && toolbar.currentlySnappedComponent == toolbarButtons[i]))
                                     {
                                         int ActualIndex = i;
                                         if (Constants.TargetPlatform == GamePlatform.Android)
@@ -272,7 +273,28 @@ namespace ItemBags
                         catch (Exception) { }
                     }
                 }
-                else if (Game1.activeClickableMenu is ItemGrabMenu IGM && IGM.context is Chest ChestSource && 
+                else if (Game1.activeClickableMenu is ItemGrabMenu IGM)
+                {
+                    if (IGM.shippingBin && IGM.context is ShippingBin)
+                    {
+                        InventoryMenu InvMenu = IGM.inventory;
+
+                        int ClickedItemIndex = InvMenu.getInventoryPositionOfClick(CursorPos.X, CursorPos.Y);
+                        bool IsValidInventorySlot = ClickedItemIndex >= 0 && ClickedItemIndex < InvMenu.actualInventory.Count;
+                        if (IsValidInventorySlot)
+                        {
+                            Item ClickedItem = InvMenu.actualInventory[ClickedItemIndex];
+
+                            //  Right-click an ItemBag to open it
+                            if ((e.Button == SButton.MouseRight || (IsGamepadInput && GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.OpenBagFromInventory)))
+                                && ClickedItem is ItemBag ClickedBag)
+                            {
+                                if (ValidateBag(ClickedBag))
+                                    ClickedBag.OpenContents(Game1.player.Items, Game1.player.MaxItems);
+                            }
+                        }
+                    }
+                    else if (IGM.context is Chest ChestSource &&
                     (e.Button == SButton.MouseRight || e.Button == SButton.MouseMiddle || (IsGamepadInput && GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.OpenBagFromChest))))
                 {
                     //  Check if they clicked a Bag in the inventory part of the chest interface
@@ -313,6 +335,7 @@ namespace ItemBags
                         }
                     }
                 }
+            }
             }
             catch (Exception ex)
             {
