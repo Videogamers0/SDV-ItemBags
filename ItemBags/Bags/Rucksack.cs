@@ -368,7 +368,7 @@ namespace ItemBags.Bags
                 return true;
 
             return base.IsValidBagObject(Item) && !BlacklistedItemIds.Contains(Item.ParentSheetIndex)
-                && (!Item.GetType().IsSubclassOf(typeof(Object)) || Item is ColoredObject)
+                && (!Item.GetType().IsSubclassOf(typeof(Object)) || Item is ColoredObject || Item is Torch)
                 && !Item.IsRecipe
                 && Item.maximumStackSize() > 1; // Possible TODO: Remove this condition, and add logic to account for it in: IsFull, GetNumEmptySlots, GetMaxStackSize, GetNumSlots, MoveToBag, and the Menu handling logic
 
