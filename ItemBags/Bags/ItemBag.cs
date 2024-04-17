@@ -685,7 +685,9 @@ namespace ItemBags.Bags
                                             // But when I reloaded the save it was now getting autofilled so something is different after it got deserialized
                 Item.heldObject.Value == null &&
                 !IsSecretNote(Item) &&
-                !Item.isLostItem && (!Item.GetType().IsSubclassOf(typeof(Object)) || Item is ColoredObject || Item is Torch);
+                !Item.isLostItem && (!Item.GetType().IsSubclassOf(typeof(Object)) || Item is ColoredObject || Item is Torch) &&
+                // "Better Chests" mod allows picking up chests that contain items. Disallow this from being placed in a bag because the chest contents would be lost
+                !Item.modData.ContainsKey("furyx639.BetterChests-ProxyChestFactory-GlobalInventoryId");
         }
 
         private static bool IsSecretNote(Object Item)

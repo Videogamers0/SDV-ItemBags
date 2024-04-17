@@ -221,7 +221,7 @@ namespace ItemBags
                                 IB.MoveToBag(Obj, Qty, out int MovedQty, true, Game1.player.Items);
 
                                 if (e.Button == SButton.MouseLeft)
-                                    //|| (MovedQty > 0 && Obj.Stack == 0)) // Handle moving the last quantity with a right-click
+                                //|| (MovedQty > 0 && Obj.Stack == 0)) // Handle moving the last quantity with a right-click
                                 {
                                     //  Clicking the bag will have made it become the held CursorSlotItem, so queue up an action that will swap them back on next game tick
                                     QueueCursorSlotIndex = ClickedItemIndex;
@@ -231,7 +231,7 @@ namespace ItemBags
                         }
                     }
                 }
-                else if (Game1.activeClickableMenu == null && 
+                else if (Game1.activeClickableMenu == null &&
                     (e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight || (IsGamepadInput && GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.OpenBagFromToolbar))))
                 {
                     //  Check if they clicked a bag on the toolbar, open the bag if so
@@ -295,47 +295,47 @@ namespace ItemBags
                         }
                     }
                     else if (IGM.context is Chest ChestSource &&
-                    (e.Button == SButton.MouseRight || e.Button == SButton.MouseMiddle || (IsGamepadInput && GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.OpenBagFromChest))))
-                {
-                    //  Check if they clicked a Bag in the inventory part of the chest interface
-                    bool Handled = false;
-                    for (int i = 0; i < IGM.inventory.inventory.Count; i++)
+                        (e.Button == SButton.MouseRight || e.Button == SButton.MouseMiddle || (IsGamepadInput && GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.OpenBagFromChest))))
                     {
-                        ClickableComponent Component = IGM.inventory.inventory[i];
-                        if (Component != null && Component.bounds.Contains(CursorPos))
+                        //  Check if they clicked a Bag in the inventory part of the chest interface
+                        bool Handled = false;
+                        for (int i = 0; i < IGM.inventory.inventory.Count; i++)
                         {
-                            Item ClickedInvItem = i < 0 || i >= IGM.inventory.actualInventory.Count ? null : IGM.inventory.actualInventory[i];
-                            if (ClickedInvItem is ItemBag IB && ValidateBag(IB))
-                            {
-                                IB.OpenContents(IGM.inventory.actualInventory, Game1.player.MaxItems);
-                            }
-                            Handled = true;
-                            break;
-                        }
-                    }
-
-                    bool IsMegaStorageCompatibleWithCurrentChest = IGM.ItemsToGrabMenu.capacity == DefaultChestCapacity ||
-                        MegaStorageInstalledVersion == null || MegaStorageInstalledVersion.IsNewerThan(new SemanticVersion(1, 4, 4));
-                    if (!Handled && IsMegaStorageCompatibleWithCurrentChest)
-                    {
-                        //  Check if they clicked a Bag in the chest part of the chest interface
-                        for (int i = 0; i < IGM.ItemsToGrabMenu.inventory.Count; i++)
-                        {
-                            ClickableComponent Component = IGM.ItemsToGrabMenu.inventory[i];
+                            ClickableComponent Component = IGM.inventory.inventory[i];
                             if (Component != null && Component.bounds.Contains(CursorPos))
                             {
-                                Item ClickedChestItem = i < 0 || i >= IGM.ItemsToGrabMenu.actualInventory.Count ? null : IGM.ItemsToGrabMenu.actualInventory[i];
-                                if (ClickedChestItem is ItemBag IB && ValidateBag(IB))
+                                Item ClickedInvItem = i < 0 || i >= IGM.inventory.actualInventory.Count ? null : IGM.inventory.actualInventory[i];
+                                if (ClickedInvItem is ItemBag IB && ValidateBag(IB))
                                 {
-                                    IB.OpenContents(IGM.ItemsToGrabMenu.actualInventory, IGM.ItemsToGrabMenu.capacity);
+                                    IB.OpenContents(IGM.inventory.actualInventory, Game1.player.MaxItems);
                                 }
                                 Handled = true;
                                 break;
                             }
                         }
+
+                        bool IsMegaStorageCompatibleWithCurrentChest = IGM.ItemsToGrabMenu.capacity == DefaultChestCapacity ||
+                            MegaStorageInstalledVersion == null || MegaStorageInstalledVersion.IsNewerThan(new SemanticVersion(1, 4, 4));
+                        if (!Handled && IsMegaStorageCompatibleWithCurrentChest)
+                        {
+                            //  Check if they clicked a Bag in the chest part of the chest interface
+                            for (int i = 0; i < IGM.ItemsToGrabMenu.inventory.Count; i++)
+                            {
+                                ClickableComponent Component = IGM.ItemsToGrabMenu.inventory[i];
+                                if (Component != null && Component.bounds.Contains(CursorPos))
+                                {
+                                    Item ClickedChestItem = i < 0 || i >= IGM.ItemsToGrabMenu.actualInventory.Count ? null : IGM.ItemsToGrabMenu.actualInventory[i];
+                                    if (ClickedChestItem is ItemBag IB && ValidateBag(IB))
+                                    {
+                                        IB.OpenContents(IGM.ItemsToGrabMenu.actualInventory, IGM.ItemsToGrabMenu.capacity);
+                                    }
+                                    Handled = true;
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
-            }
             }
             catch (Exception ex)
             {
