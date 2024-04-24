@@ -342,7 +342,7 @@ namespace ItemBags
             get => Items[index]; 
             set
             {
-                //  As of game version 1.6.3.24 1.6.3.24087, this is the decompiled logic for StardewValley.Item.ConsumeStack(int amount):
+                //  As of game version 1.6.3.24087, this is the decompiled logic for StardewValley.Item.ConsumeStack(int amount):
                 //  Notice that "Stack -= amount" does not execute when Stack-amount<=0
                 /*
                 if (amount == 0)

@@ -275,7 +275,7 @@ namespace ItemBags
                 }
                 else if (Game1.activeClickableMenu is ItemGrabMenu IGM)
                 {
-                    if (IGM.shippingBin && IGM.context is ShippingBin)
+                    if (IsShippingBinMenu(Game1.activeClickableMenu))
                     {
                         InventoryMenu InvMenu = IGM.inventory;
 
@@ -341,6 +341,19 @@ namespace ItemBags
             {
                 ItemBagsMod.ModInstance.Monitor.Log(string.Format("Unhandled error in {0}: {1}", nameof(Input_ButtonPressed), ex.Message), LogLevel.Error);
             }
+        }
+
+        private static bool IsShippingBinMenu(IClickableMenu menu)
+        {
+            if (menu is not ItemGrabMenu IGM)
+                return false;
+
+            if (IGM.shippingBin && IGM.context is ShippingBin)
+                return true;
+
+            //  The "Chests Anywhere" mod overrides the vanilla shipping bin menu
+            bool isChestsAnywhereShippingBin = object.ReferenceEquals(IGM.ItemsToGrabMenu.actualInventory, Game1.getFarm().getShippingBin(Game1.player));
+            return isChestsAnywhereShippingBin;
         }
     }
 }
