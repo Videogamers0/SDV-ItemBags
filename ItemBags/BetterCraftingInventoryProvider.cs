@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 using ItemBags.Bags;
 
@@ -16,7 +17,7 @@ using StardewValley.Network;
 
 namespace ItemBags
 {
-    public class BetterCraftingInventoryProvider : IInventoryProvider
+    public class BetterCraftingInventoryProvider : IEventedInventoryProvider
     {
         // Split-screen stuff.
         internal readonly static PerScreen<Dictionary<ItemBag, NetMutex>> BagMutexes = new(() => new());
@@ -100,12 +101,8 @@ namespace ItemBags
 
         internal static void MenuClosing(IClickableMenu menu)
         {
-            // Do one final sync of bag inventories. There may have been changes
-            // that we didn't catch with CleanInventory.
-            foreach (var inventory in BagInventories.Value.Values)
-                ResyncBag(inventory);
-
-            // Now clear them all.
+            // Just clear everything. The state should have been
+            // re-synced already in the EndExclusive handler.
             BagInventories.Value.Clear();
             BagMutexes.Value.Clear();
         }
@@ -162,23 +159,7 @@ namespace ItemBags
 
         public void CleanInventory(object obj, GameLocation location, Farmer who)
         {
-            // This can be called after a crafting operation has modified an
-            // inventory, and if so, is called before the mutex is released, so
-            // this is probably a good place to re-sync the contents of a bag.
-
-            // (Specifically, Better Crafting calls this currently if any Items
-            // were set to null, but that is an implementation detail that may
-            // change in the future.)
-
-            var inventory = GetBagInventory(obj, createIfMissing: false);
-            if (inventory != null)
-            {
-                ResyncBag(inventory);
-
-                // Remove this inventory from the cache so it is recreated
-                // for the next use.
-                BagInventories.Value.Remove(inventory.Source);
-            }
+            // Do nothing. Save our cleaning for when we're done.
         }
 
         public int GetActualCapacity(object obj, GameLocation location, Farmer who)
@@ -226,6 +207,27 @@ namespace ItemBags
         public bool IsValid(object obj, GameLocation location, Farmer who)
         {
             return obj is ItemBag bag && IsValid(bag) && BagMutexes.Value.ContainsKey(bag);
+        }
+
+        public bool? StartExclusive(object obj, GameLocation location, Farmer who, IEventedInventoryProvider.StartExclusiveCallback callback)
+        {
+            // We don't need any startup behavior, only end behavior.
+            // Just immediately return true.
+            return true;
+        }
+
+        public void EndExclusive(object obj, GameLocation location, Farmer who)
+        {
+            // Clean up this bag's inventory, if it is a bag with an inventory.
+            var inventory = GetBagInventory(obj, createIfMissing: false);
+            if (inventory != null)
+            {
+                ResyncBag(inventory);
+
+                // Remove this inventory from the cache so it is recreated
+                // for the next use.
+                BagInventories.Value.Remove(inventory.Source);
+            }
         }
     }
 }
