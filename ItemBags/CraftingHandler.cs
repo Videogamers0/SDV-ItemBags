@@ -144,7 +144,7 @@ namespace ItemBags
 
                 ItemBagInventories = new();
 
-                //  Create a temporary chest from the items of each bag, and add the chest to _materialContainers
+                //  Create a temporary IInventory from the items of each bag, and add the chest to _materialContainers
                 foreach (ItemBag IB in SearchedBags.Where(x => AllowUsingBundleBagItemsForCrafting || !(x is BundleBag)))
                 {
                     ItemBagCraftingInventory BagInventory = new(IB);
