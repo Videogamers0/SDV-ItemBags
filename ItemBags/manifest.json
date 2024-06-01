@@ -9,8 +9,12 @@
   "UpdateKeys": [ "Nexus:5382" ],
   "Dependencies": [
     {
-      "UniqueID": "spacechase0.JsonAssets",
-      "IsRequired": false
+        "UniqueID": "spacechase0.JsonAssets",
+        "IsRequired": false
+    },
+    {
+        "UniqueID": "leclair.bettercrafting",
+        "IsRequired": false
     },
     {
       "UniqueID": "spacechase0.SpaceCore",

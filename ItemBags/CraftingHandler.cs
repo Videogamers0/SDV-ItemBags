@@ -1,17 +1,17 @@
-﻿using ItemBags.Bags;
-using Microsoft.Xna.Framework;
-using StardewModdingAPI;
-using StardewModdingAPI.Events;
-using StardewValley;
-using StardewValley.Inventories;
-using StardewValley.Menus;
-using StardewValley.Objects;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
+using ItemBags.Bags;
+
+using StardewModdingAPI;
+using StardewModdingAPI.Events;
+
+using StardewValley;
+using StardewValley.Inventories;
+using StardewValley.Menus;
+
 using Object = StardewValley.Object;
 
 namespace ItemBags
@@ -88,8 +88,8 @@ namespace ItemBags
             bool IsBetterCraftingInstalled = Helper.ModRegistry.IsLoaded(BetterCraftingUniqueId);
             if (IsBetterCraftingInstalled)
             {
-                ItemBagsMod.ModInstance.Monitor.Log($"'Better Crafting' mod ({BetterCraftingUniqueId}) detected. " +
-                    $"You will not be able to craft using items inside of bags.", LogLevel.Info);
+                //ItemBagsMod.ModInstance.Monitor.Log($"'Better Crafting' mod ({BetterCraftingUniqueId}) detected. " +
+                //    $"You will not be able to craft using items inside of bags.", LogLevel.Info);
             }
             else
             {
@@ -256,7 +256,7 @@ namespace ItemBags
 
         private static bool IsCompatibleCraftingPage(IClickableMenu Menu)
         {
-            return Menu is CraftingPage || 
+            return Menu is CraftingPage ||
                 (Menu?.GetType().FullName == "CookingSkill.NewCraftingPage" && IsCookingSkillModCompatible); // CookingSkill.NewCraftingPage is a menu defined in the "Cooking Skill" mod
         }
     }
@@ -338,8 +338,8 @@ namespace ItemBags
             $"This object is only intended to be used by crafting pages, and only supports removing items.";
 
         public Item this[int index]
-        { 
-            get => Items[index]; 
+        {
+            get => Items[index];
             set
             {
                 //  As of game version 1.6.3.24087, this is the decompiled logic for StardewValley.Item.ConsumeStack(int amount):
@@ -396,7 +396,7 @@ namespace ItemBags
             else
                 return results;
         }
-            
+
         public bool HasAny() => Items.Any();
         public bool HasEmptySlots() => Count > CountItemStacks();
         public int IndexOf(Item item) => Items.IndexOf(item);
