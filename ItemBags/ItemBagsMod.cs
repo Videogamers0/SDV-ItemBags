@@ -118,21 +118,29 @@ namespace ItemBags
                 }
 
                 // Add compatibility with Better Crafting
-                if (Helper.ModRegistry.IsLoaded(BetterCraftingUniqueId) && !Helper.ModRegistry.Get(BetterCraftingUniqueId).Manifest.Version.IsOlderThan("2.12.0"))
+                if (Helper.ModRegistry.IsLoaded(BetterCraftingUniqueId))
                 {
-                    try
+                    if (Helper.ModRegistry.Get(BetterCraftingUniqueId).Manifest.Version.IsOlderThan("2.13.0"))
                     {
-                        BetterCraftingAPI = Helper.ModRegistry.GetApi<IBetterCrafting>(BetterCraftingUniqueId);
-                        if (BetterCraftingAPI != null)
-                        {
-                            BetterCraftingAPI.RegisterInventoryProvider(typeof(ItemBag), new BetterCraftingInventoryProvider());
-                            BetterCraftingAPI.MenuSimplePopulateContainers += BetterCraftingInventoryProvider.PopulateContainers;
-                            BetterCraftingAPI.MenuClosing += BetterCraftingInventoryProvider.MenuClosing;
-                        }
+                        Monitor.Log("Better Crafting mod detected. You will not be able to craft using items inside of bags due to an incompatibility with Better Crafting's crafting menu. " +
+                            $"Consider updating Better Crafting to version 2.13.0 or later to remove this incompatibility.");
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Monitor.Log(string.Format("Failed to bind to Better Crafting's Mod API. You will not be able to craft using items inside of bags. Error: {0}", ex.Message), LogLevel.Warn);
+                        try
+                        {
+                            BetterCraftingAPI = Helper.ModRegistry.GetApi<IBetterCrafting>(BetterCraftingUniqueId);
+                            if (BetterCraftingAPI != null)
+                            {
+                                BetterCraftingAPI.RegisterInventoryProvider(typeof(ItemBag), new BetterCraftingInventoryProvider());
+                                BetterCraftingAPI.MenuSimplePopulateContainers += BetterCraftingInventoryProvider.PopulateContainers;
+                                BetterCraftingAPI.MenuClosing += BetterCraftingInventoryProvider.MenuClosing;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Monitor.Log($"Failed to bind to Better Crafting's Mod API. You will not be able to craft using items inside of bags. Error: {ex.Message}", LogLevel.Warn);
+                        }
                     }
                 }
 
