@@ -692,10 +692,7 @@ namespace ItemBags.Bags
                 !Item.modData.ContainsKey("furyx639.BetterChests-ProxyChestFactory-GlobalInventoryId");
         }
 
-        private static bool IsSecretNote(Object Item)
-        {
-            return Item.ParentSheetIndex == 79 && !Item.bigCraftable.Value && !Item.IsRecipe;
-        }
+        private static bool IsSecretNote(Object Item) => Item?.QualifiedItemId == "(O)79";
 
 #region Open/Close Menu
         [XmlIgnore]
