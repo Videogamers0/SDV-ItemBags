@@ -171,14 +171,21 @@ namespace ItemBags.Persistence
             //  (Because it's very common to prefix modded QualifiedItemIds with the mod's UniqueId)
             if (!Items.Any())
             {
-                IEnumerable<ObjectData> Matches = Game1.objectData.Values.Where(x => !string.IsNullOrEmpty(x.Name) && (x.Name.StartsWith(ModUniqueId) || (!string.IsNullOrEmpty(x.Texture) && x.Texture.StartsWith(ModUniqueId))));
+                IEnumerable<ObjectData> Matches = Game1.objectData.Values
+                    .Where(x => !string.IsNullOrEmpty(x.Name) && (x.Name.StartsWith(ModUniqueId) || (!string.IsNullOrEmpty(x.Texture) && x.Texture.StartsWith(ModUniqueId))))
+                    .GroupBy(x => x.Name).Select(x => x.First()); // In rare cases, there may be multiple ObjectData entries with the same Id, such as "bees.pkr_combeefegg" from Pokemon Ranch mod v1.7.
                 foreach (ObjectData Match in Matches)
                 {
                     string Id = Match.Name;
                     bool HasQualities = CategoriesWithQualities.Contains(Match.Category);
                     ModdedItem Item = new ModdedItem(Id, true, false, HasQualities, RequiredSize);
                     ItemMetadata Metadata = ItemRegistry.ResolveMetadata(Id);
-                    bool IsBigCraftable = Metadata.TypeIdentifier == "(BC)";
+                    if (Metadata == null)
+                    {
+                        ItemBagsMod.ModInstance.Monitor.Log($"Failed to retrieve item metadata for {Match.Name}. ItemRegistry.ResolveMetadata(\"{Match.Name}\") returned null. If this is a valid item, it will be skipped for processing.", LogLevel.Warn);
+                        continue;
+                    }
+                    bool IsBigCraftable = Metadata?.TypeIdentifier == "(BC)";
                     Items.Add(Item);
                 }
             }
