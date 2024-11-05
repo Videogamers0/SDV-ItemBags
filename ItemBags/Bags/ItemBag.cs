@@ -1250,7 +1250,7 @@ namespace ItemBags.Bags
                 CustomIconSourceTexture = bag.CustomIconSourceTexture;
                 CustomIconTexturePosition = bag.CustomIconTexturePosition;
             }
-        }a
+        }
 
         #region Stack
         public override int Stack
