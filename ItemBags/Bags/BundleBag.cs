@@ -83,7 +83,7 @@ namespace ItemBags.Bags
                 this.Size = Data.Size;
                 this.Autofill = Data.Autofill;
 
-                this.BaseName = ItemBagsMod.Translate("BundleBagName");
+                this.Name = ItemBagsMod.Translate("BundleBagName");
                 this.DescriptionAlias = ItemBagsMod.Translate("BundleBagDescription");
 
                 Contents.Clear();

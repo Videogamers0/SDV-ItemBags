@@ -375,6 +375,8 @@ namespace ItemBags
 
         public bool IsReadOnly => false;
 
+        public bool IsLocalPlayerInventory { get => true; set => throw new NotImplementedException(); }
+
         public void Add(Item item) => throw new InvalidOperationException(NotSupportedErrorMsg);
         public void AddRange(ICollection<Item> collection) => throw new InvalidOperationException(NotSupportedErrorMsg);
         public void Insert(int index, Item item) => throw new InvalidOperationException(NotSupportedErrorMsg);
@@ -400,6 +402,11 @@ namespace ItemBags
         public bool HasAny() => Items.Any();
         public bool HasEmptySlots() => Count > CountItemStacks();
         public int IndexOf(Item item) => Items.IndexOf(item);
+
+        public int Reduce(Item item, int count, bool reduceRemainderFromInventory = false)
+        {
+            throw new NotImplementedException();
+        }
 
         public int ReduceId(string itemId, int count)
         {

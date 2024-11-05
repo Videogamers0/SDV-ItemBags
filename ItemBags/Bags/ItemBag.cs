@@ -568,7 +568,7 @@ namespace ItemBags.Bags
             Vector2? IconRenderOffset = null, float IconScale = 1.0f, float IconTransparency = 1.0f) : base()
             //: base(BaseName, Description, 0, Tool.wateringCanSpriteIndex, Tool.wateringCanMenuIndex)
         {
-            this.BaseName = BaseName;
+            this.Name = BaseName;
             Name = BaseName;
             description = Description;
 
@@ -1228,10 +1228,17 @@ namespace ItemBags.Bags
             return this.DisplayName;
         }
 
+        //public override string Name
+        //{
+        //    get { return this.DisplayName; }
+        //    set { /*base.BaseName = value;*/ }
+        //}
+
+        private string _Name;
         public override string Name
         {
-            get { return this.DisplayName; }
-            set { /*base.BaseName = value;*/ }
+            get { return _Name; }
+            set { _Name = value;  }
         }
 
         protected override void GetOneCopyFrom(Item source)
@@ -1243,7 +1250,7 @@ namespace ItemBags.Bags
                 CustomIconSourceTexture = bag.CustomIconSourceTexture;
                 CustomIconTexturePosition = bag.CustomIconTexturePosition;
             }
-        }
+        }a
 
         #region Stack
         public override int Stack

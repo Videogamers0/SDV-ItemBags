@@ -198,7 +198,7 @@ namespace ItemBags.Bags
 
                     _MaxStackSize = ItemBagsMod.UserConfig.GetStandardBagCapacity(Size, TypeInfo);
 
-                    BaseName = BagType.GetTranslatedName(TypeInfo);
+                    Name = BagType.GetTranslatedName(TypeInfo);
                     DescriptionAlias = string.Format("{0}\n({1})",
                         BagType.GetTranslatedDescription(TypeInfo),
                         ItemBagsMod.Translate("CapacityDescription", new Dictionary<string, string>() { { "count", MaxStackSize.ToString() } }));
@@ -353,7 +353,7 @@ namespace ItemBags.Bags
 
                 _MaxStackSize = ItemBagsMod.UserConfig.GetStandardBagCapacity(Size, TypeInfo);
 
-                this.BaseName = BagType.GetTranslatedName(TypeInfo);
+                this.Name = BagType.GetTranslatedName(TypeInfo);
                 DescriptionAlias = string.Format("{0}\n({1})",
                     BagType.GetTranslatedDescription(TypeInfo),
                     ItemBagsMod.Translate("CapacityDescription", new Dictionary<string, string>() { { "count", MaxStackSize.ToString() } }));
