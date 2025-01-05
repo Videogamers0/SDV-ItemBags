@@ -96,6 +96,8 @@ namespace ItemBags
 
             helper.Events.GameLoop.GameLaunched += (sender, e) =>
             {
+                OmniBag.OnGameLaunched();
+
                 //  Add compatibility with the Save Anywhere mod
                 bool IsSaveAnywhereInstalled = Helper.ModRegistry.IsLoaded(SaveAnywhereUniqueId) ||
                     Helper.ModRegistry.GetAll().Any(x => x.Manifest.Name.Equals("Save Anywhere", StringComparison.CurrentCultureIgnoreCase));

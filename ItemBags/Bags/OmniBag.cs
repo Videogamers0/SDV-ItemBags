@@ -44,8 +44,6 @@ namespace ItemBags.Bags
             OnSizeChanged += OmniBag_OnSizeChanged;
 
             this.NestedBags = new List<ItemBag>();
-
-            LoadTextures();
         }
 
         private void OmniBag_OnSizeChanged(object sender, EventArgs e) => UpdateDescription();
@@ -67,8 +65,6 @@ namespace ItemBags.Bags
             OnSizeChanged += OmniBag_OnSizeChanged;
 
             this.NestedBags = new List<ItemBag>();
-
-            LoadTextures();
         }
 
         public OmniBag(BagInstance SavedData)
@@ -147,22 +143,30 @@ namespace ItemBags.Bags
             return ChangesMade;
         }
 
-        /// <summary>The 16x16 portion of <see cref="CursorsTexture"/> that contains the omnibag icon</summary>
+        /// <summary>The 16x16 texture that contains the omnibag icon</summary>
         [XmlIgnore]
         private static Texture2D OriginalTexture { get; set; }
         /// <summary><see cref="OriginalTexture"/>, converted to Grayscale</summary>
         [XmlIgnore]
         private static Texture2D GrayscaleTexture { get; set; }
 
-        private void LoadTextures()
+        internal static void OnGameLaunched()
         {
             if (OriginalTexture == null || OriginalTexture.IsDisposed)
             {
+#if LEGACY_CODE
                 //48 640 16x16 LooseSprites/cursors.xnb
                 Rectangle SourceRect = new Rectangle(48, 640, 16, 16);
                 int PixelCount = SourceRect.Width * SourceRect.Height;
                 Color[] PixelData = new Color[PixelCount];
                 CursorsTexture.GetData(0, SourceRect, PixelData, 0, PixelCount);
+#else
+                Rectangle SourceRect = new Rectangle(0, 0, 16, 16);
+                int PixelCount = SourceRect.Width * SourceRect.Height;
+                Color[] PixelData = new Color[PixelCount];
+                Texture2D Texture = ItemBagsMod.ModInstance.Helper.ModContent.Load<Texture2D>("assets/omnibag_icon.png");
+                Texture.GetData(0, SourceRect, PixelData, 0, PixelCount);
+#endif
                 OriginalTexture = new Texture2D(Game1.graphics.GraphicsDevice, SourceRect.Width, SourceRect.Height);
                 OriginalTexture.SetData(PixelData);
             }
@@ -175,7 +179,8 @@ namespace ItemBags.Bags
 
         public override void drawInMenu(SpriteBatch spriteBatch, Vector2 location, float scaleSize, float transparency, float layerDepth, StackDrawType drawStackNumber, Color color, bool drawShadow)
         {
-            DrawInMenu(GrayscaleTexture, null, new Vector2(16 - GrayscaleTexture.Width, 16 - GrayscaleTexture.Height) * 2f, 1f, spriteBatch, location, scaleSize, transparency, layerDepth, drawStackNumber, color, drawShadow);
+            if (GrayscaleTexture?.IsDisposed == false)
+                DrawInMenu(GrayscaleTexture, null, new Vector2(16 - GrayscaleTexture.Width, 16 - GrayscaleTexture.Height) * 2f, 1f, spriteBatch, location, scaleSize, transparency, layerDepth, drawStackNumber, color, drawShadow);
         }
 
         public override void ResetIcon()
