@@ -189,8 +189,12 @@ namespace ItemBags.Bags
                 return false;
             else // both are non-null
             {
+#if LEGACY_CODE //(from before 1.6 update which added unique ItemIds)
                 //  Compare common properties
                 if (object1.ParentSheetIndex != object2.ParentSheetIndex ||
+#else
+                if (object1.QualifiedItemId != object2.QualifiedItemId ||
+#endif
                     object1.Quality != object2.Quality ||
                     object1.IsRecipe != object2.IsRecipe ||
                     object1.bigCraftable.Value != object2.bigCraftable.Value ||
