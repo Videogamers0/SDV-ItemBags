@@ -10,6 +10,7 @@ using ItemBags.Menus;
 using ItemBags.Persistence;
 
 using Leclair.Stardew.BetterCrafting;
+using Leclair.Stardew.BetterGameMenu;
 
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -36,6 +37,7 @@ namespace ItemBags
         public const string SaveAnywhereUniqueId = "Omegasis.SaveAnywhere";
         public const string EntoaroxFrameworkUniqueId = "Entoarox.EntoaroxFramework";
         public const string BetterCraftingUniqueId = "leclair.bettercrafting";
+        public const string BetterGameMenuUniqueId = "leclair.bettergamemenu";
 
         internal static ItemBagsMod ModInstance { get; private set; }
         public static IMonitor Logger => ModInstance?.Monitor;
@@ -61,6 +63,7 @@ namespace ItemBags
         public static ModdedItems ModdedItems { get; private set; }
 
         internal IBetterCrafting BetterCraftingAPI;
+        internal IBetterGameMenuApi BetterGameMenuAPI;
 
         internal static Dictionary<ModdedBag, BagType> TemporaryModdedBagTypes { get; private set; }
 
@@ -143,6 +146,19 @@ namespace ItemBags
                         {
                             Monitor.Log($"Failed to bind to Better Crafting's Mod API. You will not be able to craft using items inside of bags. Error: {ex.Message}", LogLevel.Warn);
                         }
+                    }
+                }
+
+                // Add compatibility with Better Game Menu
+                if (Helper.ModRegistry.IsLoaded(BetterGameMenuUniqueId))
+                {
+                    try
+                    {
+                        BetterGameMenuAPI = Helper.ModRegistry.GetApi<IBetterGameMenuApi>(BetterGameMenuUniqueId);
+                    }
+                    catch (Exception ex)
+                    {
+                        Monitor.Log($"Failed to bind to Better Game Menu's Mod API. You will not be able to open bags in the inventory menu. Error: {ex.Message}", LogLevel.Warn);
                     }
                 }
 
@@ -581,6 +597,35 @@ namespace ItemBags
                     SM.setItemPriceAndStock(Stock);
                 }
             }
+        }
+
+        /// <summary>
+        /// Determine if the provided menu is a <see cref="GameMenu"/>
+        /// or Better Game Menu.
+        /// </summary>
+        internal static bool IsGameMenu(IClickableMenu menu)
+        {
+            if (menu is GameMenu)
+                return true;
+            // There will always be a current page if a game menu is open,
+            // so we can simplify the API surface by just checking the current page.
+            if (ModInstance?.BetterGameMenuAPI?.GetCurrentPage(menu) is not null)
+                return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Get the current page of the provided <see cref="GameMenu"/> or
+        /// Better Game Menu instance, or <c>null</c> if the provided menu
+        /// is not a game menu.
+        /// </summary>
+        internal static IClickableMenu GetGameMenuPage(IClickableMenu menu)
+        {
+            if (menu is GameMenu gameMenu)
+                return gameMenu.GetCurrentPage();
+            if (ModInstance?.BetterGameMenuAPI is not null && menu is not null)
+                return ModInstance.BetterGameMenuAPI.GetCurrentPage(menu);
+            return null;
         }
     }
 }
