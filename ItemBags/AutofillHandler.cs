@@ -167,7 +167,7 @@ namespace ItemBags
                         //  (characterDialogue is null when attempting to eat a food item)
                         CanAutofill = ReflectionDialogue != null && ReflectionDialogue.GetValue() == null;
                     }
-                    else if (Game1.activeClickableMenu is GameMenu GameMenu && GameMenu.currentTab != GameMenu.craftingTab)
+                    else if (ItemBagsMod.IsGameMenu(Game1.activeClickableMenu) && ItemBagsMod.GetGameMenuPage(Game1.activeClickableMenu) is not CraftingPage)
                     {
                         //  Ignore InventoryChanged events that are due to an inventory item being dragged/dropped to/from the cursor
                         bool DidCursorSlotItemChange = Game1.player.CursorSlotItem != PreviousInventoryCursorSlotItem;

@@ -66,7 +66,7 @@ namespace ItemBags
                 //  Swaps the current CursorSlotItem with the inventory item at index=QueueCursorSlotIndex
                 if (QueuePlaceCursorSlotItem && QueueCursorSlotIndex.HasValue)
                 {
-                    if (Game1.activeClickableMenu is GameMenu GM && GM.currentTab == GameMenu.inventoryTab)
+                    if (ItemBagsMod.GetGameMenuPage(Game1.activeClickableMenu) is InventoryPage)
                     {
                         Item Temp = Game1.player.Items[QueueCursorSlotIndex.Value];
                         Game1.player.Items[QueueCursorSlotIndex.Value] = Game1.player.CursorSlotItem;
@@ -166,9 +166,8 @@ namespace ItemBags
                         catch (Exception ex) { Monitor.Log(string.Format("Unhandled error while handling Gamepad button pressed: {0}\n\n{1}", ex.Message, ex.ToString()), LogLevel.Error); }
                     }
                 }
-                else if (Game1.activeClickableMenu != null && Game1.activeClickableMenu is GameMenu GM && GM.currentTab == GameMenu.inventoryTab)
+                else if (ItemBagsMod.GetGameMenuPage(Game1.activeClickableMenu) is InventoryPage InvPage)
                 {
-                    InventoryPage InvPage = GM.pages.First(x => x is InventoryPage) as InventoryPage;
                     InventoryMenu InvMenu = InvPage.inventory;
 
                     int ClickedItemIndex = InvMenu.getInventoryPositionOfClick(CursorPos.X, CursorPos.Y);

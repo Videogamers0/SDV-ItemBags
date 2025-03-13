@@ -189,33 +189,33 @@ namespace ItemBags
 
         private static void GameLoop_UpdateTicked(object sender, UpdateTickedEventArgs e)
         {
-            if (IsViewingGameMenu && Game1.activeClickableMenu is GameMenu GM)
+            if (IsViewingGameMenu && ItemBagsMod.GetGameMenuPage(Game1.activeClickableMenu) is IClickableMenu page)
             {
-                int CurrentTab = GM.currentTab;
-                if (!PreviousGameMenuTab.HasValue || PreviousGameMenuTab.Value != CurrentTab)
+                bool isCraftingPage = IsCompatibleCraftingPage(page);
+                if (!PreviouslyViewingCraftingPage.HasValue || PreviouslyViewingCraftingPage.Value != isCraftingPage)
                 {
-                    OnGameMenuTabChanged(PreviousGameMenuTab, CurrentTab);
+                    OnGameMenuTabChanged(PreviouslyViewingCraftingPage, isCraftingPage);
                 }
             }
         }
 
-        private static int? PreviousGameMenuTab { get; set; }
+        private static bool? PreviouslyViewingCraftingPage { get; set; }
 
-        private static void OnGameMenuTabChanged(int? PreviousTab, int? CurrentTab)
+        private static void OnGameMenuTabChanged(bool? previouslyViewing, bool? isCraftingPage)
         {
             try
             {
-                GameMenu GM = Game1.activeClickableMenu as GameMenu;
-                if (CurrentTab.HasValue && CurrentTab.Value == GameMenu.craftingTab && GM.pages.Any(x => x is CraftingPage))
+                var page = ItemBagsMod.GetGameMenuPage(Game1.activeClickableMenu);
+                if (isCraftingPage.HasValue && isCraftingPage.Value && page is CraftingPage)
                 {
-                    OnCraftingPageActivated(GM.pages.First(x => x is CraftingPage) as CraftingPage);
+                    OnCraftingPageActivated(page);
                 }
-                else if (PreviousTab.HasValue && PreviousTab.Value == GameMenu.craftingTab)
+                else if (previouslyViewing.HasValue && previouslyViewing.Value)
                 {
                     OnCraftingPageDeactivated();
                 }
             }
-            finally { PreviousGameMenuTab = CurrentTab; }
+            finally { PreviouslyViewingCraftingPage = isCraftingPage; }
         }
 
         private static bool IsViewingGameMenu { get; set; } = false;
@@ -223,23 +223,23 @@ namespace ItemBags
         private static void OnGameMenuOpened()
         {
             IsViewingGameMenu = true;
-            GameMenu GM = Game1.activeClickableMenu as GameMenu;
-            OnGameMenuTabChanged(null, GM.currentTab);
+            bool isCraftingPage = IsCompatibleCraftingPage(ItemBagsMod.GetGameMenuPage(Game1.activeClickableMenu));
+            OnGameMenuTabChanged(null, isCraftingPage);
         }
 
         private static void OnGameMenuClosed()
         {
-            OnGameMenuTabChanged(PreviousGameMenuTab, null);
+            OnGameMenuTabChanged(PreviouslyViewingCraftingPage, null);
             IsViewingGameMenu = false;
         }
 
         private static void Display_MenuChanged(object sender, MenuChangedEventArgs e)
         {
-            if (e.NewMenu is GameMenu)
+            if (ItemBagsMod.IsGameMenu(e.NewMenu))
             {
                 OnGameMenuOpened();
             }
-            else if (e.OldMenu is GameMenu)
+            else if (ItemBagsMod.IsGameMenu(e.OldMenu))
             {
                 OnGameMenuClosed();
             }
