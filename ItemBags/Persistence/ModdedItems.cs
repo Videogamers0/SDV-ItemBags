@@ -5,12 +5,14 @@ using Newtonsoft.Json;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Buildings;
 using StardewValley.GameData.BigCraftables;
 using StardewValley.GameData.Objects;
 using StardewValley.ItemTypeDefinitions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -68,6 +70,11 @@ namespace ItemBags.Persistence
         /// <summary>Metadata about each modded item that should be storeable inside this bag.</summary>
         [JsonProperty("Items")]
         public List<ModdedItem> Items { get; set; } = new List<ModdedItem>();
+
+        /// <summary>Optional. If specified, this bag will be able to store all items belonging to the given category Ids.<para/>
+        /// See also: <see cref="Items"/></summary>
+        [JsonProperty("ItemCategories")]
+        public Dictionary<ContainerSize, List<int>> ItemCategories { get; set; } = AllSizes.ToDictionary(x => x, x => new List<int>());
 
         //Taken from: https://weblogs.asp.net/haithamkhedre/generate-guid-from-any-string-using-c
         public static Guid StringToGUID(string value)
@@ -190,21 +197,6 @@ namespace ItemBags.Persistence
                 }
             }
 
-            //Possible TODO
-            //If ContentPatcher mod is loaded, try to parse the mod's content.json file and read the modded item's added by "Action"="EditData" and "Target"="Data/ObjectInformation"
-            //For example, the content.json file might have data like this (this is a brief sample from the 'New Fish' mod https://www.nexusmods.com/stardewvalley/mods/3578):
-            //{
-            //      "Action": "EditData",
-            //      "Target": "Data/ObjectInformation",
-            //      "Entries": {
-            //          "1120": "Ladyfish/80/8/Fish -4/Ladyfish/This saltwater fish prefers temperate waters and feeds in large schools.",
-            //          "1121": "Tancho Koi/150/5/Fish -4/Tancho Koi/A white carp with a red spot on its head. People appreciate their beauty and usually keep them in aquariums. It would be such a waste to eat or turn into fertilizer./Day Night^Fall",
-            //          ...
-            //          ...
-            //          ...
-            //      }
-            //}
-
             return Items;
         }
 
@@ -250,6 +242,57 @@ namespace ItemBags.Persistence
                     }
                 }
             }
+        }
+
+        private static IReadOnlyDictionary<int, IReadOnlyList<StoreableBagItem>> _ItemsByCategory;
+        private static IReadOnlyDictionary<int, IReadOnlyList<StoreableBagItem>> ItemsByCategory
+        {
+            get
+            {
+                _ItemsByCategory ??= GetItemsByCategory(false);
+                return _ItemsByCategory;
+            }
+        }
+
+        private static IReadOnlyDictionary<int, IReadOnlyList<StoreableBagItem>> GetItemsByCategory(bool includeBigCraftables)
+        {
+            Dictionary<int, List<StoreableBagItem>> Tmp = new Dictionary<int, List<StoreableBagItem>>();
+
+            if (includeBigCraftables)
+            {
+                foreach (System.Collections.Generic.KeyValuePair<string, BigCraftableData> KVP in Game1.bigCraftableData)
+                {
+                    string Id = KVP.Key;
+                    BigCraftableData Data = KVP.Value;
+                    ItemMetadata Meta = ItemRegistry.GetMetadata(Id);
+                    int CategoryId = Meta.GetParsedData().Category;
+                    if (!Tmp.TryGetValue(CategoryId, out List<StoreableBagItem> CategoryItems))
+                    {
+                        CategoryItems = new List<StoreableBagItem>();
+                        Tmp.Add(CategoryId, CategoryItems);
+                    }
+                    CategoryItems.Add(new StoreableBagItem(Meta.LocalItemId, false, null, true));
+                }
+            }
+
+            foreach (System.Collections.Generic.KeyValuePair<string, ObjectData> KVP in Game1.objectData)
+            {
+                string Id = KVP.Key;
+                ObjectData Data = KVP.Value;
+                ItemMetadata Meta = ItemRegistry.GetMetadata(Id);
+                int CategoryId = Meta.GetParsedData().Category;
+                if (!Tmp.TryGetValue(CategoryId, out List<StoreableBagItem> CategoryItems))
+                {
+                    CategoryItems = new List<StoreableBagItem>();
+                    Tmp.Add(CategoryId, CategoryItems);
+                }
+                CategoryItems.Add(new StoreableBagItem(Meta.LocalItemId, CategoriesWithQualities.Contains(CategoryId), null, false));
+            }
+
+            Dictionary<int, IReadOnlyList<StoreableBagItem>> Result = new Dictionary<int, IReadOnlyList<StoreableBagItem>>();
+            foreach (var KVP in Tmp)
+                Result.Add(KVP.Key, KVP.Value);
+            return Result;
         }
 
         private static void OnJsonAssetsIdsFixed(IJsonAssetsAPI API, BagConfig Target, bool RevalidateInstances)
@@ -301,6 +344,18 @@ namespace ItemBags.Persistence
                                     FailedItemNames.Add(DesiredItem.Name);
                                 else
                                     Items.Add(Item);
+                            }
+
+                            if (KVP.Key.ItemCategories != null && KVP.Key.ItemCategories.ContainsKey(SizeCfg.Size))
+                            {
+                                HashSet<string> ItemIds = Items.Select(x => x.Id).ToHashSet();
+                                foreach (int CategoryId in KVP.Key.ItemCategories[SizeCfg.Size])
+                                {
+                                    if (!ItemsByCategory.TryGetValue(CategoryId, out IReadOnlyList<StoreableBagItem> CategoryItems))
+                                        ItemBagsMod.ModInstance.Monitor.Log($"Warning - No category found with Id={CategoryId}. The modded bag '{KVP.Key.BagName}' will skip items of this category id.");
+                                    else
+                                        Items.AddRange(ItemsByCategory[CategoryId].Where(x => !ItemIds.Contains(x.Id)));
+                                }
                             }
 
                             SizeCfg.Items = Items;
