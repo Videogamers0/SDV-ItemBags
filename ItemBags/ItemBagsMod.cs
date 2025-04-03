@@ -30,7 +30,7 @@ namespace ItemBags
         internal static LogLevel InfoLogLevel = LogLevel.Trace;
 #endif
 
-        public static Version CurrentVersion = new Version(3, 0, 10); // Last updated 2025-01-12 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(3, 0, 11); // Last updated 2025-04-3 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.Item_Bags";
         public const string JAUniqueId = "spacechase0.JsonAssets";
         public const string SpaceCoreUniqueId = "spacechase0.SpaceCore";
