@@ -115,6 +115,11 @@ namespace ItemBags.Menus
         [JsonProperty("BoundedBagToggleAutofill")]
         public Buttons BoundedBagToggleAutofill { get; set; } = Buttons.LeftShoulder | Buttons.RightShoulder;
 
+        [JsonProperty("CyclePreviousBag")]
+        public Buttons CyclePreviousBag { get; set; } = 0;
+        [JsonProperty("CycleNextBag")]
+        public Buttons CycleNextBag { get; set; } = 0;
+
         public GamepadControls()
         {
             InitializeDefaults();

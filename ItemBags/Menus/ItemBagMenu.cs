@@ -570,6 +570,88 @@ namespace ItemBags.Menus
             }
         }
 
+        /// <summary>Attempts to find a bag before the currently-opened bag in the current inventory source</summary>
+        /// <param name="AllowWrap">If <see langword="true"/>, will wrap back to the last item in the inventory if no bag was found when reaching the 1st item</param>
+        private bool TryGetPreviousBag(bool AllowWrap, out ItemBag PreviousBag)
+        {
+            PreviousBag = null;
+
+            try
+            {
+                int StartIndex = InventorySource.IndexOf(Bag);
+                int CurrentIndex = StartIndex - 1;
+                while (CurrentIndex >= 0)
+                {
+                    if (InventorySource[CurrentIndex] is ItemBag Bag)
+                    {
+                        PreviousBag = Bag;
+                        break;
+                    }
+                    else
+                        CurrentIndex -= 1;
+                }
+
+                if (AllowWrap && PreviousBag == null)
+                {
+                    CurrentIndex = InventorySource.Count - 1;
+                    while (CurrentIndex > StartIndex)
+                    {
+                        if (InventorySource[CurrentIndex] is ItemBag Bag)
+                        {
+                            PreviousBag = Bag;
+                            break;
+                        }
+                        else
+                            CurrentIndex -= 1;
+                    }
+                }
+
+                return PreviousBag != null;
+            }
+            catch { return false; }
+        }
+
+        /// <summary>Attempts to find a bag after the currently-opened bag in the current inventory source</summary>
+        /// <param name="AllowWrap">If <see langword="true"/>, will wrap back to the first item in the inventory if no bag was found when reaching the last item</param>
+        private bool TryGetNextBag(bool AllowWrap, out ItemBag NextBag)
+        {
+            NextBag = null;
+
+            try
+            {
+                int StartIndex = InventorySource.IndexOf(Bag);
+                int CurrentIndex = StartIndex + 1;
+                while (CurrentIndex < InventorySource.Count)
+                {
+                    if (InventorySource[CurrentIndex] is ItemBag Bag)
+                    {
+                        NextBag = Bag;
+                        break;
+                    }
+                    else
+                        CurrentIndex += 1;
+                }
+
+                if (AllowWrap && NextBag == null)
+                {
+                    CurrentIndex = 0;
+                    while (CurrentIndex < StartIndex)
+                    {
+                        if (InventorySource[CurrentIndex] is ItemBag Bag)
+                        {
+                            NextBag = Bag;
+                            break;
+                        }
+                        else
+                            CurrentIndex += 1;
+                    }
+                }
+
+                return NextBag != null;
+            }
+            catch { return false; }
+        }
+
         public bool IsNavigatingWithGamepad { get; private set; }
 
         public void OnGamepadButtonsPressed(Buttons GamepadButtons)
@@ -592,6 +674,24 @@ namespace ItemBags.Menus
             if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.TransferHalfModifier))
             {
                 IsTransferHalfModifierHeld = true;
+            }
+
+            //  Handle bag cycling buttons
+            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.CyclePreviousBag))
+            {
+                if (TryGetPreviousBag(true, out ItemBag PreviousBag))
+                {
+                    Bag.CloseContents(true, false);
+                    PreviousBag.OpenContents(InventorySource, ActualInventoryCapacity, InventoryMenu.InventoryColumns);
+                }
+            }
+            if (GamepadControls.IsMatch(GamepadButtons, GamepadControls.Current.CycleNextBag))
+            {
+                if (TryGetNextBag(true, out ItemBag NextBag))
+                {
+                    Bag.CloseContents(true, false);
+                    NextBag.OpenContents(InventorySource, ActualInventoryCapacity, InventoryMenu.InventoryColumns);
+                }
             }
 
             if (!IsGamepadFocused && !InventoryMenu.IsGamepadFocused && !Content.IsGamepadFocused)
