@@ -86,6 +86,25 @@ namespace ItemBags.Bags
             }
         }
 
+        /// <summary>Returns the <see cref="NestedBags"/> in the same order that they would appear on the <see cref="OmniBagMenu"/></summary>
+        public IList<ItemBag> GetOrderedBags()
+        {
+            List<ItemBag> OrderedBags = new List<ItemBag>();
+
+            Dictionary<string, ItemBag> BagsByTypeId = NestedBags.Where(x => x != null).ToDictionary(x => x.GetTypeId());
+            if (BagsByTypeId.TryGetValue(BundleBag.BundleBagTypeId, out ItemBag NestedBundleBag))
+                OrderedBags.Add(NestedBundleBag);
+            if (BagsByTypeId.TryGetValue(Rucksack.RucksackTypeId, out ItemBag NestedRucksack))
+                OrderedBags.Add(NestedRucksack);
+            foreach (BagType BagType in ItemBagsMod.BagConfig.BagTypes)
+            {
+                if (BagsByTypeId.TryGetValue(BagType.Id, out ItemBag NestedBag))
+                    OrderedBags.Add(NestedBag);
+            }
+
+            return OrderedBags;
+        }
+
         protected override void LoadSettings(BagInstance Data)
         {
             if (Data != null)

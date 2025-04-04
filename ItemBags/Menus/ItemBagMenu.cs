@@ -570,6 +570,69 @@ namespace ItemBags.Menus
             }
         }
 
+        private static bool IsValidIndex<T>(IList<T> items, int index) => index >= 0 && index < items.Count;
+
+#if NEVER
+        /// <summary>Attempts to retrive the <see cref="OmniBag"/> that the current <see cref="Bag"/> is inside of, if any</summary>
+        private bool TryGetOmniBag(out OmniBag OmniBag)
+        {
+            foreach (Item item in InventorySource)
+            {
+                if (item is OmniBag ob && ob.NestedBags.Contains(Bag))
+                {
+                    OmniBag = ob;
+                    return true;
+                }
+            }
+
+            OmniBag = null;
+            return false;
+        }
+
+        private bool TryGetPreviousBagInsideOmniBag(OmniBag OmniBag, ItemBag CurrentBag, bool AllowWrap, out ItemBag PreviousBag)
+        {
+            PreviousBag = null;
+
+            try
+            {
+                if (OmniBag == null)
+                    throw new ArgumentNullException(nameof(OmniBag));
+                if (CurrentBag == null)
+                    throw new ArgumentNullException(nameof(CurrentBag));
+
+                if (OmniBag.NestedBags.Contains(CurrentBag))
+                {
+                    IList<ItemBag> OrderedBags = OmniBag.GetOrderedBags();
+                    int PreviousIndex = OrderedBags.IndexOf(CurrentBag) - 1;
+                    if (AllowWrap && PreviousIndex < 0)
+                        PreviousIndex = OrderedBags.Count - 1;
+
+                    if (IsValidIndex(OrderedBags, PreviousIndex))
+                        PreviousBag = OrderedBags[PreviousIndex];
+                }
+
+                return PreviousBag != null;
+            }
+            catch { return false; }
+        }
+#endif
+
+        private IEnumerable<ItemBag> GetBags()
+        {
+            foreach (Item item in InventorySource)
+            {
+                if (item is ItemBag ib)
+                {
+                    yield return ib;
+                    if (ib is OmniBag ob)
+                    {
+                        foreach (ItemBag nested in ob.GetOrderedBags())
+                            yield return nested;
+                    }
+                }
+            }
+        }
+
         /// <summary>Attempts to find a bag before the currently-opened bag in the current inventory source</summary>
         /// <param name="AllowWrap">If <see langword="true"/>, will wrap back to the last item in the inventory if no bag was found when reaching the 1st item</param>
         private bool TryGetPreviousBag(bool AllowWrap, out ItemBag PreviousBag)
@@ -578,6 +641,13 @@ namespace ItemBags.Menus
 
             try
             {
+#if NEVER
+                //  Look for the previous bag within an omnibag
+                bool IsInsideOmniBag = TryGetOmniBag(out OmniBag OmniBag);
+                if (IsInsideOmniBag && TryGetPreviousBagInsideOmniBag(OmniBag, Bag, false, out PreviousBag))
+                    return true;
+
+                //  Look for the previous bag within the inventory source
                 int StartIndex = InventorySource.IndexOf(Bag);
                 int CurrentIndex = StartIndex - 1;
                 while (CurrentIndex >= 0)
@@ -606,7 +676,19 @@ namespace ItemBags.Menus
                     }
                 }
 
-                return PreviousBag != null;
+                //  Look for the previous bag within an omnibag, but this time allow it to wrap back around if the 1st bag in the omnibag is already selected
+                if (IsInsideOmniBag && TryGetPreviousBagInsideOmniBag(OmniBag, Bag, true, out PreviousBag))
+                    return true;
+#else
+                IList<ItemBag> Bags = GetBags().ToList();
+                int PreviousIndex = Bags.IndexOf(Bag) - 1;
+                if (AllowWrap && PreviousIndex < 0)
+                    PreviousIndex = Bags.Count - 1;
+                if (IsValidIndex(Bags, PreviousIndex))
+                    PreviousBag = Bags[PreviousIndex];
+#endif
+
+                return PreviousBag != Bag;
             }
             catch { return false; }
         }
@@ -619,6 +701,7 @@ namespace ItemBags.Menus
 
             try
             {
+#if NEVER
                 int StartIndex = InventorySource.IndexOf(Bag);
                 int CurrentIndex = StartIndex + 1;
                 while (CurrentIndex < InventorySource.Count)
@@ -646,8 +729,16 @@ namespace ItemBags.Menus
                             CurrentIndex += 1;
                     }
                 }
+#else
+                IList<ItemBag> Bags = GetBags().ToList();
+                int NextIndex = Bags.IndexOf(Bag) + 1;
+                if (AllowWrap && NextIndex >= Bags.Count)
+                    NextIndex = 0;
+                if (IsValidIndex(Bags, NextIndex))
+                    NextBag = Bags[NextIndex];
+#endif
 
-                return NextBag != null;
+                return NextBag != Bag;
             }
             catch { return false; }
         }
@@ -747,7 +838,7 @@ namespace ItemBags.Menus
             InventoryMenu.OnGamepadButtonsReleased(GamepadButtons);
             Content.OnGamepadButtonsReleased(GamepadButtons);
         }
-        #endregion Gamepad support
+#endregion Gamepad support
 
         private void HandlePrimaryAction()
         {
@@ -804,7 +895,7 @@ namespace ItemBags.Menus
         {
 
         }
-        #endregion Input Handling
+#endregion Input Handling
 
         public void Update(UpdateTickedEventArgs e)
         {
