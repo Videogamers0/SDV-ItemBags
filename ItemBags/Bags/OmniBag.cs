@@ -201,11 +201,11 @@ namespace ItemBags.Bags
         [XmlIgnore]
         public override int MaxStackSize { get { return 1; } }
 
-        protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity)
+        protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity, int? InventoryColumns)
         {
             try
             {
-                ItemBagMenu Menu = new ItemBagMenu(this, InventorySource, ActualCapacity, 12, BagInventoryMenu.DefaultInventoryIconSize);
+                ItemBagMenu Menu = new ItemBagMenu(this, InventorySource, ActualCapacity, InventoryColumns ?? 12, BagInventoryMenu.DefaultInventoryIconSize);
                 ItemBagsMod.UserConfig.GetOmniBagMenuOptions(Size, out int NumColumns, out int SlotSize);
                 Menu.Content = new OmniBagMenu(Menu, this, NumColumns, SlotSize, true, 12);
                 return Menu;

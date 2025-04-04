@@ -326,7 +326,11 @@ namespace ItemBags
                                     Item ClickedChestItem = i < 0 || i >= IGM.ItemsToGrabMenu.actualInventory.Count ? null : IGM.ItemsToGrabMenu.actualInventory[i];
                                     if (ClickedChestItem is ItemBag IB && ValidateBag(IB))
                                     {
-                                        IB.OpenContents(IGM.ItemsToGrabMenu.actualInventory, IGM.ItemsToGrabMenu.capacity);
+                                        // Usually bags are opened from the inventory, which displays 12 columns
+                                        // but when opened from a large chest (70 slots), the menu has 14 columns
+                                        int? Columns = ChestSource.GetActualCapacity() == 70 ? 14 : null;
+
+                                        IB.OpenContents(IGM.ItemsToGrabMenu.actualInventory, IGM.ItemsToGrabMenu.capacity, Columns);
                                     }
                                     Handled = true;
                                     break;

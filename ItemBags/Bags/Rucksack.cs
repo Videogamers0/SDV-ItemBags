@@ -376,11 +376,11 @@ namespace ItemBags.Bags
             //they all probably have maximumStackSize() == 1 so probably not an issue
         }
 
-        protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity)
+        protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity, int? InventoryColumns)
         {
             try
             {
-                ItemBagMenu Menu = new ItemBagMenu(this, InventorySource, ActualCapacity, 12, BagInventoryMenu.DefaultInventoryIconSize);
+                ItemBagMenu Menu = new ItemBagMenu(this, InventorySource, ActualCapacity, InventoryColumns ?? 12, BagInventoryMenu.DefaultInventoryIconSize);
                 ItemBagsMod.UserConfig.GetRucksackMenuOptions(Size, out int NumColumns, out int SlotSize);
                 Menu.Content = new RucksackMenu(Menu, this, NumColumns, SlotSize, true, 12);
                 return Menu;

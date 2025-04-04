@@ -61,7 +61,7 @@ namespace ItemBags.Menus
 
         protected Texture2D White { get { return TextureHelpers.GetSolidColorTexture(Game1.graphics.GraphicsDevice, Color.White); } }
 
-        private BagInventoryMenu InventoryMenu { get; }
+        internal BagInventoryMenu InventoryMenu { get; }
 
         private IBagMenuContent _Content;
         public IBagMenuContent Content
@@ -195,8 +195,8 @@ namespace ItemBags.Menus
             this.exitFunction += () => { Bag.CloseContents(); };
         }
 
-        public ItemBagMenu(ItemBag Bag, IList<Item> InventorySource, int ActualCapacity, BagMenuOptions Options)
-            : this(Bag, InventorySource, ActualCapacity, Options.InventoryColumns, Options.InventorySlotSize) { }
+        public ItemBagMenu(ItemBag Bag, IList<Item> InventorySource, int ActualCapacity, BagMenuOptions Options, int? InventoryColumns = null)
+            : this(Bag, InventorySource, ActualCapacity, InventoryColumns ?? Options.InventoryColumns, Options.InventorySlotSize) { }
 
         internal void OnWindowSizeChanged()
         {

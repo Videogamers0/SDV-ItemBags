@@ -401,11 +401,12 @@ namespace ItemBags.Bags
 
         /// <param name="InventorySource">Typically this is <see cref="Game1.player.Items"/> if this menu should display the player's inventory.</param>
         /// <param name="ActualCapacity">The maximum # of items that can be stored in the InventorySource list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
-        protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity)
+        /// <param name="InventoryColumns">The number of columns to display the items in the bottom half of the menu. Typically 12 if the bag was opened from the player's inventory, but some chests have 14 columns.</param>
+        protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity, int? InventoryColumns)
         {
             try
             {
-                ItemBagMenu Menu = new ItemBagMenu(this, InventorySource, ActualCapacity, SizeInfo.MenuOptions);
+                ItemBagMenu Menu = new ItemBagMenu(this, InventorySource, ActualCapacity, SizeInfo.MenuOptions, InventoryColumns);
                 Menu.Content = new BoundedBagMenu(Menu, this, SizeInfo.MenuOptions, 12);
                 return Menu;
             }

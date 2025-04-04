@@ -326,7 +326,7 @@ namespace ItemBags.Menus
                 //IClickableMenu PreviousMenu = this.Bag.PreviousMenu;
                 //this.Bag.CloseContents(false, false);
                 //TargetBag.OpenContents(InventorySource, ActualInventoryCapacity, PreviousMenu);
-                TargetBag.OpenContents(IBM.InventorySource, IBM.ActualInventoryCapacity, this.Bag.ContentsMenu);
+                TargetBag.OpenContents(IBM.InventorySource, IBM.ActualInventoryCapacity, this.Bag.ContentsMenu, this.Bag.ContentsMenu?.InventoryMenu?.InventoryColumns);
 
                 this.HoveredSlot = null;
             }

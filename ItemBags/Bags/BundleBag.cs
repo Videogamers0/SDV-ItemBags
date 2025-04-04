@@ -124,11 +124,11 @@ namespace ItemBags.Bags
 
         /// <param name="InventorySource">Typically this is <see cref="Game1.player.Items"/> if this menu should display the player's inventory.</param>
         /// <param name="ActualCapacity">The maximum # of items that can be stored in the InventorySource list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
-        protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity)
+        protected override ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity, int? InventoryColumns)
         {
             try
             {
-                ItemBagMenu Menu = new ItemBagMenu(this, InventorySource, ActualCapacity, 12, BagInventoryMenu.DefaultInventoryIconSize);
+                ItemBagMenu Menu = new ItemBagMenu(this, InventorySource, ActualCapacity, InventoryColumns ?? 12, BagInventoryMenu.DefaultInventoryIconSize);
                 Menu.Content = new BundleBagMenu(Menu, this, 20, 48, true, 12);
                 return Menu;
             }

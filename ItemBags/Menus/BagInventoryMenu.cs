@@ -342,7 +342,7 @@ namespace ItemBags.Menus
                         {
                             IClickableMenu PreviousMenu = this.Bag.PreviousMenu;
                             this.Bag.CloseContents(false, false);
-                            IB.OpenContents(Source, ActualCapacity, PreviousMenu);
+                            IB.OpenContents(Source, ActualCapacity, PreviousMenu, InventoryColumns);
                         }
                         else
                         {
@@ -350,7 +350,7 @@ namespace ItemBags.Menus
                             if (PreviousMenu is ItemBagMenu IBM && IBM.Content is OmniBagMenu OBM)
                                 PreviousMenu = OBM.OmniBag.PreviousMenu;
                             this.Bag.CloseContents(false, false);
-                            IB.OpenContents(Source, ActualCapacity, PreviousMenu);
+                            IB.OpenContents(Source, ActualCapacity, PreviousMenu, InventoryColumns);
                         }
                     }
                 }

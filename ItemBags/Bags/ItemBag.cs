@@ -708,17 +708,17 @@ namespace ItemBags.Bags
 
         /// <param name="Source">The source items that should appear in the bottom half of the bag's interface. Typically this is <see cref="Game1.player.Items"/> if moving to/from the inventory.</param>
         /// <param name="ActualCapacity">The maximum # of items that can be stored in the Source list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
-        public virtual void OpenContents(IList<Item> Source, int ActualCapacity)
+        public virtual void OpenContents(IList<Item> Source, int ActualCapacity, int? InventoryColumns = null)
         {
-            OpenContents(Source, ActualCapacity, Game1.activeClickableMenu);
+            OpenContents(Source, ActualCapacity, Game1.activeClickableMenu, InventoryColumns);
         }
 
         /// <param name="RestoreableMenu">The menu to re-open when this bag is closed. Typically this should be <see cref="Game1.activeClickableMenu"/></param>
-        internal void OpenContents(IList<Item> Source, int ActualCapacity, IClickableMenu RestoreableMenu)
+        internal void OpenContents(IList<Item> Source, int ActualCapacity, IClickableMenu RestoreableMenu, int? InventoryColumns = null)
         {
             this.PreviousMenu = RestoreableMenu;
             TryRemoveInvalidItems(Game1.player.Items, Game1.player.MaxItems);
-            this.ContentsMenu = CreateMenu(Source, ActualCapacity);
+            this.ContentsMenu = CreateMenu(Source, ActualCapacity, InventoryColumns);
             Game1.activeClickableMenu = ContentsMenu;
             Game1.playSound("bigSelect");
         }
@@ -789,7 +789,7 @@ namespace ItemBags.Bags
 
         /// <param name="InventorySource">Typically this is <see cref="Game1.player.Items"/> if this menu should display the player's inventory.</param>
         /// <param name="ActualCapacity">The maximum # of items that can be stored in the InventorySource list. Use <see cref="Game1.player.MaxItems"/> if moving to/from the inventory.</param>
-        protected abstract ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity);
+        protected abstract ItemBagMenu CreateMenu(IList<Item> InventorySource, int ActualCapacity, int? InventoryColumns);
 
         /// <summary>Reverts this Bag's icon back to default values</summary>
         public abstract void ResetIcon();
