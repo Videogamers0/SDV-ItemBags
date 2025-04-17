@@ -76,6 +76,12 @@ namespace ItemBags.Persistence
         [JsonProperty("ItemCategories")]
         public Dictionary<ContainerSize, List<int>> ItemCategories { get; set; } = AllSizes.ToDictionary(x => x, x => new List<int>());
 
+        [JsonProperty("ItemFilters")]
+        public List<string> ItemFilters { get; set; } = new List<string>();
+
+        [JsonProperty("CategoryQualities")]
+        public string CategoryQualities { get; set; }
+
         //Taken from: https://weblogs.asp.net/haithamkhedre/generate-guid-from-any-string-using-c
         public static Guid StringToGUID(string value)
         {
@@ -332,6 +338,34 @@ namespace ItemBags.Persistence
                     //  Now that JsonAssets has finished loading the modded items, go through each one, and convert the items into StoreableBagItems (which requires an Id instead of just a Name)
                     foreach (System.Collections.Generic.KeyValuePair<ModdedBag, BagType> KVP in ItemBagsMod.TemporaryModdedBagTypes)
                     {
+                        List<ObjectQuality> AllQualities = Enum.GetValues(typeof(ObjectQuality)).Cast<ObjectQuality>().ToList();
+                        List<ObjectQuality> RegularQualites = new List<ObjectQuality>() { ObjectQuality.Regular };
+                        List<int> QualityCategories = CategoriesWithQualities.ToList();
+
+                        //  Parse category quality overrides - this property tells us which CategoryIds support items with multiple quality values (gold/silver/iridium) instead of just normal quality
+                        if (!string.IsNullOrEmpty(KVP.Key.CategoryQualities))
+                        {
+                            try
+                            {
+                                List<string> CategoryOverrides = KVP.Key.CategoryQualities.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+                                foreach (string Override in CategoryOverrides)
+                                {
+                                    int DelimiterIndex = Override.IndexOf(':');
+                                    int CategoryId = int.Parse(Override.Substring(0, DelimiterIndex));
+                                    bool OverrideValue = bool.Parse(Override.Substring(DelimiterIndex + 1));
+
+                                    if (!OverrideValue && QualityCategories.Contains(CategoryId))
+                                        QualityCategories.Remove(CategoryId);
+                                    else if (OverrideValue && !QualityCategories.Contains(CategoryId))
+                                        QualityCategories.Add(CategoryId);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                ItemBagsMod.ModInstance.Monitor.Log($"Error while parsing {nameof(CategoryQualities)} property for bag '{KVP.Key.BagName}' with value \"{KVP.Key.CategoryQualities}\":\n{ex}");
+                            }
+                        }
+
                         foreach (BagSizeConfig SizeCfg in KVP.Value.SizeSettings)
                         {
                             HashSet<string> FailedItemNames = new HashSet<string>();
@@ -355,6 +389,64 @@ namespace ItemBags.Persistence
                                         ItemBagsMod.ModInstance.Monitor.Log($"Warning - No category found with Id={CategoryId}. The modded bag '{KVP.Key.BagName}' will skip items of this category id.");
                                     else
                                         Items.AddRange(ItemsByCategory[CategoryId].Where(x => !ItemIds.Contains(x.Id)));
+                                }
+                            }
+
+                            //  Process the ItemFilters modded bag property which allows users to specify valid bag items via filters instead of explicitly defining each item by Id
+                            if (KVP.Key.ItemFilters?.Any() == true)
+                            {
+                                ModdedBag Bag = KVP.Key;
+                                List<IItemFilter> Filters = new List<IItemFilter>();
+                                foreach (string FilterString in KVP.Key.ItemFilters)
+                                {
+                                    try
+                                    {
+                                        IItemFilter CurrentFilter = ItemFilter.Parse(Bag, FilterString);
+                                        Filters.Add(CurrentFilter);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        ItemBagsMod.ModInstance.Monitor.Log($"Error while parsing filter for bag '{Bag.BagName}': {FilterString}.\n{ex}");
+                                    }
+                                }
+
+                                IItemFilter Filter = new ItemFilterGroup(CompositionType.LogicalAND, Filters.ToArray());
+                                bool HasQualityFilters = ItemFilter.EnumerateFilters(Filter).Any(x => x.UsesQuality);
+
+                                HashSet<string> ItemIds = Items.Select(x => x.Id).ToHashSet();
+                                foreach (var KVP2 in Game1.bigCraftableData)
+                                {
+                                    string Id = KVP2.Key;
+                                    if (ItemIds.Contains(Id))
+                                        continue;
+                                    BigCraftableData Data = KVP2.Value;
+                                    if (Filter.IsMatch(Data, ItemRegistry.GetData(Id), SizeCfg.Size, ObjectQuality.Regular))
+                                        Items.Add(new StoreableBagItem(Id, false, null, true));
+                                }
+
+                                foreach (var KVP2 in Game1.objectData)
+                                {
+                                    string Id = KVP2.Key;
+                                    if (ItemIds.Contains(Id))
+                                        continue;
+                                    ObjectData Data = KVP2.Value;
+                                    ParsedItemData ParsedData = ItemRegistry.GetData(Id);
+                                    int CategoryId = ParsedData.Category;
+                                    bool HasQualities = QualityCategories.Contains(CategoryId);
+
+                                    //  For performance purposes, we don't need to check every quality if the filter doesn't use that data
+                                    if (!HasQualityFilters)
+                                    {
+                                        if (Filter.IsMatch(Data, ParsedData, SizeCfg.Size, ObjectQuality.Regular))
+                                            Items.Add(new StoreableBagItem(Id, HasQualities, null, false));
+                                    }
+                                    else
+                                    {
+                                        List<ObjectQuality> ValidQualities = (HasQualities ? AllQualities : RegularQualites)
+                                            .Where(x => Filter.IsMatch(Data, ParsedData, SizeCfg.Size, x)).ToList();
+                                        if (ValidQualities.Any())
+                                            Items.Add(new StoreableBagItem(Id, HasQualities, ValidQualities, false));
+                                    }
                                 }
                             }
 
