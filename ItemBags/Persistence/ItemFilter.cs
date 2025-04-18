@@ -329,8 +329,8 @@ namespace ItemBags.Persistence
             this.ContextTag = ContextTag;
         }
 
-        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => data.ContextTags.Contains(ContextTag);
-        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => data.ContextTags.Contains(ContextTag);
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => data.ContextTags?.Contains(ContextTag) == true;
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => data.ContextTags?.Contains(ContextTag) == true;
 
         public static ContextTagItemFilter Parse(bool IsNegated, string Value) => new ContextTagItemFilter(IsNegated, Value);
     }
