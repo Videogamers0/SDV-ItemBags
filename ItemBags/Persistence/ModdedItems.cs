@@ -422,8 +422,9 @@ namespace ItemBags.Persistence
                                     if (ItemIds.Contains(Id))
                                         continue;
                                     BigCraftableData Data = KVP2.Value;
-                                    if (Filter.IsMatch(Data, ItemRegistry.GetData(Id), SizeCfg.Size, ObjectQuality.Regular))
-                                        Items.Add(new StoreableBagItem(Id, false, null, true));
+                                    ParsedItemData ParsedData = ItemRegistry.GetData(Id);
+                                    if (Filter.IsMatch(Data, ParsedData, SizeCfg.Size, ObjectQuality.Regular))
+                                        Items.Add(new StoreableBagItem(ParsedData.ItemId, false, null, true));
                                 }
 
                                 foreach (var KVP2 in Game1.objectData)

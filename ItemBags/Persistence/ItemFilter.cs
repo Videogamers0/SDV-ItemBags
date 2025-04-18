@@ -266,8 +266,8 @@ namespace ItemBags.Persistence
             this.ModUniqueId = ModUniqueId;
         }
 
-        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.QualifiedItemId.StartsWith(ModUniqueId + "_");
-        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.QualifiedItemId.StartsWith(ModUniqueId + "_");
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.ItemId.StartsWith(ModUniqueId + "_");
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.ItemId.StartsWith(ModUniqueId + "_");
 
         public static FromModItemFilter Parse(bool IsNegated, string Value) => new FromModItemFilter(IsNegated, Value);
     }
