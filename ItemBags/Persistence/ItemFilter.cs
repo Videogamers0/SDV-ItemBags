@@ -1,4 +1,5 @@
 ﻿using ItemBags.Bags;
+using StardewModdingAPI;
 using StardewValley;
 using StardewValley.GameData.BigCraftables;
 using StardewValley.GameData.Objects;
@@ -8,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ItemBags.Persistence
@@ -17,6 +19,7 @@ namespace ItemBags.Persistence
         BagSize,
         IsVanillaItem,
         FromMod,
+        HasMod,
         CategoryId,
         IsBigCraftable,
         Quality,
@@ -157,6 +160,7 @@ namespace ItemBags.Persistence
                         ItemFilterType.BagSize => BagSizeFilter.Parse(IsNegated, filterValue),
                         ItemFilterType.IsVanillaItem => VanillaItemFilter.Parse(IsNegated, filterValue),
                         ItemFilterType.FromMod => FromModItemFilter.Parse(IsNegated, filterValue),
+                        ItemFilterType.HasMod => HasModItemFilter.Parse(IsNegated, filterValue),
                         ItemFilterType.CategoryId => CategoryItemFilter.Parse(IsNegated, filterValue),
                         ItemFilterType.IsBigCraftable => BigCraftableItemFilter.Parse(IsNegated, filterValue),
                         ItemFilterType.Quality => QualityItemFilter.Parse(IsNegated, filterValue),
@@ -195,20 +199,47 @@ namespace ItemBags.Persistence
 
     public class BagSizeFilter : ItemFilter
     {
-        public ContainerSize Size { get; }
+        public IReadOnlyList<ContainerSize> Sizes { get; }
 
         public override bool UsesBagSize => true;
 
-        public BagSizeFilter(bool IsNegated, ContainerSize Size)
+        public BagSizeFilter(bool IsNegated, params ContainerSize[] Sizes)
             : base(ItemFilterType.BagSize, IsNegated)
         {
-            this.Size = Size;
+            this.Sizes = Sizes.ToList();
         }
 
-        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => size == Size;
-        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => size == Size;
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => Sizes.Contains(size);
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => Sizes.Contains(size);
 
-        public static BagSizeFilter Parse(bool IsNegated, string Value) => new BagSizeFilter(IsNegated, (ContainerSize)Enum.Parse(typeof(ContainerSize), Value, true));
+        private static readonly IReadOnlyList<ContainerSize> AllSizes = Enum.GetValues(typeof(ContainerSize)).Cast<ContainerSize>().ToList();
+        private static readonly IReadOnlyList<string> Prefixes = new List<string>() { "=", "<", "<=", ">", ">=" };
+        private static readonly Regex Pattern = new Regex(@"^(?<Modifier>(>=|<=|=|>|<))(?<Size>.*)$");
+
+        public static BagSizeFilter Parse(bool IsNegated, string Value)
+        {
+            if (Pattern.IsMatch(Value))
+            {
+                Match m = Pattern.Match(Value);
+                string Modifier = m.Groups["Modifier"].Value;
+                string Size = m.Groups["Size"].Value;
+                ContainerSize ParsedSize = (ContainerSize)Enum.Parse(typeof(ContainerSize), Size, true);
+
+                List<ContainerSize> Sizes = Modifier switch
+                {
+                    "<" => AllSizes.Where(x => x < ParsedSize).ToList(),
+                    "<=" => AllSizes.Where(x => x <= ParsedSize).ToList(),
+                    "=" => AllSizes.Where(x => x == ParsedSize).ToList(),
+                    ">" => AllSizes.Where(x => x > ParsedSize).ToList(),
+                    ">=" => AllSizes.Where(x => x >= ParsedSize).ToList(),
+                    _ => throw new NotImplementedException($"Invalid format for {nameof(BagSizeFilter)} value: The prefix '{Modifier}' is unrecognized.")
+                };
+
+                return new BagSizeFilter(IsNegated, Sizes.ToArray());
+            }
+            else
+                return new BagSizeFilter(IsNegated, (ContainerSize)Enum.Parse(typeof(ContainerSize), Value, true));
+        }
     }
 
     public class VanillaItemFilter : ItemFilter
@@ -239,6 +270,62 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.QualifiedItemId.StartsWith(ModUniqueId + "_");
 
         public static FromModItemFilter Parse(bool IsNegated, string Value) => new FromModItemFilter(IsNegated, Value);
+    }
+
+    public class HasModItemFilter : ItemFilter
+    {
+        public string ModUniqueId { get; }
+        public string MinimumVersion { get; }
+
+        public HasModItemFilter(bool IsNegated, string ModUniqueId, string MinimumVersion)
+            : base(ItemFilterType.HasMod, IsNegated)
+        {
+            this.ModUniqueId = ModUniqueId;
+            this.MinimumVersion = MinimumVersion;
+        }
+
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => IsLoaded(ModUniqueId, MinimumVersion);
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => IsLoaded(ModUniqueId, MinimumVersion);
+
+        private static readonly Dictionary<string, bool> ModRegistryLookup = new Dictionary<string, bool>();
+        private static bool IsLoaded(string ModId, string MinimumVersion)
+        {
+            string Key = ModId;
+            if (MinimumVersion != null)
+                Key += "|" + MinimumVersion;
+
+            if (ModRegistryLookup.TryGetValue(Key, out bool CachedValue))
+                return CachedValue;
+
+            bool Result = true;
+            if (!ItemBagsMod.ModInstance.Helper.ModRegistry.IsLoaded(ModId))
+                Result = false;
+            else if (MinimumVersion != null)
+            {
+                ISemanticVersion Version = ItemBagsMod.ModInstance.Helper.ModRegistry.Get(ModId).Manifest.Version;
+                if (Version.IsOlderThan(MinimumVersion))
+                    Result = false;
+            }
+
+            ModRegistryLookup.Add(Key, Result);
+            return Result;
+        }
+
+        private static readonly Regex Pattern = new Regex(@"^(?<ModId>.+)-(?<MinVersion>\d+\.\d+\.\d+.*)$");
+        public static HasModItemFilter Parse(bool IsNegated, string Value)
+        {
+            //  Attempt to parse values in the format: "{ModId}-{MinVersion}", such as: "Rafseazz.RSVCP-2.5.17"
+            if (Pattern.IsMatch(Value))
+            {
+                Match m = Pattern.Match(Value);
+                string ModId = m.Groups["ModId"].Value;
+                string MinVersion = m.Groups["MinVersion"].Value;
+                if (SemanticVersion.TryParse(MinVersion, out _))
+                    return new HasModItemFilter(IsNegated, ModId, MinVersion);
+            }
+
+            return new HasModItemFilter(IsNegated, Value, null);
+        }
     }
 
     public class CategoryItemFilter : ItemFilter
