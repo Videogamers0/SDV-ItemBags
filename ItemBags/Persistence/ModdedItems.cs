@@ -417,6 +417,8 @@ namespace ItemBags.Persistence
                                 foreach (var KVP2 in Game1.bigCraftableData)
                                 {
                                     string Id = KVP2.Key;
+                                    if (!ItemRegistry.IsQualifiedItemId(Id))
+                                        Id = ItemRegistry.ManuallyQualifyItemId(Id, ItemRegistry.type_bigCraftable);
                                     if (ItemIds.Contains(Id))
                                         continue;
                                     BigCraftableData Data = KVP2.Value;
