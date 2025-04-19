@@ -31,10 +31,13 @@ namespace ItemBags.Bags
     {
         public class AllowedObject
         {
+            private static readonly IReadOnlyList<ObjectQuality> AllQualities = Enum.GetValues(typeof(ObjectQuality)).Cast<ObjectQuality>().ToList();
+
             public string Id { get; }
             public ReadOnlyCollection<ObjectQuality> Qualities { get; }
             public bool HasQualities { get; }
             public bool IsBigCraftable { get; }
+            public bool HasAllQualities { get; }
 
             public const int DefaultQuality = 0;
 
@@ -44,10 +47,14 @@ namespace ItemBags.Bags
                 this.HasQualities = Item.HasQualities;
                 this.IsBigCraftable = Item.IsBigCraftable;
 
-                if (Item.Qualities == null || !HasQualities)
+                if (Item.Qualities == null && HasQualities)
                     this.Qualities = new ReadOnlyCollection<ObjectQuality>(Enum.GetValues(typeof(ObjectQuality)).Cast<ObjectQuality>().ToList());
+                else if (Item.Qualities == null && !HasQualities)
+                    this.Qualities = new List<ObjectQuality>() { ObjectQuality.Regular }.AsReadOnly();
                 else
                     this.Qualities = new ReadOnlyCollection<ObjectQuality>(Item.Qualities);
+
+                this.HasAllQualities = AllQualities.All(x => Qualities.Contains(x));
             }
 
             internal bool IsValidQuality(Object Item)

@@ -387,11 +387,12 @@ namespace ItemBags.Menus
             }
             else
             {
-                List<AllowedObject> UngroupedObjects = BoundedBag.AllowedObjects.Where(x => !Menu.GroupByQuality || !x.HasQualities).ToList();
+                List<AllowedObject> UngroupedObjects = BoundedBag.AllowedObjects.Where(x => !Menu.GroupByQuality || !x.HasAllQualities).ToList();
 
                 List<Object> Placeholders = new List<Object>();
                 foreach (AllowedObject Item in UngroupedObjects)
                 {
+#if NEVER
                     if (!Item.HasQualities || Item.IsBigCraftable)
                     {
                         Object Obj = Item.IsBigCraftable ?
@@ -401,6 +402,12 @@ namespace ItemBags.Menus
                     }
                     else
                         Placeholders.AddRange(Item.Qualities.Select(x => new Object(Item.Id, 0, false, -1, (int)x)));
+#else
+                    if (Item.IsBigCraftable)
+                        Placeholders.Add(new Object(Vector2.Zero, Item.Id, false));
+                    else
+                        Placeholders.AddRange(Item.Qualities.Select(x => new Object(Item.Id, 0, false, -1, (int)x)));
+#endif
                 }
                 this.PlaceholderItems = new ReadOnlyCollection<Object>(Placeholders);
 
@@ -424,7 +431,7 @@ namespace ItemBags.Menus
                     ItemBag.ForceSetQuantity(Placeholder, Item.Stack);
             }
         }
-        #endregion Parent Menu
+#endregion Parent Menu
 
         public bool CanResize { get; } = true;
 
@@ -446,10 +453,10 @@ namespace ItemBags.Menus
             int CurrentLine = 0;
             int TotalLineBreakHeight = 0;
 
-            List<AllowedObject> UngroupedObjects = BoundedBag.AllowedObjects.Where(x => !Menu.GroupByQuality || !x.HasQualities).ToList();
+            List<AllowedObject> UngroupedObjects = BoundedBag.AllowedObjects.Where(x => !Menu.GroupByQuality || !x.HasAllQualities).ToList();
             foreach (AllowedObject Obj in UngroupedObjects)
             {
-                foreach (int Quality in Enumerable.Range(0, Obj.HasQualities ? Obj.Qualities.Count : 1))
+                foreach (int Quality in Enumerable.Range(0, Obj.Qualities.Count))
                 {
                     if (CurrentColumn == ColumnCount)
                     {

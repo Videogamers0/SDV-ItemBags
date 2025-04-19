@@ -449,7 +449,7 @@ namespace ItemBags.Menus
             }
             else
             {
-                this.GroupedObjects = new ReadOnlyCollection<AllowedObject>(BoundedBag.AllowedObjects.Where(x => Menu.GroupByQuality && x.HasQualities && !x.IsBigCraftable).ToList());
+                this.GroupedObjects = new ReadOnlyCollection<AllowedObject>(BoundedBag.AllowedObjects.Where(x => Menu.GroupByQuality && x.HasAllQualities && !x.IsBigCraftable).ToList());
 
                 int TotalFilledSlots = GroupedObjects.Count * ColumnsPerGroup;
                 this.TotalSlots = ((GroupedObjects.Count - 1) / GroupsPerRow + 1) * GroupsPerRow * ColumnsPerGroup; // Force grid to perfect square, for ex if there were 13 items and 12 columns, we'd want 2x12=24 slots
