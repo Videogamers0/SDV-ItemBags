@@ -404,7 +404,7 @@ namespace ItemBags.Persistence
             }
             else
             {
-                if (!QualityNameLookup.TryGetValue(Value, out ObjectQuality QualityValue))
+                if (!QualityNameLookup.TryGetValue(Value.ToLower(), out ObjectQuality QualityValue))
                     QualityValue = ObjectQuality.Regular;
                 return new QualityItemFilter(IsNegated, QualityValue);
             }
