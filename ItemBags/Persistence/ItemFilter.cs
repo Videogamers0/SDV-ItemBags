@@ -421,8 +421,24 @@ namespace ItemBags.Persistence
             this.ContextTag = ContextTag;
         }
 
-        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => data.ContextTags?.Contains(ContextTag) == true;
-        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => data.ContextTags?.Contains(ContextTag) == true;
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) 
+            => data.ContextTags?.Contains(ContextTag) == true || HasTag(parsedData, ContextTag);
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) 
+            => data.ContextTags?.Contains(ContextTag) == true || HasTag(parsedData, ContextTag);
+
+        private static readonly Dictionary<string, Item> ItemInstances = new Dictionary<string, Item>();
+
+        private static bool HasTag(ParsedItemData ItemData, string Tag)
+        {
+            //  Some ContextTags are added dynamically after the item is created, so we need a sample instance to read data from
+            if (!ItemInstances.TryGetValue(ItemData.QualifiedItemId, out Item Instance))
+            {
+                Instance = ItemRegistry.Create(ItemData.QualifiedItemId);
+                ItemInstances.Add(ItemData.QualifiedItemId, Instance);
+            }
+
+            return Instance.GetContextTags().Contains(Tag);
+        }
 
         public static ContextTagItemFilter Parse(bool IsNegated, string Value) => new ContextTagItemFilter(IsNegated, Value);
     }
