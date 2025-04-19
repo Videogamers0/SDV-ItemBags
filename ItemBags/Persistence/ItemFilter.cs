@@ -266,8 +266,13 @@ namespace ItemBags.Persistence
             this.ModUniqueId = ModUniqueId;
         }
 
-        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.ItemId.StartsWith(ModUniqueId + "_");
-        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.ItemId.StartsWith(ModUniqueId + "_");
+        //  Most mods use the format: "{ModId}_{ItemId}" to define their item Ids, but some mods also seem to use "{ModId}.{ItemId}"
+        private static readonly IReadOnlyList<string> ModItemIdDelimiters = new List<string>() { "_", "." };
+
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => IsFromMod(ModUniqueId, parsedData.ItemId);
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => IsFromMod(ModUniqueId, parsedData.ItemId);
+
+        private static bool IsFromMod(string ModId, string UnqualifiedItemId) => ModItemIdDelimiters.Any(delimiter => UnqualifiedItemId.StartsWith(ModId + delimiter));
 
         public static FromModItemFilter Parse(bool IsNegated, string Value) => new FromModItemFilter(IsNegated, Value);
     }
