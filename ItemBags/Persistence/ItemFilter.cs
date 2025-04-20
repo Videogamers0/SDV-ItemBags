@@ -335,18 +335,19 @@ namespace ItemBags.Persistence
 
     public class CategoryItemFilter : ItemFilter
     {
-        public int CategoryId { get; }
+        public IReadOnlyList<int> CategoryIds { get; }
 
-        public CategoryItemFilter(bool IsNegated, int CategoryId)
+        public CategoryItemFilter(bool IsNegated, params int[] CategoryIds)
             : base(ItemFilterType.CategoryId, IsNegated)
         {
-            this.CategoryId = CategoryId;
+            this.CategoryIds = CategoryIds.ToList();
         }
 
-        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.Category == CategoryId;
-        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.Category == CategoryId;
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => CategoryIds.Contains(parsedData.Category);
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => CategoryIds.Contains(parsedData.Category);
 
-        public static CategoryItemFilter Parse(bool IsNegated, string Value) => new CategoryItemFilter(IsNegated, int.Parse(Value));
+        public static CategoryItemFilter Parse(bool IsNegated, string Value)
+            => new CategoryItemFilter(IsNegated, Value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => int.Parse(x)).ToArray());
     }
 
     public class BigCraftableItemFilter : ItemFilter
