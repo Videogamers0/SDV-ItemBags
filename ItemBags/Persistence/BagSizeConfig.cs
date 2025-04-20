@@ -109,6 +109,16 @@ namespace ItemBags.Persistence
             this.Items = new List<StoreableBagItem> { };
         }
 
+        public void CopySettingsFrom(BagSizeConfig Other)
+        {
+            Size = Other.Size;
+            MenuOptions.CopySettingsFrom(Other.MenuOptions);
+            Price = Other.Price;
+            Sellers = Other.Sellers.ToList();
+            CapacityMultiplier = Other.CapacityMultiplier;
+            Items = Other.Items.ToList();            
+        }
+
         [OnSerializing]
         private void OnSerializing(StreamingContext sc) { }
         [OnSerialized]

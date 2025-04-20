@@ -397,13 +397,16 @@ namespace ItemBags
             ModdedItems = GlobalModdedItems;
         }
 
+        public static string ModdedBagsFolder => Path.Combine(ModInstance.Helper.DirectoryPath, "assets", "Modded Bags");
+        public static string[] GetModdedBagFilePaths() => Directory.GetFiles(ModdedBagsFolder, "*.json", SearchOption.TopDirectoryOnly);
+        internal static IEnumerable<string> GetModdedBagRelativeFilePaths() => GetModdedBagFilePaths().Select(x => x.Replace(ModInstance.Helper.DirectoryPath + Path.DirectorySeparatorChar, ""));
+
         private static void LoadModdedBags()
         {
             try
             {
                 List<ModdedBag> ModdedBags = new List<ModdedBag>();
-                string ModdedBagsDirectory = Path.Combine(ModInstance.Helper.DirectoryPath, "assets", "Modded Bags");
-                string[] ModdedBagFiles = Directory.GetFiles(ModdedBagsDirectory, "*.json", SearchOption.TopDirectoryOnly);
+                string[] ModdedBagFiles = GetModdedBagFilePaths();
                 if (ModdedBagFiles.Length > 0)
                 {
                     foreach (string File in ModdedBagFiles)

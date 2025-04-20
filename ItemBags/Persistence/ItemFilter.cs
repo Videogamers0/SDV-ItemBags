@@ -186,7 +186,7 @@ namespace ItemBags.Persistence
                 }
                 else
                 {
-                    ItemBagsMod.ModInstance.Monitor.Log($"Failed to parse an item filter for bag '{bag.BagName}'. {filterType} is unrecognized. Full value: \"{data}\".");
+                    ItemBagsMod.ModInstance.Monitor.Log($"Failed to parse an item filter for bag '{bag.BagName}'. {filterType} is unrecognized. Full value: \"{data}\".", LogLevel.Error);
                 }
             }
 

@@ -104,10 +104,7 @@ namespace ItemBags.Bags
             }
         }
 
-        internal override bool OnJsonAssetsItemIdsFixed(IJsonAssetsAPI API, bool AllowResyncing)
-        {
-            return ValidateContentsIds(API, AllowResyncing);
-        }
+        internal override bool OnModdedBagItemsUpdated(bool AllowResyncing) => ValidateContentsIds(AllowResyncing);
 
         public override void ResetIcon()
         {

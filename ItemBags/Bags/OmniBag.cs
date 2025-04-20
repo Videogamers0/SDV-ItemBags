@@ -145,12 +145,12 @@ namespace ItemBags.Bags
             }
         }
 
-        internal override bool OnJsonAssetsItemIdsFixed(IJsonAssetsAPI API, bool AllowResyncing)
+        internal override bool OnModdedBagItemsUpdated(bool AllowResyncing)
         {
             bool ChangesMade = false;
             foreach (ItemBag Bag in NestedBags)
             {
-                if (Bag.OnJsonAssetsItemIdsFixed(API, false))
+                if (Bag.OnModdedBagItemsUpdated(false))
                     ChangesMade = true;
             }
 

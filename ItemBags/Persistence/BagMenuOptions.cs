@@ -45,6 +45,13 @@ namespace ItemBags.Persistence
                 this.SlotSize = BagInventoryMenu.DefaultInventoryIconSize;
             }
 
+            public void CopySettingsFrom(GroupedLayout Other)
+            {
+                GroupsPerRow = Other.GroupsPerRow;
+                ShowValueColumn = Other.ShowValueColumn;
+                SlotSize = Other.SlotSize;
+            }
+
             [OnSerializing]
             private void OnSerializing(StreamingContext sc) { }
 
@@ -99,6 +106,14 @@ namespace ItemBags.Persistence
                 this.SlotSize = BagInventoryMenu.DefaultInventoryIconSize;
             }
 
+            public void CopySettingsFrom(UngroupedLayout Other)
+            {
+                Columns = Other.Columns;
+                LineBreakIndices = Other.LineBreakIndices;
+                LineBreakHeights = Other.LineBreakHeights;
+                SlotSize = Other.SlotSize;
+            }
+
             [OnSerializing]
             private void OnSerializing(StreamingContext sc) { }
 
@@ -151,6 +166,15 @@ namespace ItemBags.Persistence
 
             this.GroupedLayoutOptions = new GroupedLayout();
             this.UngroupedLayoutOptions = new UngroupedLayout();
+        }
+
+        public void CopySettingsFrom(BagMenuOptions Other)
+        {
+            GroupByQuality = Other.GroupByQuality;
+            InventoryColumns = Other.InventoryColumns;
+            InventorySlotSize = Other.InventorySlotSize;
+            GroupedLayoutOptions.CopySettingsFrom(Other.GroupedLayoutOptions);
+            UngroupedLayoutOptions.CopySettingsFrom(Other.UngroupedLayoutOptions);
         }
 
         [OnSerializing]

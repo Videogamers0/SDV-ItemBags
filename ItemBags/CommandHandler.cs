@@ -1,4 +1,5 @@
 ﻿using ItemBags.Bags;
+using ItemBags.Menus;
 using ItemBags.Persistence;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
@@ -33,6 +34,7 @@ namespace ItemBags
             RegisterAddOmniBagCommand();
             RegisterGenerateModdedBagCommand();
             RegisterReloadConfigCommand();
+            RegisterRefreshModdedBagsCommand();
         }
 
         private static void RegisterAddItemBagCommand()
@@ -513,6 +515,55 @@ namespace ItemBags
                                 Monitor.Log($"File exported to: {Path.Combine(Helper.DirectoryPath, RelativePath)}\nYou will need to re-launch the game for this file to be loaded.", LogLevel.Alert);
                             }
                         }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Monitor.Log($"ItemBags: Unhandled error while executing command: {ex.Message}", LogLevel.Error);
+                }
+            });
+        }
+
+        private static void RegisterRefreshModdedBagsCommand()
+        {
+            string CommandName = "refresh_modded_bags";
+            string CommandHelp = "Refreshes all modded bag settings. Intended to assist with debugging so you don't need to re-launch the game after making a change to a modded bag's settings. " +
+                "Note: This command does not completely reload the modded bags, it only refreshes the settings of modded bags that have already been loaded. " +
+                "So if a new modded bag file is added to the assets/modded bags folder, it won't be loaded until relaunching the game. But if an existing modded bag file is modified, " +
+                "this command will update its settings such as what items it can store or its menu options.";
+
+            Helper.ConsoleCommands.Add(CommandName, CommandHelp, (string Name, string[] Args) =>
+            {
+                try
+                {
+                    if (!Context.IsWorldReady)
+                    {
+                        Monitor.Log("Unable to execute command: You must load a save file before using this command.", LogLevel.Alert);
+                        return;
+                    }
+
+                    Dictionary<string, ModdedBag> BagsById = ItemBagsMod.TemporaryModdedBagTypes.ToDictionary(x => x.Key.Guid, x => x.Key);
+                    foreach (string File in ItemBagsMod.GetModdedBagRelativeFilePaths())
+                    {
+                        ModdedBag ModdedBag = ItemBagsMod.ModInstance.Helper.Data.ReadJsonFile<ModdedBag>(File);
+                        if (BagsById.TryGetValue(ModdedBag.Guid, out ModdedBag Bag))
+                        {
+                            BagType Type = ItemBagsMod.TemporaryModdedBagTypes[Bag];
+                            ItemBagsMod.TemporaryModdedBagTypes.Remove(Bag);
+                            ItemBagsMod.TemporaryModdedBagTypes.Add(ModdedBag, Type);
+                            Type.CopySettingsFrom(ModdedBag.GetBagTypePlaceholder());
+                        }
+                    }
+
+                    ModdedBag.UpdateModdedBagItems(ItemBagsMod.BagConfig, true);
+
+                    //  Refresh opened menus by closing/re-opening them
+                    ItemBag OpenedBag = ItemBag.GetAllBags(true).FirstOrDefault(x => x.IsContentsMenuOpen);
+                    if (OpenedBag != null)
+                    {
+                        ItemBagMenu Menu = OpenedBag.ContentsMenu;
+                        OpenedBag.CloseContents(true, false);
+                        OpenedBag.OpenContents(Menu.InventorySource, Menu.ActualInventoryCapacity, Menu.InventoryMenu.InventoryColumns);
                     }
                 }
                 catch (Exception ex)

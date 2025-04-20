@@ -227,7 +227,7 @@ namespace ItemBags.Persistence
                 void DoWork()
                 {
                     IJsonAssetsAPI API = Helper.ModRegistry.IsLoaded(ItemBagsMod.JAUniqueId) ? Helper.ModRegistry.GetApi<IJsonAssetsAPI>(ItemBagsMod.JAUniqueId) : null;
-                    OnJsonAssetsIdsFixed(API, ItemBagsMod.BagConfig, true);
+                    UpdateModdedBagItems(ItemBagsMod.BagConfig, true);
                 }
                 DelayHelpers.InvokeLater(1, DoWork);
             };
@@ -244,7 +244,7 @@ namespace ItemBags.Persistence
                     IJsonAssetsAPI API = Helper.ModRegistry.GetApi<IJsonAssetsAPI>(ItemBagsMod.JAUniqueId);
                     if (API != null)
                     {
-                        OnJsonAssetsIdsFixed(API, ItemBagsMod.BagConfig, false);
+                        UpdateModdedBagItems(ItemBagsMod.BagConfig, false);
                     }
                 }
             }
@@ -301,15 +301,15 @@ namespace ItemBags.Persistence
             return Result;
         }
 
-        private static void OnJsonAssetsIdsFixed(IJsonAssetsAPI API, BagConfig Target, bool RevalidateInstances)
+        internal static void UpdateModdedBagItems(BagConfig Target, bool RevalidateInstances)
         {
             try
             {
-                ItemBagsMod.ModdedItems.ImportModdedItems(API, ItemBagsMod.BagConfig);
+                ItemBagsMod.ModdedItems.ImportModdedItems(ItemBagsMod.BagConfig);
 
                 if (ItemBagsMod.TemporaryModdedBagTypes.Any())
                 {
-                    ItemBagsMod.ModInstance.Monitor.Log("Loading Modded Bags type info", LogLevel.Debug);
+                    ItemBagsMod.ModInstance.Monitor.Log("Loading Modded Bags type info", ItemBagsMod.InfoLogLevel);
 
                     Dictionary<string, string> AllBigCraftableIds = new Dictionary<string, string>();
                     foreach (System.Collections.Generic.KeyValuePair<string, BigCraftableData> KVP in Game1.bigCraftableData)
@@ -362,7 +362,7 @@ namespace ItemBags.Persistence
                             }
                             catch (Exception ex)
                             {
-                                ItemBagsMod.ModInstance.Monitor.Log($"Error while parsing {nameof(CategoryQualities)} property for bag '{KVP.Key.BagName}' with value \"{KVP.Key.CategoryQualities}\":\n{ex}");
+                                ItemBagsMod.ModInstance.Monitor.Log($"Error while parsing {nameof(CategoryQualities)} property for bag '{KVP.Key.BagName}' with value \"{KVP.Key.CategoryQualities}\":\n{ex}", LogLevel.Error);
                             }
                         }
 
@@ -386,7 +386,7 @@ namespace ItemBags.Persistence
                                 foreach (int CategoryId in KVP.Key.ItemCategories[SizeCfg.Size])
                                 {
                                     if (!ItemsByCategory.TryGetValue(CategoryId, out IReadOnlyList<StoreableBagItem> CategoryItems))
-                                        ItemBagsMod.ModInstance.Monitor.Log($"Warning - No category found with Id={CategoryId}. The modded bag '{KVP.Key.BagName}' will skip items of this category id.");
+                                        ItemBagsMod.ModInstance.Monitor.Log($"Warning - No category found with Id={CategoryId}. The modded bag '{KVP.Key.BagName}' will skip items of this category id.", LogLevel.Error);
                                     else
                                         Items.AddRange(ItemsByCategory[CategoryId].Where(x => !ItemIds.Contains(x.Id)));
                                 }
@@ -406,7 +406,7 @@ namespace ItemBags.Persistence
                                     }
                                     catch (Exception ex)
                                     {
-                                        ItemBagsMod.ModInstance.Monitor.Log($"Error while parsing filter for bag '{Bag.BagName}': {FilterString}.\n{ex}");
+                                        ItemBagsMod.ModInstance.Monitor.Log($"Error while parsing filter for bag '{Bag.BagName}': {FilterString}.\n{ex}", LogLevel.Error);
                                     }
                                 }
 
@@ -468,7 +468,7 @@ namespace ItemBags.Persistence
                     }
 
                     if (RevalidateInstances)
-                        ItemBag.GetAllBags(true).ForEach(x => x.OnJsonAssetsItemIdsFixed(API, true));
+                        ItemBag.GetAllBags(true).ForEach(x => x.OnModdedBagItemsUpdated(true));
                 }
             }
             catch (Exception ex)
@@ -541,7 +541,7 @@ namespace ItemBags.Persistence
         public List<ModAddon> ModAddons { get; set; } = new List<ModAddon>();
 
         private bool HasImportedItems { get; set; } = false;
-        internal void ImportModdedItems(IJsonAssetsAPI API, BagConfig Target)
+        internal void ImportModdedItems(BagConfig Target)
         {
             try
             {

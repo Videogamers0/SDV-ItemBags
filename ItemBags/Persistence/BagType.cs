@@ -168,6 +168,23 @@ namespace ItemBags.Persistence
             return GetIconTexture(this.IconSourceTexture);
         }
 
+        public void CopySettingsFrom(BagType Other)
+        {
+            Id = Other.Id;
+            Name = Other.Name;
+            Description = Other.Description;
+            IconSourceTexture = Other.IconSourceTexture;
+            IconSourceRect = Other.IconSourceRect;
+            foreach (BagSizeConfig SizeCfg in SizeSettings)
+            {
+                BagSizeConfig OtherSizeCfg = Other.SizeSettings.FirstOrDefault(x => x.Size == SizeCfg.Size);
+                if (OtherSizeCfg != null)
+                {
+                    SizeCfg.CopySettingsFrom(OtherSizeCfg);
+                }
+            }
+        }
+
         [OnSerializing]
         private void OnSerializing(StreamingContext sc) { }
         [OnSerialized]

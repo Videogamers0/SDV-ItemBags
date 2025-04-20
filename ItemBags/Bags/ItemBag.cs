@@ -472,9 +472,9 @@ namespace ItemBags.Bags
         public abstract string GetTypeId();
         protected abstract void LoadSettings(BagInstance Data);
 
-        internal virtual bool OnJsonAssetsItemIdsFixed(IJsonAssetsAPI API, bool AllowResyncing)
+        internal virtual bool OnModdedBagItemsUpdated(bool AllowResyncing)
         {
-            return ValidateContentsIds(API, AllowResyncing);
+            return ValidateContentsIds(AllowResyncing);
         }
 
         public override bool CanBeLostOnDeath() => false;
@@ -485,7 +485,7 @@ namespace ItemBags.Bags
         /// <summary>Intended to be invoked exactly one time per bag instance when a save file is loaded. Checks if an Item Id of a modded item added through Json Assets has changed since the last game session ended.<para/>
         /// This typically happens when mods that add items through Json Assets have been installed/uninstalled between game sessions. When an item's Id changes, it must be re-created with the correct Id or else the item would be transformed into a different Object.</summary>
         /// <param name="AllowResyncing">True to allow the bag data to be resynced across all multiplayer clients if a change was made.</param>
-        protected bool ValidateContentsIds(IJsonAssetsAPI API, bool AllowResyncing)
+        protected bool ValidateContentsIds(bool AllowResyncing)
         {
             if (HasValidatedContentsIds)
                 return false;
