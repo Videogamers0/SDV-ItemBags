@@ -38,11 +38,16 @@ namespace ItemBags.Persistence
         LocalIdPrefix,
         LocalIdSuffix,
         LocalIdContains,
-        //Uses InternalName, not localized name
+        //Uses InternalName, not localized name (DisplayName)
         Name,
         NamePrefix,
         NameSuffix,
-        NameContains
+        NameContains,
+        //Uses DisplayName
+        DisplayName,
+        DisplayNamePrefix,
+        DisplayNameSuffix,
+        DisplayNameContains
     }
 
     public enum CompositionType
@@ -180,6 +185,10 @@ namespace ItemBags.Persistence
                         ItemFilterType.NamePrefix => NamePrefixItemFilter.Parse(IsNegated, filterValue),
                         ItemFilterType.NameSuffix => NameSuffixItemFilter.Parse(IsNegated, filterValue),
                         ItemFilterType.NameContains => NameContainsItemFilter.Parse(IsNegated, filterValue),
+                        ItemFilterType.DisplayName => DisplayNameItemFilter.Parse(IsNegated, filterValue),
+                        ItemFilterType.DisplayNamePrefix => DisplayNamePrefixItemFilter.Parse(IsNegated, filterValue),
+                        ItemFilterType.DisplayNameSuffix => DisplayNameSuffixItemFilter.Parse(IsNegated, filterValue),
+                        ItemFilterType.DisplayNameContains => DisplayNameContainsItemFilter.Parse(IsNegated, filterValue),
                         _ => throw new NotImplementedException($"Unrecognized {nameof(ItemFilterType)}: {parsedFilterType}"),
                     };
                     filters.Add(filter);
@@ -690,6 +699,72 @@ namespace ItemBags.Persistence
         public static NameContainsItemFilter Parse(bool IsNegated, string Value) => new NameContainsItemFilter(IsNegated, Value);
     }
     #endregion Name filters
+
+    #region DisplayName filters
+    public class DisplayNameItemFilter : ItemFilter
+    {
+        public string DisplayName { get; }
+
+        public DisplayNameItemFilter(bool IsNegated, string DisplayName)
+            : base(ItemFilterType.DisplayName, IsNegated)
+        {
+            this.DisplayName = DisplayName;
+        }
+
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName == DisplayName;
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName == DisplayName;
+
+        public static DisplayNameItemFilter Parse(bool IsNegated, string Value) => new DisplayNameItemFilter(IsNegated, Value);
+    }
+
+    public class DisplayNamePrefixItemFilter : ItemFilter
+    {
+        public string Prefix { get; }
+
+        public DisplayNamePrefixItemFilter(bool IsNegated, string Prefix)
+            : base(ItemFilterType.DisplayNamePrefix, IsNegated)
+        {
+            this.Prefix = Prefix;
+        }
+
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName.StartsWith(Prefix);
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName.StartsWith(Prefix);
+
+        public static DisplayNamePrefixItemFilter Parse(bool IsNegated, string Value) => new DisplayNamePrefixItemFilter(IsNegated, Value);
+    }
+
+    public class DisplayNameSuffixItemFilter : ItemFilter
+    {
+        public string Suffix { get; }
+
+        public DisplayNameSuffixItemFilter(bool IsNegated, string Suffix)
+            : base(ItemFilterType.DisplayNameSuffix, IsNegated)
+        {
+            this.Suffix = Suffix;
+        }
+
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName.EndsWith(Suffix);
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName.EndsWith(Suffix);
+
+        public static DisplayNameSuffixItemFilter Parse(bool IsNegated, string Value) => new DisplayNameSuffixItemFilter(IsNegated, Value);
+    }
+
+    public class DisplayNameContainsItemFilter : ItemFilter
+    {
+        public string Text { get; }
+
+        public DisplayNameContainsItemFilter(bool IsNegated, string Text)
+            : base(ItemFilterType.DisplayNameContains, IsNegated)
+        {
+            this.Text = Text;
+        }
+
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName.Contains(Text);
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName.Contains(Text);
+
+        public static DisplayNameContainsItemFilter Parse(bool IsNegated, string Value) => new DisplayNameContainsItemFilter(IsNegated, Value);
+    }
+    #endregion DisplayName filters
 
 #if NEVER // for copy-pasting purposes...
     public class SampleItemFilter : ItemFilter
