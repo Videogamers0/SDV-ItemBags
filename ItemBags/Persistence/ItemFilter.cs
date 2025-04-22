@@ -3,6 +3,7 @@ using StardewModdingAPI;
 using StardewValley;
 using StardewValley.GameData.BigCraftables;
 using StardewValley.GameData.Objects;
+using StardewValley.Internal;
 using StardewValley.ItemTypeDefinitions;
 using StardewValley.Locations;
 using System;
@@ -58,34 +59,92 @@ namespace ItemBags.Persistence
 
     public interface IItemFilter
     {
-        bool IsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality);
-        bool IsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality);
+        /// <summary>The maximum number of results that this filter can match, or <see langword="null"/> if it can match unlimited number of results</summary>
+        public int? Limit { get; }
+        /// <summary>The number of results to skip before matching anything</summary>
+        public int? Offset { get; }
+        void ResetPaginationCounter();
+        void IncrementPaginationCounter();
+
+        public bool IsPaginated => Limit.HasValue || Offset.HasValue;
+
+        bool IsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality, bool CheckPagination, bool IncrementPagination);
+        bool IsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality, bool CheckPagination, bool IncrementPagination);
     }
 
     public class ItemFilterGroup : IItemFilter
     {
         public CompositionType Type { get; }
         public IReadOnlyList<IItemFilter> Filters { get; }
+        private IReadOnlyList<ItemFilter> PaginatedFilters { get; }
 
-        public ItemFilterGroup(CompositionType Type, params IItemFilter[] Filters)
+        /// <summary>The maximum number of results that this filter can match, or <see langword="null"/> if it can match unlimited number of results</summary>
+        public int? Limit { get; }
+        /// <summary>The number of results to skip before matching anything</summary>
+        public int? Offset { get; }
+
+        public int ResultCounter { get; private set; }
+        public void ResetPaginationCounter() => ResultCounter = 0;
+        public void IncrementPaginationCounter() => ResultCounter += 1;
+        private int MinResultIndex { get; }
+        private int MaxResultIndex { get; }
+
+        public ItemFilterGroup(CompositionType Type, int? Limit, int? Offset, params IItemFilter[] Filters)
         {
             this.Type = Type;
-            this.Filters = Filters.ToList();           
+            this.Limit = Limit;
+            this.Offset = Offset;
+            this.Filters = Filters.ToList();
+
+            this.PaginatedFilters = ItemFilter.EnumerateFilters(this).Where(x => x.Limit.HasValue || x.Offset.HasValue).ToList();
+            ResetPaginationCounter();
+            MinResultIndex = Offset ?? 0;
+            MaxResultIndex = Limit.HasValue ? Limit.Value + MinResultIndex : int.MaxValue;
         }
 
-        public bool IsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => Type switch
+        public bool IsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality, bool CheckPagination, bool IncrementPagination)
         {
-            CompositionType.LogicalOR => !Filters.Any() || Filters.Any(x => x.IsMatch(data, parsedData, size, quality)),
-            CompositionType.LogicalAND => !Filters.Any() || Filters.All(x => x.IsMatch(data, parsedData, size, quality)),
-            _ => throw new NotImplementedException($"Unrecognized {nameof(CompositionType)}: {Type}"),
-        };
+            bool BaseResult = Type switch
+            {
+                CompositionType.LogicalOR => !Filters.Any() || Filters.Any(x => x.IsMatch(data, parsedData, size, quality, CheckPagination, false)),
+                CompositionType.LogicalAND => !Filters.Any() || Filters.All(x => x.IsMatch(data, parsedData, size, quality, CheckPagination, false)),
+                _ => throw new NotImplementedException($"Unrecognized {nameof(CompositionType)}: {Type}"),
+            };
 
-        public bool IsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => Type switch
+            if (IncrementPagination)
+            {
+                foreach (ItemFilter Filter in PaginatedFilters)
+                    _ = Filter.IsMatch(data, parsedData, size, quality, false, true);
+            }
+
+            bool ActualResult = BaseResult && (!CheckPagination || (ResultCounter >= MinResultIndex && ResultCounter < MaxResultIndex));
+            if (BaseResult && IncrementPagination)
+                ResultCounter++;
+            return ActualResult;
+        }
+
+        public bool IsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality, bool CheckPagination, bool IncrementPagination)
         {
-            CompositionType.LogicalOR => !Filters.Any() || Filters.Any(x => x.IsMatch(data, parsedData, size, quality)),
-            CompositionType.LogicalAND => !Filters.Any() || Filters.All(x => x.IsMatch(data, parsedData, size, quality)),
-            _ => throw new NotImplementedException($"Unrecognized {nameof(CompositionType)}: {Type}"),
-        };
+            bool BaseResult = Type switch
+            {
+                CompositionType.LogicalOR => !Filters.Any() || Filters.Any(x => x.IsMatch(data, parsedData, size, quality, CheckPagination, false)),
+                CompositionType.LogicalAND => !Filters.Any() || Filters.All(x => x.IsMatch(data, parsedData, size, quality, CheckPagination, false)),
+                _ => throw new NotImplementedException($"Unrecognized {nameof(CompositionType)}: {Type}"),
+            };
+
+            if (IncrementPagination)
+            {
+                foreach (ItemFilter Filter in PaginatedFilters)
+                    _ = Filter.IsMatch(data, parsedData, size, quality, false, true);
+            }
+
+            bool ActualResult = BaseResult && (!CheckPagination || (ResultCounter >= MinResultIndex && ResultCounter < MaxResultIndex));
+            if (BaseResult && IncrementPagination)
+                ResultCounter++;
+            return ActualResult;
+        }
+
+        public override string ToString() => $"{nameof(ItemFilterGroup)}: {Type} ({Filters.Count} filter(s))";
     }
 
     public abstract class ItemFilter : IItemFilter
@@ -93,25 +152,52 @@ namespace ItemBags.Persistence
         public ItemFilterType Type { get; }
         public bool IsNegated { get; }
 
+        /// <summary>The maximum number of results that this filter can match, or <see langword="null"/> if it can match unlimited number of results</summary>
+        public int? Limit { get; }
+        /// <summary>The number of results to skip before matching anything</summary>
+        public int? Offset { get; }
+
+        public int ResultCounter { get; private set; }
+        public void ResetPaginationCounter() => ResultCounter = 0;
+        public void IncrementPaginationCounter() => ResultCounter += 1;
+        private int MinResultIndex { get; }
+        private int MaxResultIndex { get; }
+
         public virtual bool UsesBagSize => false;
         public virtual bool UsesQuality => false;
 
-        public ItemFilter(ItemFilterType Type, bool IsNegated)
+        public ItemFilter(ItemFilterType Type, bool IsNegated, int? Limit, int? Offset)
         {
             this.Type = Type;
             this.IsNegated = IsNegated;
+            this.Limit = Limit;
+            this.Offset = Offset;
+            ResetPaginationCounter();
+
+            MinResultIndex = Offset ?? 0;
+            MaxResultIndex = Limit.HasValue ? Limit.Value + MinResultIndex : int.MaxValue;
         }
 
-        public bool IsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) =>
-            IsNegated ? !DerivedIsMatch(data, parsedData, size, quality) : DerivedIsMatch(data, parsedData, size, quality);
+        public bool IsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality, bool CheckPagination, bool IncrementPagination)
+        {
+            bool BaseResult = IsNegated ? !DerivedIsMatch(data, parsedData, size, quality) : DerivedIsMatch(data, parsedData, size, quality);
+            bool ActualResult = BaseResult && (!CheckPagination || (ResultCounter >= MinResultIndex && ResultCounter < MaxResultIndex));
+            if (BaseResult && IncrementPagination)
+                ResultCounter++;
+            return ActualResult;
+        }
 
-        public bool IsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) =>
-            IsNegated ? !DerivedIsMatch(data, parsedData, size, quality) : DerivedIsMatch(data, parsedData, size, quality);
+        public bool IsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality, bool CheckPagination, bool IncrementPagination)
+        {
+            bool BaseResult = IsNegated ? !DerivedIsMatch(data, parsedData, size, quality) : DerivedIsMatch(data, parsedData, size, quality);
+            bool ActualResult = BaseResult && (!CheckPagination || (ResultCounter >= MinResultIndex && ResultCounter < MaxResultIndex));
+            if (BaseResult && IncrementPagination)
+                ResultCounter++;
+            return ActualResult;
+        }
 
         protected abstract bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality);
         protected abstract bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality);
-
-        private const string NegationOperator = "!";
 
         public static IEnumerable<ItemFilter> EnumerateFilters(IItemFilter Filter)
         {
@@ -128,14 +214,32 @@ namespace ItemBags.Persistence
                 throw new NotImplementedException($"Unrecognized {nameof(IItemFilter)} type: {Filter.GetType().Name}");
         }
 
+        private const string NegationOperator = "!";
+        private const string FilterIsNegatedPattern = @"(?<IsNegated>!)?";
+        private const string FilterTypePattern = @"(?<FilterType>[^:]+?)";
+        private const string FilterValuePattern = @"(:(?<FilterValue>.+))?";
+        private const string FilterPaginationPattern = @"(-(?<Limit>\d+),(?<Offset>\d+))?";
+
+        //  Each filter is expected to be in this format: "{FilterType}:{FilterValue}"
+        //  Can optionally be prefixed with the NegationOperator such as "!Quality:Iridium" to match non-iridium items
+        //  And the filter type can optionally be suffixed with pagination settings such as "FromMod-30,10:Cornucopia"
+        //      to match up to 30 results, skipping the first 10 matches
+        private static readonly Regex FilterParser = new Regex($@"^{FilterIsNegatedPattern}{FilterTypePattern}{FilterPaginationPattern}{FilterValuePattern}$");
+        //^(?<IsNegated>!)?(?<FilterType>[^:]+?)(-(?<MaxResults>\d+),(?<Offset>\d+))?:(?<FilterValue>.+)$
+
         public static IItemFilter Parse(ModdedBag bag, string data)
         {
             List<ItemFilter> filters = new List<ItemFilter>();
-
-            //  Each filter is expected to be in this format: "{FilterType}:{FilterValue}",
-            //  and can optionally be prefixed with the NegationOperator such as "!Quality:Iridium" to match non-iridium items
             foreach (string filterString in data.Split('|'))
             {
+#if true
+                Match m = FilterParser.Match(filterString);
+                bool IsNegated = m.Groups["IsNegated"].Success;
+                string filterType = m.Groups["FilterType"].Value;
+                string filterValue = m.Groups["FilterValue"].Value;
+                int? Limit = m.Groups["Limit"].Success ? int.Parse(m.Groups["Limit"].Value) : null;
+                int? Offset = m.Groups["Offset"].Success ? int.Parse(m.Groups["Offset"].Value) : null;
+#else
                 string filterType;
                 string filterValue;
 
@@ -157,38 +261,39 @@ namespace ItemBags.Persistence
                     IsNegated = true;
                     filterType = filterType.Substring(NegationOperator.Length);
                 }
+#endif
 
                 if (Enum.TryParse(filterType, true, out ItemFilterType parsedFilterType))
                 {
                     ItemFilter filter = parsedFilterType switch
                     {
-                        ItemFilterType.BagSize => BagSizeFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.IsVanillaItem => VanillaItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.FromMod => FromModItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.HasMod => HasModItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.CategoryId => CategoryItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.IsBigCraftable => BigCraftableItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.Quality => QualityItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.HasContextTag => ContextTagItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.HasBuffs => BuffsItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.IsDonatable => DonateableItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.IsPendingDonation => PendingDonationItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.QualifiedId => QualifiedIdItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.QualifiedIdPrefix => QualifiedIdPrefixItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.QualifiedIdSuffix => QualifiedIdSuffixItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.QualifiedIdContains => QualifiedIdContainsItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.LocalId => LocalIdItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.LocalIdPrefix => LocalIdPrefixItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.LocalIdSuffix => LocalIdSuffixItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.LocalIdContains => LocalIdContainsItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.Name => NameItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.NamePrefix => NamePrefixItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.NameSuffix => NameSuffixItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.NameContains => NameContainsItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.DisplayName => DisplayNameItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.DisplayNamePrefix => DisplayNamePrefixItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.DisplayNameSuffix => DisplayNameSuffixItemFilter.Parse(IsNegated, filterValue),
-                        ItemFilterType.DisplayNameContains => DisplayNameContainsItemFilter.Parse(IsNegated, filterValue),
+                        ItemFilterType.BagSize => BagSizeFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.IsVanillaItem => VanillaItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.FromMod => FromModItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.HasMod => HasModItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.CategoryId => CategoryItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.IsBigCraftable => BigCraftableItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.Quality => QualityItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.HasContextTag => ContextTagItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.HasBuffs => BuffsItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.IsDonatable => DonateableItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.IsPendingDonation => PendingDonationItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.QualifiedId => QualifiedIdItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.QualifiedIdPrefix => QualifiedIdPrefixItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.QualifiedIdSuffix => QualifiedIdSuffixItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.QualifiedIdContains => QualifiedIdContainsItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.LocalId => LocalIdItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.LocalIdPrefix => LocalIdPrefixItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.LocalIdSuffix => LocalIdSuffixItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.LocalIdContains => LocalIdContainsItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.Name => NameItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.NamePrefix => NamePrefixItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.NameSuffix => NameSuffixItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.NameContains => NameContainsItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.DisplayName => DisplayNameItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.DisplayNamePrefix => DisplayNamePrefixItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.DisplayNameSuffix => DisplayNameSuffixItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.DisplayNameContains => DisplayNameContainsItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
                         _ => throw new NotImplementedException($"Unrecognized {nameof(ItemFilterType)}: {parsedFilterType}"),
                     };
                     filters.Add(filter);
@@ -202,8 +307,10 @@ namespace ItemBags.Persistence
             if (filters.Count == 1)
                 return filters.First();
             else
-                return new ItemFilterGroup(CompositionType.LogicalOR, filters.ToArray());
+                return new ItemFilterGroup(CompositionType.LogicalOR, null, 0, filters.ToArray());
         }
+
+        public override string ToString() => $"{nameof(ItemFilter)}";
     }
 
     public class BagSizeFilter : ItemFilter
@@ -212,8 +319,8 @@ namespace ItemBags.Persistence
 
         public override bool UsesBagSize => true;
 
-        public BagSizeFilter(bool IsNegated, params ContainerSize[] Sizes)
-            : base(ItemFilterType.BagSize, IsNegated)
+        public BagSizeFilter(bool IsNegated, int? Limit, int? Offset, params ContainerSize[] Sizes)
+            : base(ItemFilterType.BagSize, IsNegated, Limit, Offset)
         {
             this.Sizes = Sizes.ToList();
         }
@@ -225,7 +332,7 @@ namespace ItemBags.Persistence
         private static readonly IReadOnlyList<string> Prefixes = new List<string>() { "=", "<", "<=", ">", ">=" };
         private static readonly Regex Pattern = new Regex(@"^(?<Modifier>(>=|<=|=|>|<))(?<Size>.*)$");
 
-        public static BagSizeFilter Parse(bool IsNegated, string Value)
+        public static BagSizeFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value)
         {
             if (Pattern.IsMatch(Value))
             {
@@ -244,17 +351,19 @@ namespace ItemBags.Persistence
                     _ => throw new NotImplementedException($"Invalid format for {nameof(BagSizeFilter)} value: The prefix '{Modifier}' is unrecognized.")
                 };
 
-                return new BagSizeFilter(IsNegated, Sizes.ToArray());
+                return new BagSizeFilter(IsNegated, Limit, Offset, Sizes.ToArray());
             }
             else
-                return new BagSizeFilter(IsNegated, (ContainerSize)Enum.Parse(typeof(ContainerSize), Value, true));
+                return new BagSizeFilter(IsNegated, Limit, Offset, (ContainerSize)Enum.Parse(typeof(ContainerSize), Value, true));
         }
+
+        public override string ToString() => $"{nameof(BagSizeFilter)}:{string.Join(",", Sizes)}";
     }
 
     public class VanillaItemFilter : ItemFilter
     {
-        public VanillaItemFilter(bool IsNegated)
-            : base(ItemFilterType.IsVanillaItem, IsNegated)
+        public VanillaItemFilter(bool IsNegated, int? Limit, int? Offset)
+            : base(ItemFilterType.IsVanillaItem, IsNegated, Limit, Offset)
         {
 
         }
@@ -262,15 +371,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => !parsedData.QualifiedItemId.Contains('_');
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => !parsedData.QualifiedItemId.Contains('_');
 
-        public static VanillaItemFilter Parse(bool IsNegated, string Value) => new VanillaItemFilter(IsNegated);
+        public static VanillaItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new VanillaItemFilter(IsNegated, Limit, Offset);
+
+        public override string ToString() => $"{nameof(VanillaItemFilter)}";
     }
 
     public class FromModItemFilter : ItemFilter
     {
         public string ModUniqueId { get; }
 
-        public FromModItemFilter(bool IsNegated, string ModUniqueId)
-            : base(ItemFilterType.FromMod, IsNegated)
+        public FromModItemFilter(bool IsNegated, int? Limit, int? Offset, string ModUniqueId)
+            : base(ItemFilterType.FromMod, IsNegated, Limit, Offset)
         {
             this.ModUniqueId = ModUniqueId;
         }
@@ -283,7 +395,10 @@ namespace ItemBags.Persistence
 
         private static bool IsFromMod(string ModId, string UnqualifiedItemId) => ModItemIdDelimiters.Any(delimiter => UnqualifiedItemId.StartsWith(ModId + delimiter));
 
-        public static FromModItemFilter Parse(bool IsNegated, string Value) => new FromModItemFilter(IsNegated, Value);
+        public static FromModItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new FromModItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(FromModItemFilter)}:{ModUniqueId}";
     }
 
     public class HasModItemFilter : ItemFilter
@@ -291,8 +406,8 @@ namespace ItemBags.Persistence
         public string ModUniqueId { get; }
         public string MinimumVersion { get; }
 
-        public HasModItemFilter(bool IsNegated, string ModUniqueId, string MinimumVersion)
-            : base(ItemFilterType.HasMod, IsNegated)
+        public HasModItemFilter(bool IsNegated, int? Limit, int? Offset, string ModUniqueId, string MinimumVersion)
+            : base(ItemFilterType.HasMod, IsNegated, Limit, Offset)
         {
             this.ModUniqueId = ModUniqueId;
             this.MinimumVersion = MinimumVersion;
@@ -326,7 +441,7 @@ namespace ItemBags.Persistence
         }
 
         private static readonly Regex Pattern = new Regex(@"^(?<ModId>.+)-(?<MinVersion>\d+\.\d+\.\d+.*)$");
-        public static HasModItemFilter Parse(bool IsNegated, string Value)
+        public static HasModItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value)
         {
             //  Attempt to parse values in the format: "{ModId}-{MinVersion}", such as: "Rafseazz.RSVCP-2.5.17"
             if (Pattern.IsMatch(Value))
@@ -335,19 +450,21 @@ namespace ItemBags.Persistence
                 string ModId = m.Groups["ModId"].Value;
                 string MinVersion = m.Groups["MinVersion"].Value;
                 if (SemanticVersion.TryParse(MinVersion, out _))
-                    return new HasModItemFilter(IsNegated, ModId, MinVersion);
+                    return new HasModItemFilter(IsNegated, Limit, Offset, ModId, MinVersion);
             }
 
-            return new HasModItemFilter(IsNegated, Value, null);
+            return new HasModItemFilter(IsNegated, Limit, Offset, Value, null);
         }
+
+        public override string ToString() => $"{nameof(HasModItemFilter)}:{ModUniqueId}-{MinimumVersion ?? "any version"}";
     }
 
     public class CategoryItemFilter : ItemFilter
     {
         public IReadOnlyList<int> CategoryIds { get; }
 
-        public CategoryItemFilter(bool IsNegated, params int[] CategoryIds)
-            : base(ItemFilterType.CategoryId, IsNegated)
+        public CategoryItemFilter(bool IsNegated, int? Limit, int? Offset, params int[] CategoryIds)
+            : base(ItemFilterType.CategoryId, IsNegated, Limit, Offset)
         {
             this.CategoryIds = CategoryIds.ToList();
         }
@@ -355,14 +472,16 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => CategoryIds.Contains(parsedData.Category);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => CategoryIds.Contains(parsedData.Category);
 
-        public static CategoryItemFilter Parse(bool IsNegated, string Value)
-            => new CategoryItemFilter(IsNegated, Value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => int.Parse(x)).ToArray());
+        public static CategoryItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value)
+            => new CategoryItemFilter(IsNegated, Limit, Offset, Value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => int.Parse(x)).ToArray());
+
+        public override string ToString() => $"{nameof(CategoryItemFilter)}:{string.Join(",", CategoryIds)}";
     }
 
     public class BigCraftableItemFilter : ItemFilter
     {
-        public BigCraftableItemFilter(bool IsNegated)
-            : base(ItemFilterType.IsBigCraftable, IsNegated)
+        public BigCraftableItemFilter(bool IsNegated, int? Limit, int? Offset)
+            : base(ItemFilterType.IsBigCraftable, IsNegated, Limit, Offset)
         {
 
         }
@@ -370,7 +489,10 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => false;
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => true;
 
-        public static BigCraftableItemFilter Parse(bool IsNegated, string Value) => new BigCraftableItemFilter(IsNegated);
+        public static BigCraftableItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new BigCraftableItemFilter(IsNegated, Limit, Offset);
+
+        public override string ToString() => $"{nameof(BigCraftableItemFilter)}";
     }
 
     public class QualityItemFilter : ItemFilter
@@ -379,8 +501,8 @@ namespace ItemBags.Persistence
 
         public override bool UsesQuality => true;
 
-        public QualityItemFilter(bool IsNegated, params ObjectQuality[] Qualities)
-            : base(ItemFilterType.Quality, IsNegated)
+        public QualityItemFilter(bool IsNegated, int? Limit, int? Offset, params ObjectQuality[] Qualities)
+            : base(ItemFilterType.Quality, IsNegated, Limit, Offset)
         {
             this.Qualities = Qualities.ToList();
         }
@@ -397,7 +519,7 @@ namespace ItemBags.Persistence
             { "iridium", ObjectQuality.Iridium }
         };
 
-        public static QualityItemFilter Parse(bool IsNegated, string Value)
+        public static QualityItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value)
         {
             if (int.TryParse(Value, out int ValueInt))
             {
@@ -410,23 +532,25 @@ namespace ItemBags.Persistence
                     4 => ObjectQuality.Iridium,
                     _ => ObjectQuality.Regular
                 };
-                return new QualityItemFilter(IsNegated, QualityValue);
+                return new QualityItemFilter(IsNegated, Limit, Offset, QualityValue);
             }
             else
             {
                 if (!QualityNameLookup.TryGetValue(Value.ToLower(), out ObjectQuality QualityValue))
                     QualityValue = ObjectQuality.Regular;
-                return new QualityItemFilter(IsNegated, QualityValue);
+                return new QualityItemFilter(IsNegated, Limit, Offset, QualityValue);
             }
         }
+
+        public override string ToString() => $"{nameof(QualityItemFilter)}:{string.Join(",", Qualities)}";
     }
 
     public class ContextTagItemFilter : ItemFilter
     {
         public string ContextTag { get; }
 
-        public ContextTagItemFilter(bool IsNegated, string ContextTag)
-            : base(ItemFilterType.HasContextTag, IsNegated)
+        public ContextTagItemFilter(bool IsNegated, int? Limit, int? Offset, string ContextTag)
+            : base(ItemFilterType.HasContextTag, IsNegated, Limit, Offset)
         {
             this.ContextTag = ContextTag;
         }
@@ -450,13 +574,16 @@ namespace ItemBags.Persistence
             return Instance.GetContextTags().Contains(Tag);
         }
 
-        public static ContextTagItemFilter Parse(bool IsNegated, string Value) => new ContextTagItemFilter(IsNegated, Value);
+        public static ContextTagItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new ContextTagItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(ContextTagItemFilter)}:{ContextTag}";
     }
 
     public class BuffsItemFilter : ItemFilter
     {
-        public BuffsItemFilter(bool IsNegated)
-            : base(ItemFilterType.HasBuffs, IsNegated)
+        public BuffsItemFilter(bool IsNegated, int? Limit, int? Offset)
+            : base(ItemFilterType.HasBuffs, IsNegated, Limit, Offset)
         {
 
         }
@@ -464,14 +591,17 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => data.Buffs?.Any() == true;
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => false;
 
-        public static BuffsItemFilter Parse(bool IsNegated, string Value) => new BuffsItemFilter(IsNegated);
+        public static BuffsItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new BuffsItemFilter(IsNegated, Limit, Offset);
+
+        public override string ToString() => $"{nameof(BuffsItemFilter)}";
     }
 
     #region Museum filters
     public class DonateableItemFilter : ItemFilter
     {
-        public DonateableItemFilter(bool IsNegated)
-            : base(ItemFilterType.IsDonatable, IsNegated)
+        public DonateableItemFilter(bool IsNegated, int? Limit, int? Offset)
+            : base(ItemFilterType.IsDonatable, IsNegated, Limit, Offset)
         {
 
         }
@@ -482,13 +612,16 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) =>
             false; // LibraryMuseum.IsItemSuitableForDonation(parsedData.QualifiedItemId, false); // I don't think BigCraftables are ever valid for donating
 
-        public static DonateableItemFilter Parse(bool IsNegated, string Value) => new DonateableItemFilter(IsNegated);
+        public static DonateableItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new DonateableItemFilter(IsNegated, Limit, Offset);
+
+        public override string ToString() => $"{nameof(DonateableItemFilter)}";
     }
 
     public class PendingDonationItemFilter : ItemFilter
     {
-        public PendingDonationItemFilter(bool IsNegated)
-            : base(ItemFilterType.IsPendingDonation, IsNegated)
+        public PendingDonationItemFilter(bool IsNegated, int? Limit, int? Offset)
+            : base(ItemFilterType.IsPendingDonation, IsNegated, Limit, Offset)
         {
 
         }
@@ -498,7 +631,10 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) =>
             false; // LibraryMuseum.IsItemSuitableForDonation(parsedData.QualifiedItemId, true); // I don't think BigCraftables are ever valid for donating
 
-        public static PendingDonationItemFilter Parse(bool IsNegated, string Value) => new PendingDonationItemFilter(IsNegated);
+        public static PendingDonationItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new PendingDonationItemFilter(IsNegated, Limit, Offset);
+
+        public override string ToString() => $"{nameof(PendingDonationItemFilter)}";
     }
     #endregion Museum filters
 
@@ -507,8 +643,8 @@ namespace ItemBags.Persistence
     {
         public string Id { get; }
 
-        public QualifiedIdItemFilter(bool IsNegated, string Id)
-            : base(ItemFilterType.QualifiedId, IsNegated)
+        public QualifiedIdItemFilter(bool IsNegated, int? Limit, int? Offset, string Id)
+            : base(ItemFilterType.QualifiedId, IsNegated, Limit, Offset)
         {
             this.Id = Id;
         }
@@ -516,15 +652,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => Id == parsedData.QualifiedItemId;
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => Id == parsedData.QualifiedItemId;
 
-        public static QualifiedIdItemFilter Parse(bool IsNegated, string Value) => new QualifiedIdItemFilter(IsNegated, Value);
+        public static QualifiedIdItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new QualifiedIdItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(QualifiedIdItemFilter)}:{Id}";
     }
 
     public class QualifiedIdPrefixItemFilter : ItemFilter
     {
         public string Prefix { get; }
 
-        public QualifiedIdPrefixItemFilter(bool IsNegated, string Prefix)
-            : base(ItemFilterType.QualifiedIdPrefix, IsNegated)
+        public QualifiedIdPrefixItemFilter(bool IsNegated, int? Limit, int? Offset, string Prefix)
+            : base(ItemFilterType.QualifiedIdPrefix, IsNegated, Limit, Offset)
         {
             this.Prefix = Prefix;
         }
@@ -532,15 +671,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.QualifiedItemId.StartsWith(Prefix);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.QualifiedItemId.StartsWith(Prefix);
 
-        public static QualifiedIdPrefixItemFilter Parse(bool IsNegated, string Value) => new QualifiedIdPrefixItemFilter(IsNegated, Value);
+        public static QualifiedIdPrefixItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new QualifiedIdPrefixItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(QualifiedIdPrefixItemFilter)}:{Prefix}";
     }
 
     public class QualifiedIdSuffixItemFilter : ItemFilter
     {
         public string Suffix { get; }
 
-        public QualifiedIdSuffixItemFilter(bool IsNegated, string Suffix)
-            : base(ItemFilterType.QualifiedIdSuffix, IsNegated)
+        public QualifiedIdSuffixItemFilter(bool IsNegated, int? Limit, int? Offset, string Suffix)
+            : base(ItemFilterType.QualifiedIdSuffix, IsNegated, Limit, Offset)
         {
             this.Suffix = Suffix;
         }
@@ -548,15 +690,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.QualifiedItemId.EndsWith(Suffix);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.QualifiedItemId.EndsWith(Suffix);
 
-        public static QualifiedIdSuffixItemFilter Parse(bool IsNegated, string Value) => new QualifiedIdSuffixItemFilter(IsNegated, Value);
+        public static QualifiedIdSuffixItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new QualifiedIdSuffixItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(QualifiedIdSuffixItemFilter)}:{Suffix}";
     }
 
     public class QualifiedIdContainsItemFilter : ItemFilter
     {
         public string Text { get; }
 
-        public QualifiedIdContainsItemFilter(bool IsNegated, string Text)
-            : base(ItemFilterType.QualifiedIdContains, IsNegated)
+        public QualifiedIdContainsItemFilter(bool IsNegated, int? Limit, int? Offset, string Text)
+            : base(ItemFilterType.QualifiedIdContains, IsNegated, Limit, Offset)
         {
             this.Text = Text;
         }
@@ -564,7 +709,10 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.QualifiedItemId.Contains(Text);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.QualifiedItemId.Contains(Text);
 
-        public static QualifiedIdContainsItemFilter Parse(bool IsNegated, string Value) => new QualifiedIdContainsItemFilter(IsNegated, Value);
+        public static QualifiedIdContainsItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new QualifiedIdContainsItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(QualifiedIdContainsItemFilter)}:{Text}";
     }
     #endregion Qualified Id filters
 
@@ -573,8 +721,8 @@ namespace ItemBags.Persistence
     {
         public string Id { get; }
 
-        public LocalIdItemFilter(bool IsNegated, string Id)
-            : base(ItemFilterType.LocalId, IsNegated)
+        public LocalIdItemFilter(bool IsNegated, int? Limit, int? Offset, string Id)
+            : base(ItemFilterType.LocalId, IsNegated, Limit, Offset)
         {
             this.Id = Id;
         }
@@ -582,15 +730,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => Id == parsedData.ItemId;
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => Id == parsedData.ItemId;
 
-        public static LocalIdItemFilter Parse(bool IsNegated, string Value) => new LocalIdItemFilter(IsNegated, Value);
+        public static LocalIdItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new LocalIdItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(LocalIdItemFilter)}:{Id}";
     }
 
     public class LocalIdPrefixItemFilter : ItemFilter
     {
         public string Prefix { get; }
 
-        public LocalIdPrefixItemFilter(bool IsNegated, string Prefix)
-            : base(ItemFilterType.LocalIdPrefix, IsNegated)
+        public LocalIdPrefixItemFilter(bool IsNegated, int? Limit, int? Offset, string Prefix)
+            : base(ItemFilterType.LocalIdPrefix, IsNegated, Limit, Offset)
         {
             this.Prefix = Prefix;
         }
@@ -598,15 +749,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.ItemId.StartsWith(Prefix);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.ItemId.StartsWith(Prefix);
 
-        public static LocalIdPrefixItemFilter Parse(bool IsNegated, string Value) => new LocalIdPrefixItemFilter(IsNegated, Value);
+        public static LocalIdPrefixItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new LocalIdPrefixItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(LocalIdPrefixItemFilter)}:{Prefix}";
     }
 
     public class LocalIdSuffixItemFilter : ItemFilter
     {
         public string Suffix { get; }
 
-        public LocalIdSuffixItemFilter(bool IsNegated, string Suffix)
-            : base(ItemFilterType.LocalIdSuffix, IsNegated)
+        public LocalIdSuffixItemFilter(bool IsNegated, int? Limit, int? Offset, string Suffix)
+            : base(ItemFilterType.LocalIdSuffix, IsNegated, Limit, Offset)
         {
             this.Suffix = Suffix;
         }
@@ -614,15 +768,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.ItemId.EndsWith(Suffix);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.ItemId.EndsWith(Suffix);
 
-        public static LocalIdSuffixItemFilter Parse(bool IsNegated, string Value) => new LocalIdSuffixItemFilter(IsNegated, Value);
+        public static LocalIdSuffixItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new LocalIdSuffixItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(LocalIdSuffixItemFilter)}:{Suffix}";
     }
 
     public class LocalIdContainsItemFilter : ItemFilter
     {
         public string Text { get; }
 
-        public LocalIdContainsItemFilter(bool IsNegated, string Text)
-            : base(ItemFilterType.LocalIdContains, IsNegated)
+        public LocalIdContainsItemFilter(bool IsNegated, int? Limit, int? Offset, string Text)
+            : base(ItemFilterType.LocalIdContains, IsNegated, Limit, Offset)
         {
             this.Text = Text;
         }
@@ -630,7 +787,10 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.ItemId.Contains(Text);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.ItemId.Contains(Text);
 
-        public static LocalIdContainsItemFilter Parse(bool IsNegated, string Value) => new LocalIdContainsItemFilter(IsNegated, Value);
+        public static LocalIdContainsItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new LocalIdContainsItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(LocalIdContainsItemFilter)}:{Text}";
     }
     #endregion Local Id filters
 
@@ -639,8 +799,8 @@ namespace ItemBags.Persistence
     {
         public string Name { get; }
 
-        public NameItemFilter(bool IsNegated, string Name)
-            : base(ItemFilterType.Name, IsNegated)
+        public NameItemFilter(bool IsNegated, int? Limit, int? Offset, string Name)
+            : base(ItemFilterType.Name, IsNegated, Limit, Offset)
         {
             this.Name = Name;
         }
@@ -648,15 +808,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.InternalName == Name;
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.InternalName == Name;
 
-        public static NameItemFilter Parse(bool IsNegated, string Value) => new NameItemFilter(IsNegated, Value);
+        public static NameItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value)
+            => new NameItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(NameItemFilter)}:{Name}";
     }
 
     public class NamePrefixItemFilter : ItemFilter
     {
         public string Prefix { get; }
 
-        public NamePrefixItemFilter(bool IsNegated, string Prefix)
-            : base(ItemFilterType.NamePrefix, IsNegated)
+        public NamePrefixItemFilter(bool IsNegated, int? Limit, int? Offset, string Prefix)
+            : base(ItemFilterType.NamePrefix, IsNegated, Limit, Offset)
         {
             this.Prefix = Prefix;
         }
@@ -664,15 +827,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.InternalName.StartsWith(Prefix);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.InternalName.StartsWith(Prefix);
 
-        public static NamePrefixItemFilter Parse(bool IsNegated, string Value) => new NamePrefixItemFilter(IsNegated, Value);
+        public static NamePrefixItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new NamePrefixItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(NamePrefixItemFilter)}:{Prefix}";
     }
 
     public class NameSuffixItemFilter : ItemFilter
     {
         public string Suffix { get; }
 
-        public NameSuffixItemFilter(bool IsNegated, string Suffix)
-            : base(ItemFilterType.NameSuffix, IsNegated)
+        public NameSuffixItemFilter(bool IsNegated, int? Limit, int? Offset, string Suffix)
+            : base(ItemFilterType.NameSuffix, IsNegated, Limit, Offset)
         {
             this.Suffix = Suffix;
         }
@@ -680,15 +846,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.InternalName.EndsWith(Suffix);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.InternalName.EndsWith(Suffix);
 
-        public static NameSuffixItemFilter Parse(bool IsNegated, string Value) => new NameSuffixItemFilter(IsNegated, Value);
+        public static NameSuffixItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new NameSuffixItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(NameSuffixItemFilter)}:{Suffix}";
     }
 
     public class NameContainsItemFilter : ItemFilter
     {
         public string Text { get; }
 
-        public NameContainsItemFilter(bool IsNegated, string Text)
-            : base(ItemFilterType.NameContains, IsNegated)
+        public NameContainsItemFilter(bool IsNegated, int? Limit, int? Offset, string Text)
+            : base(ItemFilterType.NameContains, IsNegated, Limit, Offset)
         {
             this.Text = Text;
         }
@@ -696,7 +865,10 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.InternalName.Contains(Text);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.InternalName.Contains(Text);
 
-        public static NameContainsItemFilter Parse(bool IsNegated, string Value) => new NameContainsItemFilter(IsNegated, Value);
+        public static NameContainsItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new NameContainsItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(NameContainsItemFilter)}:{Text}";
     }
     #endregion Name filters
 
@@ -705,8 +877,8 @@ namespace ItemBags.Persistence
     {
         public string DisplayName { get; }
 
-        public DisplayNameItemFilter(bool IsNegated, string DisplayName)
-            : base(ItemFilterType.DisplayName, IsNegated)
+        public DisplayNameItemFilter(bool IsNegated, int? Limit, int? Offset, string DisplayName)
+            : base(ItemFilterType.DisplayName, IsNegated, Limit, Offset)
         {
             this.DisplayName = DisplayName;
         }
@@ -714,15 +886,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName == DisplayName;
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName == DisplayName;
 
-        public static DisplayNameItemFilter Parse(bool IsNegated, string Value) => new DisplayNameItemFilter(IsNegated, Value);
+        public static DisplayNameItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new DisplayNameItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(DisplayNameItemFilter)}:{DisplayName}";
     }
 
     public class DisplayNamePrefixItemFilter : ItemFilter
     {
         public string Prefix { get; }
 
-        public DisplayNamePrefixItemFilter(bool IsNegated, string Prefix)
-            : base(ItemFilterType.DisplayNamePrefix, IsNegated)
+        public DisplayNamePrefixItemFilter(bool IsNegated, int? Limit, int? Offset, string Prefix)
+            : base(ItemFilterType.DisplayNamePrefix, IsNegated, Limit, Offset)
         {
             this.Prefix = Prefix;
         }
@@ -730,15 +905,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName.StartsWith(Prefix);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName.StartsWith(Prefix);
 
-        public static DisplayNamePrefixItemFilter Parse(bool IsNegated, string Value) => new DisplayNamePrefixItemFilter(IsNegated, Value);
+        public static DisplayNamePrefixItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new DisplayNamePrefixItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(DisplayNamePrefixItemFilter)}:{Prefix}";
     }
 
     public class DisplayNameSuffixItemFilter : ItemFilter
     {
         public string Suffix { get; }
 
-        public DisplayNameSuffixItemFilter(bool IsNegated, string Suffix)
-            : base(ItemFilterType.DisplayNameSuffix, IsNegated)
+        public DisplayNameSuffixItemFilter(bool IsNegated, int? Limit, int? Offset, string Suffix)
+            : base(ItemFilterType.DisplayNameSuffix, IsNegated, Limit, Offset)
         {
             this.Suffix = Suffix;
         }
@@ -746,15 +924,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName.EndsWith(Suffix);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName.EndsWith(Suffix);
 
-        public static DisplayNameSuffixItemFilter Parse(bool IsNegated, string Value) => new DisplayNameSuffixItemFilter(IsNegated, Value);
+        public static DisplayNameSuffixItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new DisplayNameSuffixItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(DisplayNameSuffixItemFilter)}:{Suffix}";
     }
 
     public class DisplayNameContainsItemFilter : ItemFilter
     {
         public string Text { get; }
 
-        public DisplayNameContainsItemFilter(bool IsNegated, string Text)
-            : base(ItemFilterType.DisplayNameContains, IsNegated)
+        public DisplayNameContainsItemFilter(bool IsNegated, int? Limit, int? Offset, string Text)
+            : base(ItemFilterType.DisplayNameContains, IsNegated, Limit, Offset)
         {
             this.Text = Text;
         }
@@ -762,15 +943,18 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName.Contains(Text);
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => parsedData.DisplayName.Contains(Text);
 
-        public static DisplayNameContainsItemFilter Parse(bool IsNegated, string Value) => new DisplayNameContainsItemFilter(IsNegated, Value);
+        public static DisplayNameContainsItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) 
+            => new DisplayNameContainsItemFilter(IsNegated, Limit, Offset, Value);
+
+        public override string ToString() => $"{nameof(DisplayNameContainsItemFilter)}:{Text}";
     }
     #endregion DisplayName filters
 
 #if NEVER // for copy-pasting purposes...
     public class SampleItemFilter : ItemFilter
     {
-        public SampleItemFilter(bool IsNegated)
-            : base(ItemFilterType.Sample, IsNegated)
+        public SampleItemFilter(bool IsNegated, int? Limit, int? Offset)
+            : base(ItemFilterType.Sample, IsNegated, Limit, Offset)
         {
 
         }
@@ -778,7 +962,7 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => aaaaaaaa;
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => aaaaaaaaaaa;
 
-        public static SomeItemFilter Parse(bool IsNegated, string Value) => new SomeItemFilter(IsNegated);
+        public static SomeItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) => new SomeItemFilter(IsNegated, Limit, Offset);
     }
 #endif
 }

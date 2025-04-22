@@ -410,8 +410,10 @@ namespace ItemBags.Persistence
                                     }
                                 }
 
-                                IItemFilter Filter = new ItemFilterGroup(CompositionType.LogicalAND, Filters.ToArray());
+                                //TODO additional setting in json, ItemFiltersMaxResults, ItemFiltersOffset
+                                IItemFilter Filter = new ItemFilterGroup(CompositionType.LogicalAND, null, 0, Filters.ToArray());
                                 bool HasQualityFilters = ItemFilter.EnumerateFilters(Filter).Any(x => x.UsesQuality);
+                                bool HasPaginatedFilters = ItemFilter.EnumerateFilters(Filter).Any(x => ((IItemFilter)x).IsPaginated);
 
                                 HashSet<string> ItemIds = Items.Select(x => x.Id).ToHashSet();
                                 foreach (var KVP2 in Game1.bigCraftableData)
@@ -423,7 +425,7 @@ namespace ItemBags.Persistence
                                         continue;
                                     BigCraftableData Data = KVP2.Value;
                                     ParsedItemData ParsedData = ItemRegistry.GetData(Id);
-                                    if (Filter.IsMatch(Data, ParsedData, SizeCfg.Size, ObjectQuality.Regular))
+                                    if (Filter.IsMatch(Data, ParsedData, SizeCfg.Size, ObjectQuality.Regular, true, true))
                                         Items.Add(new StoreableBagItem(ParsedData.ItemId, false, null, true));
                                 }
 
@@ -440,15 +442,24 @@ namespace ItemBags.Persistence
                                     //  For performance purposes, we don't need to check every quality if the filter doesn't use that data
                                     if (!HasQualityFilters)
                                     {
-                                        if (Filter.IsMatch(Data, ParsedData, SizeCfg.Size, ObjectQuality.Regular))
+                                        if (Filter.IsMatch(Data, ParsedData, SizeCfg.Size, ObjectQuality.Regular, true, true))
                                             Items.Add(new StoreableBagItem(Id, HasQualities, null, false));
                                     }
                                     else
                                     {
                                         List<ObjectQuality> ValidQualities = (HasQualities ? AllQualities : RegularQualites)
-                                            .Where(x => Filter.IsMatch(Data, ParsedData, SizeCfg.Size, x)).ToList();
+                                            .Where(x => Filter.IsMatch(Data, ParsedData, SizeCfg.Size, x, true, false)).ToList();
                                         if (ValidQualities.Any())
+                                        {
                                             Items.Add(new StoreableBagItem(Id, HasQualities, ValidQualities, false));
+                                        }
+
+                                        if (HasPaginatedFilters)
+                                        {
+                                            //  Increment pagination (limit/offset) properties
+                                            //  (this is intentionally only done once per item rather than once per quality of each item)
+                                            _ = Filter.IsMatch(Data, ParsedData, SizeCfg.Size, ValidQualities.Any() ? ValidQualities.First() : ObjectQuality.Regular, false, true);
+                                        }
                                     }
                                 }
                             }
