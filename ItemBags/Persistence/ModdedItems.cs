@@ -78,6 +78,10 @@ namespace ItemBags.Persistence
 
         [JsonProperty("ItemFilters")]
         public List<string> ItemFilters { get; set; } = new List<string>();
+        [JsonProperty("ItemFiltersLimit")]
+        public int? ItemFiltersLimit { get; set; }
+        [JsonProperty("ItemFiltersOffset")]
+        public int? ItemFiltersOffset { get; set; }
 
         [JsonProperty("CategoryQualities")]
         public string CategoryQualities { get; set; }
@@ -397,7 +401,7 @@ namespace ItemBags.Persistence
                             {
                                 ModdedBag Bag = KVP.Key;
                                 List<IItemFilter> Filters = new List<IItemFilter>();
-                                foreach (string FilterString in KVP.Key.ItemFilters)
+                                foreach (string FilterString in Bag.ItemFilters)
                                 {
                                     try
                                     {
@@ -410,10 +414,11 @@ namespace ItemBags.Persistence
                                     }
                                 }
 
-                                //TODO additional setting in json, ItemFiltersMaxResults, ItemFiltersOffset
-                                IItemFilter Filter = new ItemFilterGroup(CompositionType.LogicalAND, null, 0, Filters.ToArray());
+                                ItemFilterGroup Filter = new ItemFilterGroup(CompositionType.LogicalAND, Bag.ItemFiltersLimit, Bag.ItemFiltersOffset, Filters.ToArray());
                                 bool HasQualityFilters = ItemFilter.EnumerateFilters(Filter).Any(x => x.UsesQuality);
-                                bool HasPaginatedFilters = ItemFilter.EnumerateFilters(Filter).Any(x => ((IItemFilter)x).IsPaginated);
+                                bool HasPaginatedFilters = 
+                                    ItemFilter.EnumerateFilters(Filter).Any(x => ((IItemFilter)x).IsPaginated) || 
+                                    ItemFilter.EnumerateGroups(Filter, true).Any(x => ((IItemFilter)x).IsPaginated);
 
                                 HashSet<string> ItemIds = Items.Select(x => x.Id).ToHashSet();
                                 foreach (var KVP2 in Game1.bigCraftableData)

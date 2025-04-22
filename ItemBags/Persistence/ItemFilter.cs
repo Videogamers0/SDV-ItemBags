@@ -214,6 +214,18 @@ namespace ItemBags.Persistence
                 throw new NotImplementedException($"Unrecognized {nameof(IItemFilter)} type: {Filter.GetType().Name}");
         }
 
+        public static IEnumerable<ItemFilterGroup> EnumerateGroups(ItemFilterGroup Group, bool IncludeSelf)
+        {
+            if (IncludeSelf)
+                yield return Group;
+
+            foreach (ItemFilterGroup NestedGroup in Group.Filters.Where(x => x is ItemFilterGroup).Cast<ItemFilterGroup>())
+            {
+                foreach (var Item in EnumerateGroups(NestedGroup, true))
+                    yield return Item;
+            }
+        }
+
         private const string NegationOperator = "!";
         private const string FilterIsNegatedPattern = @"(?<IsNegated>!)?";
         private const string FilterTypePattern = @"(?<FilterType>[^:]+?)";
