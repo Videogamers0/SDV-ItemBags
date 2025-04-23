@@ -28,17 +28,20 @@ namespace ItemBags.Persistence
         HasBuffs,
         /// <summary>Matches items that can be donated to the museum, including items that have already been donated</summary>
         IsDonatable,
+
         /// <summary>Matches items that can be donated to the museum, AND have not yet been donated</summary>
         IsPendingDonation,
         QualifiedId,
         QualifiedIdPrefix,
         QualifiedIdSuffix,
         QualifiedIdContains,
+
         //Unqualified Ids
         LocalId,
         LocalIdPrefix,
         LocalIdSuffix,
         LocalIdContains,
+
         //Uses InternalName, not localized name (DisplayName)
         Name,
         NamePrefix,
@@ -48,7 +51,9 @@ namespace ItemBags.Persistence
         DisplayName,
         DisplayNamePrefix,
         DisplayNameSuffix,
-        DisplayNameContains
+        DisplayNameContains,
+
+        Regex
     }
 
     public enum CompositionType
@@ -239,10 +244,10 @@ namespace ItemBags.Persistence
         private static readonly Regex FilterParser = new Regex($@"^{FilterIsNegatedPattern}{FilterTypePattern}{FilterPaginationPattern}{FilterValuePattern}$");
         //^(?<IsNegated>!)?(?<FilterType>[^:]+?)(-(?<MaxResults>\d+),(?<Offset>\d+))?:(?<FilterValue>.+)$
 
-        public static IItemFilter Parse(ModdedBag bag, string data)
+        public static IItemFilter Parse(ModdedBag bag, string data, string delimiter)
         {
             List<ItemFilter> filters = new List<ItemFilter>();
-            foreach (string filterString in data.Split('|'))
+            foreach (string filterString in data.Split(delimiter))
             {
 #if true
                 Match m = FilterParser.Match(filterString);
@@ -310,6 +315,21 @@ namespace ItemBags.Persistence
                     };
                     filters.Add(filter);
                 }
+                else if (filterType.EndsWith(ItemFilterType.Regex.ToString()))
+                {
+                    string PropertyName = ReplaceLastOccurrence(filterType, ItemFilterType.Regex.ToString(), "");
+                    if (!Enum.TryParse(PropertyName, true, out RegexItemFilter.RegexFilterProperty ParsedProperty))
+                    {
+                        IEnumerable<string> ValidPropertyNames = Enum.GetValues(typeof(RegexItemFilter.RegexFilterProperty)).Cast<RegexItemFilter.RegexFilterProperty>().Select(x => x.ToString());
+                        ItemBagsMod.ModInstance.Monitor.Log($"Failed to parse an item filter for bag '{bag.BagName}'. " +
+                            $"Regex filters must use one of the following properties: {string.Join(", ", ValidPropertyNames)}. Full value: \"{data}\".", LogLevel.Error);
+                    }
+                    else
+                    {
+                        ItemFilter filter = RegexItemFilter.Parse(IsNegated, Limit, Offset, ParsedProperty, filterValue);
+                        filters.Add(filter);
+                    }
+                }
                 else
                 {
                     ItemBagsMod.ModInstance.Monitor.Log($"Failed to parse an item filter for bag '{bag.BagName}'. {filterType} is unrecognized. Full value: \"{data}\".", LogLevel.Error);
@@ -320,6 +340,16 @@ namespace ItemBags.Persistence
                 return filters.First();
             else
                 return new ItemFilterGroup(CompositionType.LogicalOR, null, 0, filters.ToArray());
+        }
+
+        private static string ReplaceLastOccurrence(string source, string find, string replace)
+        {
+            int place = source.LastIndexOf(find);
+
+            if (place == -1)
+                return source;
+
+            return source.Remove(place, find.Length).Insert(place, replace);
         }
 
         public override string ToString() => $"{nameof(ItemFilter)}";
@@ -961,6 +991,45 @@ namespace ItemBags.Persistence
         public override string ToString() => $"{nameof(DisplayNameContainsItemFilter)}:{Text}";
     }
     #endregion DisplayName filters
+
+    public class RegexItemFilter : ItemFilter
+    {
+        public enum RegexFilterProperty
+        {
+            InternalName,
+            DisplayName,
+            LocalId,
+            QualifiedId
+        }
+
+        public RegexFilterProperty Property { get; }
+        public string Pattern { get; }
+        public Regex Regex { get; }
+
+        /// <param name="Pattern">The Regex pattern string to match against</param>
+        public RegexItemFilter(bool IsNegated, int? Limit, int? Offset, RegexFilterProperty Property, string Pattern)
+            : base(ItemFilterType.Regex, IsNegated, Limit, Offset)
+        {
+            this.Property = Property;
+            this.Pattern = Pattern;
+            this.Regex = new Regex(Pattern);
+        }
+
+        private static string GetPropertyValue(RegexFilterProperty property, ParsedItemData data) => property switch
+        {
+            RegexFilterProperty.InternalName => data.InternalName,
+            RegexFilterProperty.DisplayName => data.DisplayName,
+            RegexFilterProperty.LocalId => data.ItemId,
+            RegexFilterProperty.QualifiedId => data.QualifiedItemId,
+            _ => throw new NotImplementedException($"Unrecognized {nameof(RegexFilterProperty)}: {property}"),
+        };
+
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => Regex.IsMatch(GetPropertyValue(Property, parsedData));
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => Regex.IsMatch(GetPropertyValue(Property, parsedData));
+
+        public static RegexItemFilter Parse(bool IsNegated, int? Limit, int? Offset, RegexFilterProperty Property, string Value) 
+            => new RegexItemFilter(IsNegated, Limit, Offset, Property, Value);
+    }
 
 #if NEVER // for copy-pasting purposes...
     public class SampleItemFilter : ItemFilter

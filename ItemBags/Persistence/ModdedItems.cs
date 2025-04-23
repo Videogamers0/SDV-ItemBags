@@ -83,6 +83,10 @@ namespace ItemBags.Persistence
         [JsonProperty("ItemFiltersOffset")]
         public int? ItemFiltersOffset { get; set; }
 
+        /// <summary>The delimiter to use when logically-ORing multiple filters together. Default value: "|"</summary>
+        [JsonProperty("ItemFiltersDelimiter")]
+        public string ItemFiltersDelimiter { get; set; }
+
         [JsonProperty("CategoryQualities")]
         public string CategoryQualities { get; set; }
 
@@ -405,7 +409,7 @@ namespace ItemBags.Persistence
                                 {
                                     try
                                     {
-                                        IItemFilter CurrentFilter = ItemFilter.Parse(Bag, FilterString);
+                                        IItemFilter CurrentFilter = ItemFilter.Parse(Bag, FilterString, Bag.ItemFiltersDelimiter ?? "|");
                                         Filters.Add(CurrentFilter);
                                     }
                                     catch (Exception ex)
