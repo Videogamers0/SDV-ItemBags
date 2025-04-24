@@ -97,7 +97,7 @@ namespace ItemBags.Persistence
         public ItemFilterGroup(CompositionType Type, int? Limit, int? Offset, params IItemFilter[] Filters)
         {
             this.Type = Type;
-            this.Limit = Limit;
+            this.Limit = Limit.HasValue && Limit.Value <= 0 ? null : Limit;
             this.Offset = Offset;
             this.Filters = Filters.ToList();
 

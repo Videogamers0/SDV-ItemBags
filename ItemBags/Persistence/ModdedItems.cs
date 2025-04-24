@@ -18,6 +18,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static ItemBags.Persistence.BagSizeConfig;
 using Object = StardewValley.Object;
@@ -70,6 +71,14 @@ namespace ItemBags.Persistence
         /// <summary>Metadata about each modded item that should be storeable inside this bag.</summary>
         [JsonProperty("Items")]
         public List<ModdedItem> Items { get; set; } = new List<ModdedItem>();
+
+        /// <summary>Optional. The order to sort the bag's items in when displaying the menu. Only affects items added to the bag via <see cref="ItemFilters"/><para/>
+        /// Expected format: A comma-separated list of values in this format: "{SortProperty}-{SortDirection}<br/>
+        /// The SortProperty can be any of the following: CategoryId, InternalName, DisplayName, LocalId (The unqualified ItemId), QualifiedId, Price, ObjectType, Edibility<br/>
+        /// And the SortDirection can either be Ascending or Descending<para/>
+        /// EX: "CategoryId-Ascending,Price-Descending" (sorts first by category, then by price</summary>
+        [JsonProperty("ItemFiltersSorting")]
+        public string ItemFiltersSorting { get; set; }
 
         /// <summary>Optional. If specified, this bag will be able to store all items belonging to the given category Ids.<para/>
         /// See also: <see cref="Items"/></summary>
@@ -309,6 +318,80 @@ namespace ItemBags.Persistence
             return Result;
         }
 
+        private class SortableBagItem
+        {
+            public enum SortProperty
+            {
+                CategoryId,
+                Price,
+                ObjectType,
+                Edibility,
+                InternalName,
+                DisplayName,
+                LocalId,
+                QualifiedId
+            }
+
+            public enum SortDirection
+            {
+                Ascending,
+                Descending
+            }
+
+            public StoreableBagItem Item { get; }
+            public ObjectData ObjectData { get; set; }
+            public BigCraftableData BigCraftableData { get; set; }
+            public ParsedItemData ParsedData { get; set; }
+
+            public SortableBagItem(StoreableBagItem Item, ObjectData ObjectData, ParsedItemData ParsedData)
+            {
+                this.Item = Item;
+                this.ObjectData = ObjectData;
+                this.ParsedData = ParsedData;
+            }
+
+            public SortableBagItem(StoreableBagItem Item, BigCraftableData BigCraftableData, ParsedItemData ParsedData)
+            {
+                this.Item = Item;
+                this.BigCraftableData = BigCraftableData;
+                this.ParsedData = ParsedData;
+            }
+
+            public static IOrderedEnumerable<SortableBagItem> ApplySorting(IEnumerable<SortableBagItem> Source, SortProperty Property, SortDirection Direction)
+            {
+                if (Source is IOrderedEnumerable<SortableBagItem> OrderedSource)
+                {
+                    if (Direction == SortDirection.Ascending)
+                        return OrderedSource.ThenBy(x => x.GetPropertyValue(Property));
+                    else
+                        return OrderedSource.ThenByDescending(x => x.GetPropertyValue(Property));
+                }
+                else
+                {
+                    if (Direction == SortDirection.Ascending)
+                        return Source.OrderBy(x => x.GetPropertyValue(Property));
+                    else
+                        return Source.OrderByDescending(x => x.GetPropertyValue(Property));
+                }
+            }
+
+            public object GetPropertyValue(SortProperty Property)
+            {
+                return Property switch
+                {
+                    SortProperty.CategoryId => ParsedData.Category,
+                    SortProperty.Price => ObjectData?.Price ?? BigCraftableData?.Price ?? -1,
+                    SortProperty.ObjectType => ParsedData.ObjectType,
+                    SortProperty.Edibility => ObjectData == null ? -1 : ObjectData.Edibility,
+                    SortProperty.InternalName => ParsedData.InternalName,
+                    SortProperty.DisplayName => ParsedData.DisplayName,
+                    SortProperty.LocalId => ParsedData.ItemId,
+                    SortProperty.QualifiedId => ParsedData.QualifiedItemId,
+                    _ => throw new NotImplementedException($"Unrecognized {nameof(SortProperty)}: {Property}"),
+                };
+            }
+        }
+
         internal static void UpdateModdedBagItems(BagConfig Target, bool RevalidateInstances)
         {
             try
@@ -424,6 +507,8 @@ namespace ItemBags.Persistence
                                     ItemFilter.EnumerateFilters(Filter).Any(x => ((IItemFilter)x).IsPaginated) || 
                                     ItemFilter.EnumerateGroups(Filter, true).Any(x => ((IItemFilter)x).IsPaginated);
 
+                                List<SortableBagItem> FilteredItems = new List<SortableBagItem>();
+
                                 HashSet<string> ItemIds = Items.Select(x => x.Id).ToHashSet();
                                 foreach (var KVP2 in Game1.bigCraftableData)
                                 {
@@ -435,7 +520,7 @@ namespace ItemBags.Persistence
                                     BigCraftableData Data = KVP2.Value;
                                     ParsedItemData ParsedData = ItemRegistry.GetData(Id);
                                     if (Filter.IsMatch(Data, ParsedData, SizeCfg.Size, ObjectQuality.Regular, true, true))
-                                        Items.Add(new StoreableBagItem(ParsedData.ItemId, false, null, true));
+                                        FilteredItems.Add(new SortableBagItem(new StoreableBagItem(ParsedData.ItemId, false, null, true), Data, ParsedData));
                                 }
 
                                 foreach (var KVP2 in Game1.objectData)
@@ -452,7 +537,7 @@ namespace ItemBags.Persistence
                                     if (!HasQualityFilters)
                                     {
                                         if (Filter.IsMatch(Data, ParsedData, SizeCfg.Size, ObjectQuality.Regular, true, true))
-                                            Items.Add(new StoreableBagItem(Id, HasQualities, null, false));
+                                            FilteredItems.Add(new SortableBagItem(new StoreableBagItem(Id, HasQualities, null, false), Data, ParsedData));
                                     }
                                     else
                                     {
@@ -460,7 +545,7 @@ namespace ItemBags.Persistence
                                             .Where(x => Filter.IsMatch(Data, ParsedData, SizeCfg.Size, x, true, false)).ToList();
                                         if (ValidQualities.Any())
                                         {
-                                            Items.Add(new StoreableBagItem(Id, HasQualities, ValidQualities, false));
+                                            FilteredItems.Add(new SortableBagItem(new StoreableBagItem(Id, HasQualities, ValidQualities, false), Data, ParsedData));
                                         }
 
                                         if (HasPaginatedFilters)
@@ -471,6 +556,34 @@ namespace ItemBags.Persistence
                                         }
                                     }
                                 }
+
+                                //  Apply sorting
+                                IOrderedEnumerable<SortableBagItem> OrderedItems = FilteredItems.OrderBy(x => 1);
+                                if (!string.IsNullOrEmpty(Bag.ItemFiltersSorting))
+                                {
+                                    foreach (string SortSetting in Bag.ItemFiltersSorting.Split(','))
+                                    {
+                                        try
+                                        {
+                                            SortableBagItem.SortDirection Direction = SortableBagItem.SortDirection.Ascending;
+                                            Match m = Regex.Match(SortSetting, @"^(?<Property>.+?)(-(?i)(?<Direction>(ascending|descending))(?-i))?$");
+                                            if (m.Groups["Direction"].Success)
+                                            {
+                                                Direction = Enum.Parse<SortableBagItem.SortDirection>(m.Groups["Direction"].Value, true);
+                                            }
+
+                                            SortableBagItem.SortProperty Property = Enum.Parse<SortableBagItem.SortProperty>(m.Groups["Property"].Value, true);
+
+                                            OrderedItems = SortableBagItem.ApplySorting(OrderedItems, Property, Direction);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            ItemBagsMod.ModInstance.Monitor.Log($"Failed to parse sorting settings (value='{SortSetting}') for modded bag '{Bag.BagName}': {ex}", LogLevel.Error);
+                                        }
+                                    }
+                                }
+
+                                Items.AddRange(OrderedItems.Select(x => x.Item));
                             }
 
                             SizeCfg.Items = Items;
