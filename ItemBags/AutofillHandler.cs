@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Inventories;
 using StardewValley.Menus;
 using StardewValley.Objects;
 using StardewValley.Tools;
@@ -79,7 +80,7 @@ namespace ItemBags
                         Chest Chest = IGM.context as Chest;
 
                         //  Compare previous chest items to current chest items to see if any items were just added to chest
-                        List<Item> CurrentChestMenuContents = Chest.Items.Where(x => x != null).ToList();
+                        List<Item> CurrentChestMenuContents = GetChestContents(Chest).Where(x => x != null).ToList();
                         if (PreviousChestMenuContents != null)
                         {
                             List<Item> AddedItems = CurrentChestMenuContents.Where(x => !PreviousChestMenuContents.Contains(x)).ToList();
@@ -103,12 +104,12 @@ namespace ItemBags
             if (ItemBagsMod.UserConfig.AllowAutofillInsideChest)
             {
                 //  Autofill the added items to any bags inside of the chest
-                List<ItemBag> AutofillableBags = GetAutofillableBags(Chest.Items, out HashSet<ItemBag> NestedBags);
+                List<ItemBag> AutofillableBags = GetAutofillableBags(GetChestContents(Chest), out HashSet<ItemBag> NestedBags);
                 if (AutofillableBags.Any())
                 {
                     foreach (Item NewItem in NewItemStacks)
                     {
-                        TryAutofill(Chest.Items, AutofillableBags, NestedBags, NewItem, out int AutofilledQuantity);
+                        TryAutofill(GetChestContents(Chest), AutofillableBags, NestedBags, NewItem, out int AutofilledQuantity);
                     }
                 }
             }
@@ -141,6 +142,8 @@ namespace ItemBags
                 return false;
             }
         }
+
+        private static IInventory GetChestContents(Chest Source) => Source.GetItemsForPlayer();
 
         private const int HayId = 178;
         private static bool IsHay(Item item)
