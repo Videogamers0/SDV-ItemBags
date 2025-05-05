@@ -545,13 +545,13 @@ namespace ItemBags
                     Dictionary<string, ModdedBag> BagsById = ItemBagsMod.TemporaryModdedBagTypes.ToDictionary(x => x.Key.Guid, x => x.Key);
                     foreach (string File in ItemBagsMod.GetModdedBagRelativeFilePaths())
                     {
-                        ModdedBag ModdedBag = ItemBagsMod.ModInstance.Helper.Data.ReadJsonFile<ModdedBag>(File);
-                        if (BagsById.TryGetValue(ModdedBag.Guid, out ModdedBag Bag))
+                        ModdedBag NewBag = ItemBagsMod.ModInstance.Helper.Data.ReadJsonFile<ModdedBag>(File);
+                        if (BagsById.TryGetValue(NewBag.Guid, out ModdedBag OldBag))
                         {
-                            BagType Type = ItemBagsMod.TemporaryModdedBagTypes[Bag];
-                            ItemBagsMod.TemporaryModdedBagTypes.Remove(Bag);
-                            ItemBagsMod.TemporaryModdedBagTypes.Add(ModdedBag, Type);
-                            Type.CopySettingsFrom(ModdedBag.GetBagTypePlaceholder());
+                            BagType Type = ItemBagsMod.TemporaryModdedBagTypes[OldBag];
+                            ItemBagsMod.TemporaryModdedBagTypes.Remove(OldBag);
+                            ItemBagsMod.TemporaryModdedBagTypes.Add(NewBag, Type);
+                            Type.CopySettingsFrom(NewBag.GetBagTypePlaceholder());
                         }
                     }
 
@@ -568,7 +568,7 @@ namespace ItemBags
                 }
                 catch (Exception ex)
                 {
-                    Monitor.Log($"ItemBags: Unhandled error while executing command: {ex.Message}", LogLevel.Error);
+                    Monitor.Log($"ItemBags: Unhandled error while executing command: {ex}", LogLevel.Error);
                 }
             });
         }
