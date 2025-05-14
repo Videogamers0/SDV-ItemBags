@@ -55,7 +55,9 @@ namespace ItemBags.Persistence
 
         Regex,
         /// <summary>Matches items that can be shipped AND have not yet been shipped</summary>
-        IsPendingShipment
+        IsPendingShipment,
+        IsCaughtFish,
+        IsUncaughtFish
     }
 
     public enum CompositionType
@@ -314,6 +316,8 @@ namespace ItemBags.Persistence
                         ItemFilterType.DisplayNameSuffix => DisplayNameSuffixItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
                         ItemFilterType.DisplayNameContains => DisplayNameContainsItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
                         ItemFilterType.IsPendingShipment => PendingShipmentItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.IsCaughtFish => CaughtFishItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.IsUncaughtFish => UncaughtFishItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
                         //ItemFilterType.Sample => SampleItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
                         _ => throw new NotImplementedException($"Unrecognized {nameof(ItemFilterType)}: {parsedFilterType}"),
                     };
@@ -1070,6 +1074,40 @@ namespace ItemBags.Persistence
         public override string ToString() => $"{nameof(PendingShipmentItemFilter)}";
     }
 
+    public class CaughtFishItemFilter : ItemFilter
+    {
+        public CaughtFishItemFilter(bool IsNegated, int? Limit, int? Offset)
+            : base(ItemFilterType.IsCaughtFish, IsNegated, Limit, Offset)
+        {
+
+        }
+
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) =>
+            !data.ExcludeFromFishingCollection && parsedData.Category == StardewValley.Object.FishCategory && Game1.player.fishCaught.ContainsKey(parsedData.QualifiedItemId);
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => false;
+
+        public static CaughtFishItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) => new CaughtFishItemFilter(IsNegated, Limit, Offset);
+
+        public override string ToString() => $"{nameof(CaughtFishItemFilter)}";
+    }
+
+    public class UncaughtFishItemFilter : ItemFilter
+    {
+        public UncaughtFishItemFilter(bool IsNegated, int? Limit, int? Offset)
+            : base(ItemFilterType.IsUncaughtFish, IsNegated, Limit, Offset)
+        {
+
+        }
+
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) =>
+            !data.ExcludeFromFishingCollection && parsedData.Category == StardewValley.Object.FishCategory && !Game1.player.fishCaught.ContainsKey(parsedData.QualifiedItemId);
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => false;
+
+        public static UncaughtFishItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) => new UncaughtFishItemFilter(IsNegated, Limit, Offset);
+
+        public override string ToString() => $"{nameof(UncaughtFishItemFilter)}";
+    }
+
 #if NEVER // for copy-pasting purposes...
     public class SampleItemFilter : ItemFilter
     {
@@ -1084,7 +1122,7 @@ namespace ItemBags.Persistence
 
         public static SomeItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) => new SomeItemFilter(IsNegated, Limit, Offset);
 
-        public override string ToString() => "${nameof(SampleItemFilter)}";
+        public override string ToString() => $"{nameof(SampleItemFilter)}";
     }
 #endif
 }
