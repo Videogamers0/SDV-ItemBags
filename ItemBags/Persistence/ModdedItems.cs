@@ -227,43 +227,17 @@ namespace ItemBags.Persistence
         {
             IModHelper Helper = ItemBagsMod.ModInstance.Helper;
 
-#if LEGACY_CODE
-            //  Load modded items from JsonAssets the moment it finishes registering items
-            if (Helper.ModRegistry.IsLoaded(ItemBagsMod.JAUniqueId))
-            {
-                IJsonAssetsAPI API = Helper.ModRegistry.GetApi<IJsonAssetsAPI>(ItemBagsMod.JAUniqueId);
-                if (API != null)
-                {
-                    //  JsonAssets removed this API call when updating for 1.6
-                    //API.IdsFixed += (sender, e) => { OnJsonAssetsIdsFixed(API, ItemBagsMod.BagConfig, true); };
-                }
-            }
-#else
             Helper.Events.GameLoop.SaveLoaded += (sender, e) =>
             {
-                void DoWork()
-                {
-                    IJsonAssetsAPI API = Helper.ModRegistry.IsLoaded(ItemBagsMod.JAUniqueId) ? Helper.ModRegistry.GetApi<IJsonAssetsAPI>(ItemBagsMod.JAUniqueId) : null;
-                    UpdateModdedBagItems(ItemBagsMod.BagConfig, true);
-                }
-                DelayHelpers.InvokeLater(1, DoWork);
+                DelayHelpers.InvokeLater(1, () => UpdateModdedBagItems(ItemBagsMod.BagConfig, true));
             };
-#endif
         }
 
         internal static void OnConnectedToHost()
         {
             if (!Context.IsMainPlayer)
             {
-                IModHelper Helper = ItemBagsMod.ModInstance.Helper;
-                if (Helper.ModRegistry.IsLoaded(ItemBagsMod.JAUniqueId))
-                {
-                    IJsonAssetsAPI API = Helper.ModRegistry.GetApi<IJsonAssetsAPI>(ItemBagsMod.JAUniqueId);
-                    if (API != null)
-                    {
-                        UpdateModdedBagItems(ItemBagsMod.BagConfig, false);
-                    }
-                }
+                UpdateModdedBagItems(ItemBagsMod.BagConfig, false);
             }
         }
 
@@ -420,12 +394,6 @@ namespace ItemBags.Persistence
                             AllObjectIds.Add(ObjectName, KVP.Key);
                     }
 
-                    //  JsonAssets removed these API calls when updating for 1.6
-                    //IDictionary<string, int> JABigCraftableIds = API.GetAllBigCraftableIds();
-                    //IDictionary<string, int> JAObjectIds = API.GetAllObjectIds();
-                    IDictionary<string, int> JABigCraftableIds = new Dictionary<string, int>();
-                    IDictionary<string, int> JAObjectIds = new Dictionary<string, int>();
-
                     //  Now that JsonAssets has finished loading the modded items, go through each one, and convert the items into StoreableBagItems (which requires an Id instead of just a Name)
                     foreach (System.Collections.Generic.KeyValuePair<ModdedBag, BagType> KVP in ItemBagsMod.TemporaryModdedBagTypes)
                     {
@@ -464,7 +432,7 @@ namespace ItemBags.Persistence
 
                             foreach (ModdedItem DesiredItem in KVP.Key.Items.Where(x => x.Size <= SizeCfg.Size))
                             {
-                                StoreableBagItem Item = DesiredItem.ToStoreableBagItem(JABigCraftableIds, JAObjectIds, AllBigCraftableIds, AllObjectIds);
+                                StoreableBagItem Item = DesiredItem.ToStoreableBagItem(AllBigCraftableIds, AllObjectIds);
                                 if (Item == null)
                                     FailedItemNames.Add(DesiredItem.Name);
                                 else
@@ -715,12 +683,6 @@ namespace ItemBags.Persistence
                         AllObjectIds.Add(ObjectName, KVP.Key);
                 }
 
-                //  JsonAssets removed these API calls when updating for 1.6
-                //IDictionary<string, int> JABigCraftableIds = API.GetAllBigCraftableIds();
-                //IDictionary<string, int> JAObjectIds = API.GetAllObjectIds();
-                IDictionary<string, int> JABigCraftableIds = new Dictionary<string, int>();
-                IDictionary<string, int> JAObjectIds = new Dictionary<string, int>();
-
                 //  Import items from each ModAddon
                 foreach (ModAddon ModAddon in ModAddons)
                 {
@@ -741,8 +703,8 @@ namespace ItemBags.Persistence
                                         Id = Item.ObjectId;
                                     else
                                     {
-                                        if ((Item.IsBigCraftable && !JABigCraftableIds.TryGetValue(Item.Name, out int IntId) && !AllBigCraftableIds.TryGetValue(Item.Name, out Id)) ||
-                                            (!Item.IsBigCraftable && !JAObjectIds.TryGetValue(Item.Name, out IntId) && !AllObjectIds.TryGetValue(Item.Name, out Id)))
+                                        if ((Item.IsBigCraftable && !AllBigCraftableIds.TryGetValue(Item.Name, out Id)) ||
+                                            (!Item.IsBigCraftable && !AllObjectIds.TryGetValue(Item.Name, out Id)))
                                         {
                                             string Message = string.Format("Warning - no item with Name = '{0}' was found. This item will not be imported to Bag '{1}'.", Item.Name, BagAddon.Name);
                                             ItemBagsMod.ModInstance.Monitor.Log(Message, LogLevel.Warn);
@@ -856,9 +818,7 @@ namespace ItemBags.Persistence
         [JsonIgnore]
         public ContainerSize Size { get { return string.IsNullOrEmpty(SizeString) ? ContainerSize.Small : (ContainerSize)Enum.Parse(typeof(ContainerSize), SizeString); } }
 
-        /// <param name="JABigCraftableIds">Ids of BigCraftable items added through JsonAssets. See also: <see cref="IJsonAssetsAPI.GetAllBigCraftableIds"/></param>
-        /// <param name="JAObjectIds">Ids of Objects added through JsonAssets. See also: <see cref="IJsonAssetsAPI.GetAllObjectIds"/></param>
-        public StoreableBagItem ToStoreableBagItem(IDictionary<string, int> JABigCraftableIds, IDictionary<string, int> JAObjectIds, IDictionary<string, string> AllBigCraftableIds, IDictionary<string, string> AllObjectIds)
+        public StoreableBagItem ToStoreableBagItem(IDictionary<string, string> AllBigCraftableIds, IDictionary<string, string> AllObjectIds)
         {
             if (!string.IsNullOrEmpty(ObjectId))
             {
@@ -866,18 +826,14 @@ namespace ItemBags.Persistence
             }
             else if (IsBigCraftable)
             {
-                if (JABigCraftableIds.TryGetValue(Name, out int JAId))
-                    return new StoreableBagItem(JAId, HasQualities, null, IsBigCraftable);
-                else if (AllBigCraftableIds.TryGetValue(Name, out string Id))
+                if (AllBigCraftableIds.TryGetValue(Name, out string Id))
                     return new StoreableBagItem(Id, HasQualities, null, IsBigCraftable);
                 else
                     return null;
             }
             else
             {
-                if (JAObjectIds.TryGetValue(Name, out int JAId))
-                    return new StoreableBagItem(JAId, HasQualities, null, IsBigCraftable);
-                else if (AllObjectIds.TryGetValue(Name, out string Id))
+                if (AllObjectIds.TryGetValue(Name, out string Id))
                     return new StoreableBagItem(Id, HasQualities, null, IsBigCraftable);
                 else
                     return null;

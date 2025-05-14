@@ -104,8 +104,6 @@ namespace ItemBags.Bags
             }
         }
 
-        internal override bool OnModdedBagItemsUpdated(bool AllowResyncing) => ValidateContentsIds(AllowResyncing);
-
         public override void ResetIcon()
         {
             this.DefaultIconTexture = TextureHelpers.JunimoNoteTexture;

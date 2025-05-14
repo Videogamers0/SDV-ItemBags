@@ -388,11 +388,10 @@ namespace ItemBags.Bags
             }
         }
 
-        internal override bool OnModdedBagItemsUpdated(bool AllowResyncing)
+        internal override void OnModdedBagItemsUpdated(bool AllowResyncing)
         {
             if (SizeInfo != null)
                 this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(SizeInfo.Items.Select(x => new AllowedObject(x)).ToList());
-            return ValidateContentsIds(AllowResyncing);
         }
 
         public override void ResetIcon()

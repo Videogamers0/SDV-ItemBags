@@ -145,23 +145,6 @@ namespace ItemBags.Bags
             }
         }
 
-        internal override bool OnModdedBagItemsUpdated(bool AllowResyncing)
-        {
-            bool ChangesMade = false;
-            foreach (ItemBag Bag in NestedBags)
-            {
-                if (Bag.OnModdedBagItemsUpdated(false))
-                    ChangesMade = true;
-            }
-
-            if (AllowResyncing && ChangesMade && Context.IsMainPlayer)
-            {
-                Resync();
-            }
-
-            return ChangesMade;
-        }
-
         /// <summary>The 16x16 texture that contains the omnibag icon</summary>
         [XmlIgnore]
         private static Texture2D OriginalTexture { get; set; }

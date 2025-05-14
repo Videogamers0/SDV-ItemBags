@@ -472,79 +472,9 @@ namespace ItemBags.Bags
         public abstract string GetTypeId();
         protected abstract void LoadSettings(BagInstance Data);
 
-        internal virtual bool OnModdedBagItemsUpdated(bool AllowResyncing)
-        {
-            return ValidateContentsIds(AllowResyncing);
-        }
+        internal virtual void OnModdedBagItemsUpdated(bool AllowResyncing) { }
 
         public override bool CanBeLostOnDeath() => false;
-
-        [XmlIgnore]
-        private bool HasValidatedContentsIds { get; set; } = false;
-
-        /// <summary>Intended to be invoked exactly one time per bag instance when a save file is loaded. Checks if an Item Id of a modded item added through Json Assets has changed since the last game session ended.<para/>
-        /// This typically happens when mods that add items through Json Assets have been installed/uninstalled between game sessions. When an item's Id changes, it must be re-created with the correct Id or else the item would be transformed into a different Object.</summary>
-        /// <param name="AllowResyncing">True to allow the bag data to be resynced across all multiplayer clients if a change was made.</param>
-        protected bool ValidateContentsIds(bool AllowResyncing)
-        {
-            if (HasValidatedContentsIds)
-                return false;
-
-            try
-            {
-                bool ChangesMade = false;
-                for (int i = Contents.Count - 1; i >= 0; i--)
-                {
-                    Object Item = Contents[i];
-                    if (Item != null)
-                    {
-                        int IdBeforeFixing = Item.ParentSheetIndex;
-
-                        bool IsItemStillValid = true;
-                        //  JsonAssets removed these API calls when updating for 1.6
-                        //try { IsItemStillValid = !API.FixIdsInItem(Item); }
-                        //catch (Exception ex2) 
-                        //{
-                        //    string Msg = $"Error while invoking JsonAssets API 'FixIdsInItem' for id {IdBeforeFixing} (Previous item name: {Item.DisplayName}): {ex2.Message}\n\n{ex2.ToString()}";
-                        //    ItemBagsMod.ModInstance.Monitor.Log(Msg, LogLevel.Error); 
-                        //}
-
-                        if (!IsItemStillValid)
-                        {
-                            //  The mod that this item belongs to is no longer installed
-                            this.Contents.RemoveAt(i);
-                            ChangesMade = true;
-                        }
-                        else
-                        {
-                            int IdAfterFixing = Item.ParentSheetIndex;
-                            if (IdBeforeFixing != IdAfterFixing)
-                            {
-                                //  Re-create the item with the new Id
-                                Object Actual = new BagItem(Item).ToObject();
-                                Contents[i] = Actual;
-                                ChangesMade = true;
-
-                                string Message = string.Format("Detected a change in a managed item's Id within Bag: {0}. Item Name = {1}, Previous Id = {2}, New Id = {3}", DisplayName, Actual.DisplayName, IdBeforeFixing, IdAfterFixing);
-#if DEBUG
-                                ItemBagsMod.ModInstance.Monitor.Log(Message, LogLevel.Debug);
-#else
-                                ItemBagsMod.ModInstance.Monitor.Log(Message, LogLevel.Trace);
-#endif
-                            }
-                        }
-                    }
-                }
-
-                if (AllowResyncing && ChangesMade && Context.IsMainPlayer)
-                {
-                    Resync();
-                }
-
-                return ChangesMade;
-            }
-            finally { HasValidatedContentsIds = true; }
-        }
 
         /// <summary>Default parameterless constructor intended for use by XML Serialization. Do not use this constructor to instantiate a bag.</summary>
         private ItemBag() : base()
