@@ -197,26 +197,32 @@ namespace ItemBags.Persistence
                 }
             }
 
-            //  Try to find CP items belonging to this mod by looking through Game1.objectData for ObjectData whose name or texture property begins with the mod's unique Id
-            //  (Because it's very common to prefix modded QualifiedItemIds with the mod's UniqueId)
+            //  Try to find items belonging to this mod by looking through Game1.objectData for ObjectData whose Id or texture property begins with the mod's unique Id
+            //  (Because it's very common to prefix modded ItemIds with the mod's UniqueId)
             if (!Items.Any())
             {
-                IEnumerable<ObjectData> Matches = Game1.objectData.Values
-                    .Where(x => !string.IsNullOrEmpty(x.Name) && (x.Name.StartsWith(ModUniqueId) || (!string.IsNullOrEmpty(x.Texture) && x.Texture.StartsWith(ModUniqueId))))
-                    .GroupBy(x => x.Name).Select(x => x.First()); // In rare cases, there may be multiple ObjectData entries with the same Id, such as "bees.pkr_combeefegg" from Pokemon Ranch mod v1.7.
-                foreach (ObjectData Match in Matches)
+                HashSet<string> ProcessedIds = new HashSet<string>();
+                foreach ((string Id, ObjectData Data) in Game1.objectData)
                 {
-                    string Id = Match.Name;
-                    bool HasQualities = CategoriesWithQualities.Contains(Match.Category);
-                    ModdedItem Item = new ModdedItem(Id, true, false, HasQualities, RequiredSize);
-                    ItemMetadata Metadata = ItemRegistry.ResolveMetadata(Id);
-                    if (Metadata == null)
-                    {
-                        ItemBagsMod.ModInstance.Monitor.Log($"Failed to retrieve item metadata for {Match.Name}. ItemRegistry.ResolveMetadata(\"{Match.Name}\") returned null. If this is a valid item, it will be skipped for processing.", LogLevel.Warn);
+                    // In rare cases, there may be multiple ObjectData entries with the same Id, such as "bees.pkr_combeefegg" from Pokemon Ranch mod v1.7.
+                    if (ProcessedIds.Contains(Id))
                         continue;
+
+                    if (Id.StartsWith(ModUniqueId) || (!string.IsNullOrEmpty(Data.Texture) && Data.Texture.StartsWith(ModUniqueId)))
+                    {
+                        bool HasQualities = CategoriesWithQualities.Contains(Data.Category);
+                        ItemMetadata Metadata = ItemRegistry.ResolveMetadata(Id);
+                        if (Metadata == null)
+                        {
+                            ItemBagsMod.ModInstance.Monitor.Log($"Failed to retrieve item metadata for {Data.Name}. ItemRegistry.ResolveMetadata(\"{Data.Name}\") returned null. If this is a valid item, it will be skipped for processing.", LogLevel.Warn);
+                            continue;
+                        }
+                        bool IsBigCraftable = Metadata?.TypeIdentifier == "(BC)";
+                        ModdedItem Item = new ModdedItem(Id, true, IsBigCraftable, HasQualities, RequiredSize);
+                        Items.Add(Item);
+
+                        ProcessedIds.Add(Id);
                     }
-                    bool IsBigCraftable = Metadata?.TypeIdentifier == "(BC)";
-                    Items.Add(Item);
                 }
             }
 

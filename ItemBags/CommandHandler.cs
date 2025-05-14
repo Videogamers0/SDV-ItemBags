@@ -335,7 +335,8 @@ namespace ItemBags
                             string RelativePath = Path.Combine("assets", "Modded Bags", CurrentFilename + ".json");
                             Helper.Data.WriteJsonFile(RelativePath, ModdedBag);
 
-                            Monitor.Log($"File exported to: {Path.Combine(Helper.DirectoryPath, RelativePath)}\nYou will need to re-launch the game for this file to be loaded.", LogLevel.Alert);
+                            Monitor.Log($"File exported to: {Path.Combine(Helper.DirectoryPath, RelativePath)}\n" +
+                                $"This file contains {ModdedBag.Items.Count} items. You will need to re-launch the game for this file to be loaded.", LogLevel.Alert);
                         }
                     }
                 }
