@@ -28,9 +28,9 @@ namespace ItemBags.Persistence
         HasBuffs,
         /// <summary>Matches items that can be donated to the museum, including items that have already been donated</summary>
         IsDonatable,
-
         /// <summary>Matches items that can be donated to the museum, AND have not yet been donated</summary>
         IsPendingDonation,
+
         QualifiedId,
         QualifiedIdPrefix,
         QualifiedIdSuffix,
@@ -53,7 +53,9 @@ namespace ItemBags.Persistence
         DisplayNameSuffix,
         DisplayNameContains,
 
-        Regex
+        Regex,
+        /// <summary>Matches items that can be shipped AND have not yet been shipped</summary>
+        IsPendingShipment
     }
 
     public enum CompositionType
@@ -311,6 +313,8 @@ namespace ItemBags.Persistence
                         ItemFilterType.DisplayNamePrefix => DisplayNamePrefixItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
                         ItemFilterType.DisplayNameSuffix => DisplayNameSuffixItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
                         ItemFilterType.DisplayNameContains => DisplayNameContainsItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.IsPendingShipment => PendingShipmentItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        //ItemFilterType.Sample => SampleItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
                         _ => throw new NotImplementedException($"Unrecognized {nameof(ItemFilterType)}: {parsedFilterType}"),
                     };
                     filters.Add(filter);
@@ -1031,6 +1035,41 @@ namespace ItemBags.Persistence
             => new RegexItemFilter(IsNegated, Limit, Offset, Property, Value);
     }
 
+    public class PendingShipmentItemFilter : ItemFilter
+    {
+        public PendingShipmentItemFilter(bool IsNegated, int? Limit, int? Offset)
+            : base(ItemFilterType.IsPendingShipment, IsNegated, Limit, Offset)
+        {
+
+        }
+
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => !data.ExcludeFromShippingCollection && IsUnshipped(parsedData);
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => IsUnshipped(parsedData);
+
+        private static readonly Dictionary<string, Item> ItemInstances = new Dictionary<string, Item>();
+
+        private static bool IsUnshipped(ParsedItemData Data)
+        {
+            if (!StardewValley.Object.isPotentialBasicShipped(Data.ItemId, Data.Category, Data.ObjectType))
+                return false;
+            if (Game1.player.basicShipped.TryGetValue(Data.ItemId, out int ShippedQty) && ShippedQty > 0)
+                return false;
+
+            //  Get an instance of the item so we can read the 'canBeShipped' value
+            if (!ItemInstances.TryGetValue(Data.QualifiedItemId, out Item Instance))
+            {
+                Instance = ItemRegistry.Create(Data.QualifiedItemId);
+                ItemInstances.Add(Data.QualifiedItemId, Instance);
+            }
+
+            return Instance.canBeShipped();
+        }
+
+        public static PendingShipmentItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) => new PendingShipmentItemFilter(IsNegated, Limit, Offset);
+
+        public override string ToString() => $"{nameof(PendingShipmentItemFilter)}";
+    }
+
 #if NEVER // for copy-pasting purposes...
     public class SampleItemFilter : ItemFilter
     {
@@ -1044,6 +1083,8 @@ namespace ItemBags.Persistence
         protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => aaaaaaaaaaa;
 
         public static SomeItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) => new SomeItemFilter(IsNegated, Limit, Offset);
+
+        public override string ToString() => "${nameof(SampleItemFilter)}";
     }
 #endif
 }
