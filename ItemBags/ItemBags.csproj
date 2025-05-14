@@ -27,23 +27,6 @@
     <Reference Include="Microsoft.Build.Framework" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\Aquilegia.SweetTooth.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\Hadi.JASoda.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\Hesper.JA.Succulents.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\HisameCraftables.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\HisameNewRecipes.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\kildarien.farmertoflorist.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\minervamaga.JA.EemieCrops.fruit.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\minervamaga.JA.EemieCrops.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\mizu.flowers.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\mizu.flowers.seeds.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\ParadigmNomad.FantasyCrops.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\paradigmnomad.freshmeat.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\paradigmnomad.freshmeat.seeds.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\paradigmnomad.morefood.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\ppja.ancientcrops.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\ppja.ancientcrops.seeds.json" />
-    <None Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\ppja.artisanvalleymachinegoods.json" />
     <None Include="manifest %28Android%29.json" />
     <None Include="manifest %28PC%29.json" />
   </ItemGroup>
@@ -53,7 +36,7 @@
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="assets\Modded Bags\Samples %28Copy into Modded Bags folder to use%29\help.txt" />
+    <Content Include="assets\Modded Bags\Samples\help.txt" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
