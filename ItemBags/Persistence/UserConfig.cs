@@ -77,6 +77,11 @@ namespace ItemBags.Persistence
         [XmlElement("ShowAutofillMessage")]
         public bool ShowAutofillMessage { get; set; }
 
+        /// <summary>Additional directories to load custom bag .json files from. Each path is relative to the game's install folder (the folder with 'Stardew Valley.exe').<para/>
+        /// If this list is empty, custom bags will only be loaded from "{ItemBags mod folder}\assets\Modded Bags\"</summary>
+        [XmlElement("ModdedBagRelativeFolderPaths")]
+        public List<string> ModdedBagRelativeFolderPaths { get; set; }
+
         public UserConfig()
         {
             InitializeDefaults();
@@ -135,6 +140,8 @@ namespace ItemBags.Persistence
             this.GamepadSettings = new GamepadControls();
 
             this.ShowAutofillMessage = true;
+
+            this.ModdedBagRelativeFolderPaths = new List<string>();
         }
 
         public bool AllowDowngradeBundleItemQuality(ContainerSize Size)

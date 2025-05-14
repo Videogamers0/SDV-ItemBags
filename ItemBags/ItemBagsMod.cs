@@ -398,7 +398,22 @@ namespace ItemBags
         }
 
         public static string ModdedBagsFolder => Path.Combine(ModInstance.Helper.DirectoryPath, "assets", "Modded Bags");
-        public static string[] GetModdedBagFilePaths() => Directory.GetFiles(ModdedBagsFolder, "*.json", SearchOption.TopDirectoryOnly);
+        public static string[] GetModdedBagFilePaths()
+        {
+            List<string> Directories = new List<string>() { ModdedBagsFolder };
+            if ((UserConfig.ModdedBagRelativeFolderPaths?.Count ?? 0) > 0)
+            {
+                foreach (string RelativeFolder in  UserConfig.ModdedBagRelativeFolderPaths)
+                {
+                    string Directory = Path.Combine(Constants.GamePath, RelativeFolder);
+                    if (System.IO.Directory.Exists(Directory))
+                        Directories.Add(Directory);
+                }
+            }
+
+            return Directories.SelectMany(x => Directory.GetFiles(x, "*.json", SearchOption.TopDirectoryOnly)).ToArray();
+        }
+
         internal static IEnumerable<string> GetModdedBagRelativeFilePaths() => GetModdedBagFilePaths().Select(x => x.Replace(ModInstance.Helper.DirectoryPath + Path.DirectorySeparatorChar, ""));
 
         private static void LoadModdedBags()
@@ -409,10 +424,16 @@ namespace ItemBags
                 string[] ModdedBagFiles = GetModdedBagFilePaths();
                 if (ModdedBagFiles.Length > 0)
                 {
+                    StardewModdingAPI.Toolkit.Serialization.JsonHelper Deserializer = new StardewModdingAPI.Toolkit.Serialization.JsonHelper();
+
                     foreach (string File in ModdedBagFiles)
                     {
-                        string RelativePath = File.Replace(ModInstance.Helper.DirectoryPath + Path.DirectorySeparatorChar, "");
+#if NEVER
+                        string RelativePath = Path.GetRelativePath(ModInstance.Helper.DirectoryPath, File);
                         ModdedBag ModdedBag = ModInstance.Helper.Data.ReadJsonFile<ModdedBag>(RelativePath);
+#else
+                        Deserializer.ReadJsonFileIfExists(File, out ModdedBag ModdedBag);
+#endif
 
                         if (ModdedBag.IsEnabled && (string.IsNullOrEmpty(ModdedBag.ModUniqueId) || ModInstance.Helper.ModRegistry.IsLoaded(ModdedBag.ModUniqueId)))
                         {
