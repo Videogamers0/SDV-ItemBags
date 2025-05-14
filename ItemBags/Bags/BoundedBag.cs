@@ -388,7 +388,7 @@ namespace ItemBags.Bags
             }
         }
 
-        internal override void OnModdedBagItemsUpdated(bool AllowResyncing)
+        internal override void OnModdedBagItemsUpdated()
         {
             if (SizeInfo != null)
                 this.AllowedObjects = new ReadOnlyCollection<AllowedObject>(SizeInfo.Items.Select(x => new AllowedObject(x)).ToList());

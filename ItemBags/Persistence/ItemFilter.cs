@@ -66,6 +66,14 @@ namespace ItemBags.Persistence
         LogicalAND
     }
 
+    public enum RefreshTrigger
+    {
+        BagOpened,
+        DayStart,
+        /// <summary>Fired when the current GameLocation changes from the LibraryMuseum or FossilIslandOffice to a different location</summary>
+        MuseumExited
+    }
+
     public interface IItemFilter
     {
         /// <summary>The maximum number of results that this filter can match, or <see langword="null"/> if it can match unlimited number of results</summary>

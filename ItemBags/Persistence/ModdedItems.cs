@@ -9,6 +9,7 @@ using StardewValley.Buildings;
 using StardewValley.GameData.BigCraftables;
 using StardewValley.GameData.Objects;
 using StardewValley.ItemTypeDefinitions;
+using StardewValley.Locations;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -95,6 +96,26 @@ namespace ItemBags.Persistence
         /// <summary>The delimiter to use when logically-ORing multiple filters together. Default value: "|"</summary>
         [JsonProperty("ItemFiltersDelimiter")]
         public string ItemFiltersDelimiter { get; set; }
+
+        /// <summary>A comma-separated list of triggers that will cause the bag's items to be re-calculated. Values must be the exact name of an enum value in <see cref="RefreshTrigger"/> enum.<para/>
+        /// EX: "DayStart" or "DayStart,BagOpened"</summary>
+        [JsonProperty("ItemFiltersRefreshTriggers")]
+        public string ItemFiltersRefreshTriggers { get; set; }
+        public IEnumerable<RefreshTrigger> ParsedRefreshTriggers
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(ItemFiltersRefreshTriggers))
+                {
+                    string[] Triggers = ItemFiltersRefreshTriggers.Split(',');
+                    foreach (string Value in Triggers)
+                    {
+                        if (Enum.TryParse(Value, true, out RefreshTrigger Trigger))
+                            yield return Trigger;
+                    }
+                }
+            }
+        }
 
         [JsonProperty("CategoryQualities")]
         public string CategoryQualities { get; set; }
@@ -233,9 +254,20 @@ namespace ItemBags.Persistence
         {
             IModHelper Helper = ItemBagsMod.ModInstance.Helper;
 
+            Helper.Events.GameLoop.DayStarted += (sender, e) =>
+            {
+                DelayHelpers.InvokeLater(1, () => UpdateModdedBagItems(ItemBagsMod.BagConfig, true, x => x.Key.ParsedRefreshTriggers.Contains(RefreshTrigger.DayStart)));
+            };
+
+            Helper.Events.Player.Warped += (sender, e) =>
+            {
+                if (e.OldLocation is LibraryMuseum || e.OldLocation is IslandFieldOffice)
+                    DelayHelpers.InvokeLater(1, () => UpdateModdedBagItems(ItemBagsMod.BagConfig, true, x => x.Key.ParsedRefreshTriggers.Contains(RefreshTrigger.MuseumExited)));
+            };
+
             Helper.Events.GameLoop.SaveLoaded += (sender, e) =>
             {
-                DelayHelpers.InvokeLater(1, () => UpdateModdedBagItems(ItemBagsMod.BagConfig, true));
+                DelayHelpers.InvokeLater(1, () => UpdateModdedBagItems(ItemBagsMod.BagConfig, true, null));
             };
         }
 
@@ -243,7 +275,7 @@ namespace ItemBags.Persistence
         {
             if (!Context.IsMainPlayer)
             {
-                UpdateModdedBagItems(ItemBagsMod.BagConfig, false);
+                UpdateModdedBagItems(ItemBagsMod.BagConfig, false, null);
             }
         }
 
@@ -372,15 +404,19 @@ namespace ItemBags.Persistence
             }
         }
 
-        internal static void UpdateModdedBagItems(BagConfig Target, bool RevalidateInstances)
+        /// <param name="ToUpdate">Optional. If specified, only bags that this predicate returns true for will be reprocessed</param>
+        internal static void UpdateModdedBagItems(BagConfig Target, bool RevalidateInstances, Predicate<System.Collections.Generic.KeyValuePair<ModdedBag, BagType>> ToUpdate)
         {
+            bool IsFullUpdate = ToUpdate == null;
+
             try
             {
                 ItemBagsMod.ModdedItems.ImportModdedItems(ItemBagsMod.BagConfig);
 
                 if (ItemBagsMod.TemporaryModdedBagTypes.Any())
                 {
-                    ItemBagsMod.ModInstance.Monitor.Log("Loading Modded Bags type info", ItemBagsMod.InfoLogLevel);
+                    if (IsFullUpdate)
+                        ItemBagsMod.ModInstance.Monitor.Log("Loading Modded Bags type info", ItemBagsMod.InfoLogLevel);
 
                     Dictionary<string, string> AllBigCraftableIds = new Dictionary<string, string>();
                     foreach (System.Collections.Generic.KeyValuePair<string, BigCraftableData> KVP in Game1.bigCraftableData)
@@ -400,9 +436,11 @@ namespace ItemBags.Persistence
                             AllObjectIds.Add(ObjectName, KVP.Key);
                     }
 
-                    //  Now that JsonAssets has finished loading the modded items, go through each one, and convert the items into StoreableBagItems (which requires an Id instead of just a Name)
                     foreach (System.Collections.Generic.KeyValuePair<ModdedBag, BagType> KVP in ItemBagsMod.TemporaryModdedBagTypes)
                     {
+                        if (ToUpdate?.Invoke(KVP) == false)
+                            continue;
+
                         List<ObjectQuality> AllQualities = Enum.GetValues(typeof(ObjectQuality)).Cast<ObjectQuality>().ToList();
                         List<ObjectQuality> RegularQualites = new List<ObjectQuality>() { ObjectQuality.Regular };
                         List<int> QualityCategories = CategoriesWithQualities.ToList();
@@ -562,7 +600,7 @@ namespace ItemBags.Persistence
 
                             SizeCfg.Items = Items;
 
-                            if (FailedItemNames.Any())
+                            if (IsFullUpdate && FailedItemNames.Any())
                             {
                                 int MaxNamesShown = 5;
                                 string MissingItems = string.Format("{0}{1}", string.Join(", ", FailedItemNames.Take(MaxNamesShown)),
@@ -575,7 +613,7 @@ namespace ItemBags.Persistence
                     }
 
                     if (RevalidateInstances)
-                        ItemBag.GetAllBags(true).ForEach(x => x.OnModdedBagItemsUpdated(true));
+                        ItemBag.GetAllBags(true).ForEach(x => x.OnModdedBagItemsUpdated());
                 }
             }
             catch (Exception ex)

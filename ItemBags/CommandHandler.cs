@@ -556,7 +556,7 @@ namespace ItemBags
                         }
                     }
 
-                    ModdedBag.UpdateModdedBagItems(ItemBagsMod.BagConfig, true);
+                    ModdedBag.UpdateModdedBagItems(ItemBagsMod.BagConfig, true, null);
 
                     //  Refresh opened menus by closing/re-opening them
                     ItemBag OpenedBag = ItemBag.GetAllBags(true).FirstOrDefault(x => x.IsContentsMenuOpen);

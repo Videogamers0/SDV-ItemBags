@@ -472,7 +472,7 @@ namespace ItemBags.Bags
         public abstract string GetTypeId();
         protected abstract void LoadSettings(BagInstance Data);
 
-        internal virtual void OnModdedBagItemsUpdated(bool AllowResyncing) { }
+        internal virtual void OnModdedBagItemsUpdated() { }
 
         public override bool CanBeLostOnDeath() => false;
 
@@ -646,6 +646,10 @@ namespace ItemBags.Bags
         /// <param name="RestoreableMenu">The menu to re-open when this bag is closed. Typically this should be <see cref="Game1.activeClickableMenu"/></param>
         internal void OpenContents(IList<Item> Source, int ActualCapacity, IClickableMenu RestoreableMenu, int? InventoryColumns = null)
         {
+            //  Some modded Bags are configured to refresh their item list when the bag is opened
+            if (this is BoundedBag BB && ItemBagsMod.TemporaryModdedBagTypes.Values.Any(x => x.Id == BB.TypeId))
+                ModdedBag.UpdateModdedBagItems(ItemBagsMod.BagConfig, true, x => x.Value.Id == BB.TypeId && x.Key.ParsedRefreshTriggers.Contains(RefreshTrigger.BagOpened));
+
             this.PreviousMenu = RestoreableMenu;
             TryRemoveInvalidItems(Game1.player.Items, Game1.player.MaxItems);
             this.ContentsMenu = CreateMenu(Source, ActualCapacity, InventoryColumns);
