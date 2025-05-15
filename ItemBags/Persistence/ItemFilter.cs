@@ -57,7 +57,9 @@ namespace ItemBags.Persistence
         /// <summary>Matches items that can be shipped AND have not yet been shipped</summary>
         IsPendingShipment,
         IsCaughtFish,
-        IsUncaughtFish
+        IsUncaughtFish,
+        /// <summary>Matches items that are used as an ingredient to at least one cooking recipe</summary>
+        IsCookingIngredient
     }
 
     public enum CompositionType
@@ -326,6 +328,7 @@ namespace ItemBags.Persistence
                         ItemFilterType.IsPendingShipment => PendingShipmentItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
                         ItemFilterType.IsCaughtFish => CaughtFishItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
                         ItemFilterType.IsUncaughtFish => UncaughtFishItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
+                        ItemFilterType.IsCookingIngredient => CookingIngredientItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
                         //ItemFilterType.Sample => SampleItemFilter.Parse(IsNegated, Limit, Offset, filterValue),
                         _ => throw new NotImplementedException($"Unrecognized {nameof(ItemFilterType)}: {parsedFilterType}"),
                     };
@@ -1114,6 +1117,80 @@ namespace ItemBags.Persistence
         public static UncaughtFishItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value) => new UncaughtFishItemFilter(IsNegated, Limit, Offset);
 
         public override string ToString() => $"{nameof(UncaughtFishItemFilter)}";
+    }
+
+    public class CookingIngredientItemFilter : ItemFilter
+    {
+        /// <summary>If <see langword="true"/>, this filter will match ingredients belonging to cooking recipes that the player has not learned yet.</summary>
+        public bool IncludeUnlearnedRecipes { get; }
+
+        /// <summary>If <see langword="true"/>, this filter will skip ingredients belonging to cooking recipes that the player has already cooked at least one time.</summary>
+        public bool ExcludeCookedRecipes { get; }
+
+        public IReadOnlyList<CraftingRecipe> FilteredRecipes { get; }
+        public HashSet<string> Ingredients { get; }
+
+        public CookingIngredientItemFilter(bool IsNegated, int? Limit, int? Offset, bool IncludeUnlearnedRecipes, bool ExcludeCookedRecipes)
+            : base(ItemFilterType.IsCookingIngredient, IsNegated, Limit, Offset)
+        {
+            this.IncludeUnlearnedRecipes = IncludeUnlearnedRecipes;
+            this.ExcludeCookedRecipes = ExcludeCookedRecipes;
+
+            List<CraftingRecipe> AllRecipes = new List<CraftingRecipe>();
+            List<CraftingRecipe> LearnedRecipes = new List<CraftingRecipe>();
+            List<CraftingRecipe> CookedRecipes = new List<CraftingRecipe>();
+
+            foreach (string RecipeName in CraftingRecipe.cookingRecipes.Keys)
+            {
+                CraftingRecipe Recipe = new CraftingRecipe(RecipeName, true);
+                List<string> RecipeProducts = Recipe.itemToProduce;
+                AllRecipes.Add(Recipe);
+                if (Game1.player.knowsRecipe(RecipeName))
+                    LearnedRecipes.Add(Recipe);
+                if (RecipeProducts.All(x => Game1.player.recipesCooked.TryGetValue(x, out int TimesCooked) && TimesCooked > 0))
+                    CookedRecipes.Add(Recipe);
+            }
+
+            if (IncludeUnlearnedRecipes && ExcludeCookedRecipes)
+                FilteredRecipes = AllRecipes.Except(CookedRecipes).ToList();
+            else if (IncludeUnlearnedRecipes && !ExcludeCookedRecipes)
+                FilteredRecipes = AllRecipes;
+            else if (!IncludeUnlearnedRecipes && ExcludeCookedRecipes)
+                FilteredRecipes = LearnedRecipes.Except(CookedRecipes).ToList();
+            else
+                FilteredRecipes = LearnedRecipes;
+
+            Ingredients = new HashSet<string>();
+            foreach (CraftingRecipe Recipe in FilteredRecipes)
+            {
+                foreach (string Ingredient in Recipe.recipeList.Keys)
+                {
+                    Ingredients.Add(Ingredient);
+                }
+            }
+        }
+
+        protected override bool DerivedIsMatch(ObjectData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => Ingredients.Contains(parsedData.ItemId);
+        protected override bool DerivedIsMatch(BigCraftableData data, ParsedItemData parsedData, ContainerSize size, ObjectQuality quality) => false;
+
+        public static CookingIngredientItemFilter Parse(bool IsNegated, int? Limit, int? Offset, string Value)
+        {
+            bool IncludeUnlearnedRecipes = true;
+            bool ExcludeCookedRecipes = false;
+
+            if (!string.IsNullOrEmpty(Value))
+            {
+                string[] Values = Value.Split(',');
+                if (Values.Length >= 1 && bool.TryParse(Values[0], out bool FirstBool))
+                    IncludeUnlearnedRecipes = FirstBool;
+                if (Values.Length >= 2 && bool.TryParse(Values[1], out bool SecondBool))
+                    ExcludeCookedRecipes = SecondBool;
+            }
+
+            return new CookingIngredientItemFilter(IsNegated, Limit, Offset, IncludeUnlearnedRecipes, ExcludeCookedRecipes);
+        }
+
+        public override string ToString() => $"{nameof(CookingIngredientItemFilter)}";
     }
 
 #if NEVER // for copy-pasting purposes...
