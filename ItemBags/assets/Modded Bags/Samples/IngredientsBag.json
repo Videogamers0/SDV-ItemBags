@@ -1,0 +1,137 @@
+{
+  "IsEnabled": true,
+  "ModUniqueId": "SlayerDharok.Item_Bags",
+  "BagId": "3578e96a-eff1-49d8-b1a7-e9432a8d9042",
+  "BagName": "Ingredients Bag",
+  "BagDescription": "A bag for storing cooking recipe ingredients",
+  "IconTexture": "SpringObjects",
+  "IconPosition": {
+    "X": 0,
+    "Y": 0,
+    "Width": 0,
+    "Height": 0
+  },
+  "Prices": {
+    "Small": 2500,
+    "Medium": 7500,
+    "Large": 20000,
+    "Giant": 60000,
+    "Massive": 100000
+  },
+  "Capacities": {
+    "Small": 30,
+    "Medium": 99,
+    "Large": 300,
+    "Giant": 999,
+    "Massive": 9999
+  },
+  "SizeSellers": {
+    "Small": [
+      "Gus"
+    ],
+    "Medium": [
+      "Gus"
+    ],
+    "Large": [
+      "Gus"
+    ],
+    "Giant": [
+      "Gus"
+    ],
+    "Massive": [
+      "Gus"
+    ]
+  },
+  "SizeMenuOptions": {
+    "Small": {
+      "GroupByQuality": true,
+      "InventoryColumns": 12,
+      "InventorySlotSize": 64,
+      "GroupedLayoutOptions": {
+        "GroupsPerRow": 7,
+        "ShowValueColumn": true,
+        "SlotSize": 48
+      },
+      "UngroupedLayoutOptions": {
+        "Columns": 18,
+        "LineBreakIndices": [],
+        "LineBreakHeights": [],
+        "SlotSize": 64
+      }
+    },
+    "Medium": {
+      "GroupByQuality": true,
+      "InventoryColumns": 12,
+      "InventorySlotSize": 64,
+      "GroupedLayoutOptions": {
+        "GroupsPerRow": 7,
+        "ShowValueColumn": true,
+        "SlotSize": 48
+      },
+      "UngroupedLayoutOptions": {
+        "Columns": 18,
+        "LineBreakIndices": [],
+        "LineBreakHeights": [],
+        "SlotSize": 64
+      }
+    },
+    "Large": {
+      "GroupByQuality": true,
+      "InventoryColumns": 12,
+      "InventorySlotSize": 64,
+      "GroupedLayoutOptions": {
+        "GroupsPerRow": 7,
+        "ShowValueColumn": true,
+        "SlotSize": 48
+      },
+      "UngroupedLayoutOptions": {
+        "Columns": 18,
+        "LineBreakIndices": [],
+        "LineBreakHeights": [],
+        "SlotSize": 64
+      }
+    },
+    "Giant": {
+      "GroupByQuality": true,
+      "InventoryColumns": 12,
+      "InventorySlotSize": 64,
+      "GroupedLayoutOptions": {
+        "GroupsPerRow": 7,
+        "ShowValueColumn": true,
+        "SlotSize": 48
+      },
+      "UngroupedLayoutOptions": {
+        "Columns": 18,
+        "LineBreakIndices": [],
+        "LineBreakHeights": [],
+        "SlotSize": 64
+      }
+    },
+    "Massive": {
+      "GroupByQuality": true,
+      "InventoryColumns": 12,
+      "InventorySlotSize": 64,
+      "GroupedLayoutOptions": {
+        "GroupsPerRow": 7,
+        "ShowValueColumn": true,
+        "SlotSize": 48
+      },
+      "UngroupedLayoutOptions": {
+        "Columns": 18,
+        "LineBreakIndices": [],
+        "LineBreakHeights": [],
+        "SlotSize": 64
+      }
+    }
+  },
+  "Items": [],
+  "ItemCategories": { },
+  "ItemFilters": [
+	  "IsCookingIngredient:true,false"
+  ],
+  "ItemFiltersRefreshTriggers": "DayStart",
+  "ItemFiltersLimit": 10000,
+  "ItemFiltersOffset": 0,
+  "ItemFiltersDelimiter": "|",
+  "ItemFiltersSorting": "CategoryId,DisplayName"
+}
