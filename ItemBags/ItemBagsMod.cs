@@ -14,7 +14,7 @@ using Leclair.Stardew.BetterGameMenu;
 
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
-
+using StardewModdingAPI.Toolkit.Serialization;
 using StardewValley;
 using StardewValley.Menus;
 
@@ -424,16 +424,30 @@ namespace ItemBags
                 string[] ModdedBagFiles = GetModdedBagFilePaths();
                 if (ModdedBagFiles.Length > 0)
                 {
-                    StardewModdingAPI.Toolkit.Serialization.JsonHelper Deserializer = new StardewModdingAPI.Toolkit.Serialization.JsonHelper();
+                    JsonHelper Deserializer = new JsonHelper();
+
+#if NEVER
+                    try
+                    {
+                        //  SMAPI throws a tantrum if you try to reflect its own private fields :(
+                        Deserializer = ModInstance.Helper.Reflection.GetField<JsonHelper>(ModInstance.Helper.Data, "JsonHelper").GetValue();
+                    }
+                    catch (Exception ex) { }
+#endif
 
                     foreach (string File in ModdedBagFiles)
                     {
-#if NEVER
-                        string RelativePath = Path.GetRelativePath(ModInstance.Helper.DirectoryPath, File);
-                        ModdedBag ModdedBag = ModInstance.Helper.Data.ReadJsonFile<ModdedBag>(RelativePath);
-#else
-                        Deserializer.ReadJsonFileIfExists(File, out ModdedBag ModdedBag);
-#endif
+                        ModdedBag ModdedBag;
+
+                        try
+                        {
+                            //  Try to use SMAPI's ReadJsonFile which only supports file paths within the mod folder (paths with directory climbing will throw an exception, such as "..\CustomBags\")
+                            string RelativePath = Path.GetRelativePath(ModInstance.Helper.DirectoryPath, File);
+                            ModdedBag = ModInstance.Helper.Data.ReadJsonFile<ModdedBag>(RelativePath);
+                        }
+                        //  As a fallback, try reading the Json with our JsonHelper instance, which might not have the exact same deserialization settings as SMAPI's DataHelper.JsonHelper
+                        //  (For example, it doesn't have additional converters for colors, vectors, rectangles etc: https://github.com/Pathoschild/SMAPI/blob/develop/src/SMAPI/Framework/SCore.cs#L238)
+                        catch (InvalidOperationException) { Deserializer.ReadJsonFileIfExists(File, out ModdedBag); }
 
                         if (ModdedBag.IsEnabled && (string.IsNullOrEmpty(ModdedBag.ModUniqueId) || ModInstance.Helper.ModRegistry.IsLoaded(ModdedBag.ModUniqueId)))
                         {
